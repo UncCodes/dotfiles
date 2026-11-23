@@ -10,7 +10,7 @@
 #   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
 #   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
 #   fui updates                                      count pending package updates
-#   fui update                                       pull the dotfiles, install, reload
+#   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
 #   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
 #   fui help
@@ -27,7 +27,8 @@ have()   { command -v "$1" >/dev/null 2>&1; }
 upper()  { echo "$1" | tr '[:lower:]' '[:upper:]'; }
 detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/null 2>&1 & fi; }
 die()    { echo "fui: $*" >&2; exit 1; }
-note()   { have notify-send && notify-send -t 2200 -a fui "$1" "${2:-}"; return 0; }
+t3()     { if have timeout; then timeout 3 "$@"; else "$@"; fi; }   # calls to services that may not be running
+note()   { have notify-send && t3 notify-send -t 2200 -a fui "$1" "${2:-}"; return 0; }
 usage()  { sed -n '3,17p' "$SELF" | sed 's/^# \{0,1\}//'; }
 
 # token lookups from ~/.config/fui/tokens.json (generated from tokens.toml)
@@ -142,17 +143,19 @@ cmd_mode() {
   local gtk icons scheme
   gtk=$(tok "desktop.$new.gtk_base"); icons=$(tok "desktop.$new.icon_theme"); scheme=$(tok "desktop.$new.scheme")
   if have gsettings; then
-    [ -n "$scheme" ] && gsettings set org.gnome.desktop.interface color-scheme "$scheme"
-    [ -n "$gtk" ] && gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
-    [ -n "$icons" ] && gsettings set org.gnome.desktop.interface icon-theme "$icons"
+    [ -n "$scheme" ] && t3 gsettings set org.gnome.desktop.interface color-scheme "$scheme"
+    [ -n "$gtk" ] && t3 gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
+    [ -n "$icons" ] && t3 gsettings set org.gnome.desktop.interface icon-theme "$icons"
   fi
   pkill -USR1 -x kitty 2>/dev/null               # kitty re-reads kitty.conf (the tab bar)
   pkill -USR2 -x waybar 2>/dev/null              # waybar re-reads its style
-  have swaync-client && swaync-client -rs >/dev/null 2>&1
+  have swaync-client && pgrep -x swaync >/dev/null && t3 swaync-client -rs >/dev/null 2>&1
   if pgrep -x swayosd-server >/dev/null; then pkill -x swayosd-server; detach swayosd-server; fi
-  have hyprctl && hyprctl reload >/dev/null 2>&1   # window edges, background
-  detach "$SELF" wallpaper start
-  cmd_sound move
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1   # window edges, background
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    detach "$SELF" wallpaper start
+    cmd_sound move
+  fi
   [ "$quiet" = 1 ] || note "theme" "$new"
   return 0
 }
@@ -239,7 +242,7 @@ cmd_screen() {
     *) die "usage: fui screen [toggle|on|off|status]" ;;
   esac
   echo "$cur" > "$STATE/screen"
-  have hyprctl && hyprctl reload >/dev/null 2>&1
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1
   note "screen glass" "$cur"
 }
 
@@ -526,6 +529,35 @@ cmd_record() {
 }
 
 
+# ── version / rollback ──────────────────────────────────────────────────
+cmd_version() {
+  [ -d "$DOTS/.git" ] || { echo "unknown (no git checkout at $DOTS)"; return 0; }
+  git -C "$DOTS" describe --tags --always 2>/dev/null
+}
+
+cmd_rollback() {   # go back to a tagged version; `fui update` returns to the newest
+  [ -d "$DOTS/.git" ] || die "no git checkout at $DOTS"
+  git -C "$DOTS" fetch -q --tags 2>/dev/null
+  local tag="${1:-}"
+  if [ -z "$tag" ]; then
+    echo "Versions (newest first):"
+    git -C "$DOTS" tag --sort=-creatordate | head -10 | sed 's/^/  /'
+    echo "Now: $(cmd_version)"
+    echo "Go back with: fui rollback <version>    Return to the newest with: fui update"
+    return 0
+  fi
+  git -C "$DOTS" rev-parse -q --verify "refs/tags/$tag" >/dev/null || die "no version called $tag (fui rollback lists them)"
+  if [ -n "$(git -C "$DOTS" status --porcelain)" ]; then
+    die "files in $DOTS were changed on this machine; drop them first: git -C $DOTS checkout -- ."
+  fi
+  git -C "$DOTS" reset -q --hard "refs/tags/$tag" || return 1
+  echo "Now at $tag. Re-linking..."
+  bash "$DOTS/install.sh" --no-packages --no-hardware --no-chsh
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && hyprctl reload >/dev/null 2>&1
+  return 0
+}
+
+
 # ── updates / update ────────────────────────────────────────────────────
 cmd_updates() {
   local repo=0 aur=0
@@ -625,7 +657,7 @@ fix_broken_links() {
 cmd_doctor() {
   local do_fix=0 a
   for a in "$@"; do [ "$a" = --fix ] && do_fix=1; done
-  echo "fui doctor  $(date '+%Y-%m-%d %H:%M')"
+  echo "fui doctor  $(date '+%Y-%m-%d %H:%M')  version $(cmd_version)"
   [ -r /etc/os-release ] && . /etc/os-release && echo "${PRETTY_NAME:-Linux}  kernel $(uname -r)"
 
   section "session"
@@ -1016,6 +1048,8 @@ case "$sub" in
   shot)      cmd_shot "$@" ;;
   record)    cmd_record "$@" ;;
   updates)   cmd_updates "$@" ;;
+  version)   cmd_version "$@" ;;
+  rollback)  cmd_rollback "$@" ;;
   update)    cmd_update "$@" ;;
   doctor)    cmd_doctor "$@" ;;
   setup)     cmd_setup "$@" ;;

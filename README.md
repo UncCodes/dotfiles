@@ -57,6 +57,7 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui record toggle` | screen recording to `~/Videos/Recordings` (`SUPER+R`; the bar shows `● rec`) |
 | `fui tabs` · `fui layout` | the startup terminal tabs · the startup layout |
 | `fui update` · `fui updates` | update the dotfiles · count pending package updates (also in the bar) |
+| `fui version` · `fui rollback [version]` | the installed version · go back to an earlier one if an update misbehaves (`fui update` returns to the newest) |
 | `fui doctor` / `--fix` | check graphics, audio, network, packages, fonts, links, the look; fix what it can |
 | `fui setup gpu` / `audio` / `bluetooth` / `firmware` / `system` / `firefox` / `boot` / `all` | machine setup (`boot`: the splash and the consoles; not part of `all`) |
 

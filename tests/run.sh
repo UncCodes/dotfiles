@@ -11,14 +11,23 @@ DOTS="${DOTFILES_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 export DOTFILES_DIR="$DOTS"
 lint_only=0; [ "${1:-}" = --lint ] && lint_only=1
 
+# No desktop session here: point D-Bus nowhere, so gsettings, notify-send and friends fail
+# at once instead of waiting to autolaunch a bus and services.
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/bus"
+
 pass=0; fail=0
-t() {   # t "name" command...: run one check
+t() {   # t "name" command...: run one check, at most 10 minutes
   local name="$1"; shift
-  local out
-  if out=$("$@" 2>&1); then
-    pass=$((pass + 1)); printf '  [pass] %s\n' "$name"
+  local out rc began
+  began=$(date +%s)
+  if command -v timeout >/dev/null; then out=$(timeout 600 "$@" 2>&1); else out=$("$@" 2>&1); fi; rc=$?
+  local took=$(( $(date +%s) - began ))
+  if [ "$rc" = 0 ]; then
+    pass=$((pass + 1)); printf '  [pass] %s (%ss)\n' "$name" "$took"
   else
-    fail=$((fail + 1)); printf '  [FAIL] %s\n' "$name"; printf '%s\n' "$out" | tail -n 25 | sed 's/^/         /'
+    fail=$((fail + 1))
+    [ "$rc" = 124 ] && printf '  [FAIL] %s (timed out after %ss)\n' "$name" "$took" || printf '  [FAIL] %s (%ss)\n' "$name" "$took"
+    printf '%s\n' "$out" | tail -n 25 | sed 's/^/         /'
   fi
 }
 listed() { sed -e 's/#.*//' -e 's/[[:space:]]//g' "$1" | grep -v '^$'; }
@@ -104,7 +113,7 @@ t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/ster
 t "fonts: Michroma, DSEG7, ProFont IIx, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "DSEG7 Classic" && fc-list | grep -qi "ProFontIIx" && fc-list | grep -q "JetBrainsMono Nerd"'
 t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
 if command -v nvim >/dev/null; then
-  t "Neovim config loads (plugins install)" bash -c 'nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
+  t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
 fi
 t "fui doctor runs to the end" bash -c '"$HOME/.local/bin/fui" doctor > /tmp/doctor.txt 2>&1; grep -q "ok, .* warnings, .* problems" /tmp/doctor.txt || { cat /tmp/doctor.txt; exit 1; }'
 wallpaper_checks
