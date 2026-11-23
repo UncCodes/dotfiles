@@ -6,38 +6,42 @@ bracketed geometry, micro-geometry, "muted neon" colour, technical mono type.
 The source of truth is [`tokens.toml`](tokens.toml); this page is generated from it.
 
 ## Colour
-| Token | Hex | Role |
-|---|---|---|
-| `void` | `#020304` | wallpaper ground, the darkest black |
-| `term_bg` | `#030506` | terminal and Hyprland background |
-| `term_black` | `#080C0E` | ANSI 0, panel ground |
-| `surface_deep` | `#080E12` | launcher glass base |
-| `surface` | `#0A1014` | panel / view base (used with alpha) |
-| `raised` | `#0E1519` | raised row, selected background |
-| `surface_hi` | `#18242A` | top of the panel glass gradient |
-| `line` | `#1A2428` | hairlines, grid, inactive borders |
-| `line_hi` | `#2A3A40` | brighter hairline, hover |
-| `black_hi` | `#2A3338` | ANSI 8 |
-| `fg` | `#E6EBEC` | stark off-white text |
-| `fg_dim` | `#7D8A8F` | low-opacity grey: labels, telemetry |
-| `silver` | `#B8C2C5` | ANSI 7 |
-| `white` | `#F4F6F6` | ANSI 15, text on accent fills |
-| `ice` | `#8FD3DC` | pale ice cyan: line work, focus, data |
-| `ice_hi` | `#C8EEF2` | lit edges, L-brackets |
-| `ice_dim` | `#2E5560` | fills behind ice |
-| `steel` | `#6F8FB0` | washed-out steel blue |
-| `steel_hi` | `#93AECB` |  |
-| `amber` | `#C99A4E` | dim amber: the one accent per screen |
-| `amber_hi` | `#DDB677` |  |
-| `amber_dim` | `#7A5E30` |  |
-| `crimson` | `#B5555A` | muted crimson: alerts |
-| `crimson_hi` | `#CC7378` |  |
-| `ok` | `#6FAF8A` |  |
-| `ok_hi` | `#92C7A6` |  |
-| `fault` | `#9A86B8` |  |
-| `fault_hi` | `#B5A6CC` | ANSI 16, by token name. Every terminal app inherits these. |
+Two modes share every role. `fui-mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
+
+| Token | Dark | Light | Role |
+|---|---|---|---|
+| `void` | `#020304` | `#E6EAEB` | wallpaper ground, the darkest black |
+| `term_bg` | `#030506` | `#EEF1F2` | terminal and Hyprland background |
+| `term_black` | `#080C0E` | `#E2E7E9` | ANSI 0, panel ground |
+| `surface_deep` | `#080E12` | `#F2F4F5` | launcher glass base |
+| `surface` | `#0A1014` | `#F7F9F9` | panel / view base (used with alpha) |
+| `raised` | `#0E1519` | `#E1E8EA` | raised row, selected background |
+| `surface_hi` | `#18242A` | `#FFFFFF` | top of the panel glass gradient |
+| `line` | `#1A2428` | `#C9D2D5` | hairlines, grid, inactive borders |
+| `line_hi` | `#2A3A40` | `#A9B6BB` | brighter hairline, hover |
+| `black_hi` | `#2A3338` | `#8A979C` | ANSI 8 |
+| `fg` | `#E6EBEC` | `#141B1E` | stark off-white text |
+| `fg_dim` | `#7D8A8F` | `#5B686D` | low-opacity grey: labels, telemetry |
+| `silver` | `#B8C2C5` | `#3A464B` | ANSI 7 |
+| `white` | `#F4F6F6` | `#0B1113` | ANSI 15, text on accent fills |
+| `ice` | `#8FD3DC` | `#1F7A87` | pale ice cyan: line work, focus, data |
+| `ice_hi` | `#C8EEF2` | `#0F5C68` | lit edges, L-brackets |
+| `ice_dim` | `#2E5560` | `#BFDDE2` | fills behind ice |
+| `steel` | `#6F8FB0` | `#3F6488` | washed-out steel blue |
+| `steel_hi` | `#93AECB` | `#2C4E70` |  |
+| `amber` | `#C99A4E` | `#9A6516` | dim amber: the one accent per screen |
+| `amber_hi` | `#DDB677` | `#7C4F0C` |  |
+| `amber_dim` | `#7A5E30` | `#E8D3AE` |  |
+| `crimson` | `#B5555A` | `#A63C43` | muted crimson: alerts |
+| `crimson_hi` | `#CC7378` | `#862C33` |  |
+| `ok` | `#6FAF8A` | `#3D7A57` |  |
+| `ok_hi` | `#92C7A6` | `#2C6044` |  |
+| `fault` | `#9A86B8` | `#6E5A92` |  |
+| `fault_hi` | `#B5A6CC` | `#574578` | ANSI 16, by token name. Every terminal app inherits these. |
 
 ## Terminal 16
+Dark:
+
 | # | normal | bright |
 |---|---|---|
 | 0 | `term_black` #080C0E | `black_hi` #2A3338 |
@@ -48,6 +52,19 @@ The source of truth is [`tokens.toml`](tokens.toml); this page is generated from
 | 5 | `fault` #9A86B8 | `fault_hi` #B5A6CC |
 | 6 | `ice` #8FD3DC | `ice_hi` #C8EEF2 |
 | 7 | `silver` #B8C2C5 | `white` #F4F6F6 |
+
+Light (dark "black", light "white", so programs that print them stay readable):
+
+| # | normal | bright |
+|---|---|---|
+| 0 | `fg` #141B1E | `black_hi` #8A979C |
+| 1 | `crimson` #A63C43 | `crimson_hi` #862C33 |
+| 2 | `ok` #3D7A57 | `ok_hi` #2C6044 |
+| 3 | `amber` #9A6516 | `amber_hi` #7C4F0C |
+| 4 | `steel` #3F6488 | `steel_hi` #2C4E70 |
+| 5 | `fault` #6E5A92 | `fault_hi` #574578 |
+| 6 | `ice` #1F7A87 | `ice_hi` #0F5C68 |
+| 7 | `fg_dim` #5B686D | `line_hi` #A9B6BB |
 
 ## Surfaces and geometry
 - Opacity: panel 0.55, strong 0.88, terminal 0.7, windows 0.96 / 0.88

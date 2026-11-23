@@ -15,6 +15,9 @@ qt6-svg
 # desktop pieces
 waybar
 swaybg
+mpv
+ffmpeg
+python-pillow
 rofi
 mako
 libnotify
@@ -56,3 +59,6 @@ papirus-icon-theme
 adw-gtk-theme
 fontconfig
 python
+
+# AUR, installed by install.sh with yay (not by the installer hook):
+#   mpvpaper   plays the live wallpaper

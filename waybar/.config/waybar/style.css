@@ -39,6 +39,7 @@ window#waybar {
 #network,
 #pulseaudio,
 #language,
+#custom-mode,
 #tray {
   /* frosted glass: Hyprland blurs what's behind (layer rule in hyprland.lua) */
   background: linear-gradient(180deg, alpha(#18242A, 0.55), alpha(#0A1014, 0.40));

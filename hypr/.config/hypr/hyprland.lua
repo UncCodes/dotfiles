@@ -19,6 +19,23 @@ if not ok or type(T) ~= "table" then
         desktop  = { icon_theme = "Papirus-Dark", cursor_theme = "Adwaita", cursor_size = 24, gtk_base = "adw-gtk3-dark" },
     }
 end
+-- light / dark: fui-mode (SUPER+SHIFT+T) writes the mode file and reloads Hyprland,
+-- which swaps the light colours, blur and desktop themes in here.
+local mode = "dark"
+do
+    local dir = os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")
+    local f = io.open(dir .. "/fui/mode", "r")
+    if f then
+        if f:read("*l") == "light" then mode = "light" end
+        f:close()
+    end
+end
+if mode == "light" and type(T.light) == "table" then
+    for _, key in ipairs({ "color", "blur", "glow", "desktop" }) do
+        if type(T.light[key]) == "table" then T[key] = T.light[key] end
+    end
+end
+
 local function rgba(hex, a) return string.format("rgba(%s%02X)", hex, math.floor(a * 255 + 0.5)) end
 local c = {
     bg0     = "rgb(" .. T.color.term_bg .. ")",
@@ -29,7 +46,9 @@ local c = {
 -- ── programs ────────────────────────────────────────────────────────────
 local terminal    = "kitty"
 local fileManager = "thunar"
-local menu        = "rofi -show drun"
+local rofi        = "rofi -config ~/.config/rofi/fui-mode.rasi"   -- fui-mode links this to the mode's config
+local menu        = rofi .. " -show drun"
+local bin         = "$HOME/.local/bin/"                             -- fui-mode, fui-bar, fui-wallpaper
 local mod         = "SUPER"
 
 -- ── monitors ────────────────────────────────────────────────────────────
@@ -43,19 +62,20 @@ hl.env("XCURSOR_THEME", T.desktop.cursor_theme)
 hl.env("HYPRCURSOR_SIZE", tostring(T.desktop.cursor_size))
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
-hl.env("GTK_THEME", T.desktop.gtk_base)
+-- No GTK_THEME here: it would pin one mode. GTK picks dark or light from gsettings (set below and by fui-mode).
 
 -- ── autostart ───────────────────────────────────────────────────────────
 hl.on("hyprland.start", function()
-    hl.exec_cmd("swaybg -i ~/.config/hypr/wallpaper.png -m fill")
-    hl.exec_cmd("waybar")
-    hl.exec_cmd("mako")
+    -- each falls back to the plain program if the fui scripts are missing
+    hl.exec_cmd(bin .. "fui-wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")  -- live grid, or static
+    hl.exec_cmd(bin .. "fui-bar || waybar")                                                 -- compact on small screens
+    hl.exec_cmd(bin .. "fui-mode apply --quiet; mako -c ~/.config/mako/fui-mode || mako")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("wl-paste --watch cliphist store")
-    -- dark mode + theme for GTK4/libadwaita apps (they ignore settings.ini)
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
+    -- dark or light + theme for GTK and libadwaita apps (they ignore settings.ini)
+    hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-" .. mode)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme " .. T.desktop.gtk_base)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface icon-theme " .. T.desktop.icon_theme)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. T.desktop.cursor_theme)
@@ -178,9 +198,11 @@ hl.bind(k("F"),      hl.dsp.window.fullscreen({ mode = "fullscreen", action = "t
 hl.bind(k("V"),      hl.dsp.window.float({ action = "toggle" }))
 hl.bind(k("P"),      hl.dsp.window.pseudo())
 hl.bind(k("J"),      hl.dsp.layout("togglesplit"))
-hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock"))
+hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock -c ~/.config/hypr/fui-mode-hyprlock.conf || hyprlock"))
 hl.bind(k("SHIFT + E"), hl.dsp.exit())
-hl.bind(k("SHIFT + V"), hl.dsp.exec_cmd("cliphist list | rofi -dmenu -p CLIP | cliphist decode | wl-copy"))
+hl.bind(k("SHIFT + V"), hl.dsp.exec_cmd("cliphist list | " .. rofi .. " -dmenu -p CLIP | cliphist decode | wl-copy"))
+hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(bin .. "fui-mode toggle"))        -- light / dark
+hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(bin .. "fui-wallpaper toggle"))   -- live / still wallpaper
 
 -- screenshots: region to clipboard / whole screen to ~/Pictures
 hl.bind("Print",         hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))

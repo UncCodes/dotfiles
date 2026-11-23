@@ -10,6 +10,45 @@ wide-tracked micro-labels. Colours and rules: [`theme/PALETTE.md`](theme/PALETTE
 Open [`theme/preview.html`](theme/preview.html) for a mock of the full desktop and
 [`theme/components.html`](theme/components.html) for the component geometry.
 
+## Light and dark
+
+`SUPER+SHIFT+T` (or click `MODE` in the bar) switches the whole desktop between dark and
+light: Hyprland borders and glow, the bar, launcher, notifications, lock screen, kitty,
+prompt, shell colours, GTK, Qt, btop, git, Neovim and the wallpaper. The light palette is
+`[light.color]` in [`theme/tokens.toml`](theme/tokens.toml); same roles, daylight values.
+
+From a terminal: `fui-mode toggle`, `fui-mode light`, `fui-mode dark`, `fui-mode status`.
+
+Kitty, the bar, notifications, Hyprland and the wallpaper change at once. GTK and Qt apps
+that are already open, and open shells, pick up the new mode when restarted.
+
+How it works: `build.py` writes each themed file twice (the dark original and a `-light`
+copy), and each app reads a `fui-mode.*` link next to them. `~/.local/bin/fui-mode` points
+the links at one set and reloads what's running. The mode is stored in
+`~/.local/state/fui/mode`.
+
+## Live wallpaper
+
+The wallpaper moves: the fine grid from the portfolio drifts diagonally across it (96 px every
+20 s), a radar sweep turns once per loop and one status mark blinks. `SUPER+SHIFT+W`
+switches between live and still.
+
+`fui-wallpaper` renders a seamless 20 s loop for your screen size and mode with
+[`theme/make-wallpaper.py`](theme/make-wallpaper.py) the first time (20 to 60 s, the still
+image shows meanwhile), caches it in `~/.cache/fui/`, and plays it with `mpvpaper` (AUR,
+installed by `install.sh`). It pauses while a fullscreen window covers it. Without mpvpaper
+the still image is used.
+
+A moving wallpaper makes Hyprland redraw the blur behind windows on every frame. On a weak
+GPU, or without the proper graphics driver, use still (`SUPER+SHIFT+W`).
+
+## Small screens
+
+`fui-bar` starts waybar with [`config-compact.jsonc`](waybar/.config/waybar/config-compact.jsonc)
+on screens narrower than 1400 px (for example 1024x768). It drops the window title,
+temperature and keyboard readouts so the bar fits. After changing resolution, run `fui-bar`
+or log in again.
+
 ## System-wide theming
 
 Every visual value lives in one file: [`theme/tokens.toml`](theme/tokens.toml)
@@ -69,7 +108,7 @@ They still get the window rules, fonts and dark-mode preference.
 | `btop`      | `hud` theme                          |
 | `gtk`       | GTK3/4 FUI overrides + geometry assets (generated) |
 | `qt`        | qt6ct palette + assets (generated)             |
-| `fui`       | theme env, fontconfig, git, browser flags (generated) |
+| `fui`       | theme env, fontconfig, git, browser flags (generated); `fui-mode`, `fui-bar`, `fui-wallpaper` in `~/.local/bin` |
 | `nvim`      | FUI colorscheme (generated)                    |
 
 Each folder mirrors `$HOME` and is linked with GNU Stow (`--no-folding`).
@@ -109,6 +148,8 @@ Anything it would overwrite is moved to `~/.dotfiles-backup/<timestamp>/` first.
 | `SUPER+arrows`       | focus (add `SHIFT` to move window)  |
 | `SUPER+1..9`         | workspace (add `SHIFT` to send window) |
 | `SUPER+Escape`       | lock                                |
+| `SUPER+SHIFT+T`      | light / dark                        |
+| `SUPER+SHIFT+W`      | live / still wallpaper              |
 | `SUPER+SHIFT+E`      | quit Hyprland                       |
 | `Print` / `SHIFT+Print` | region to clipboard / screen to `~/Pictures` |
 | `Alt+Shift`          | switch English / Arabic keyboard    |
@@ -126,5 +167,7 @@ Colours live in each app's config, listed in `theme/PALETTE.md`. The wallpaper i
 
 ```bash
 python3 theme/make-wallpaper.py                       # 2560x1440 into hypr/
+python3 theme/make-wallpaper.py --mode light          # the light still
 python3 theme/make-wallpaper.py out.png 3840 2160     # other sizes
+python3 theme/make-wallpaper.py --live out.mp4 1920 1080   # the live loop (needs ffmpeg)
 ```

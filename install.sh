@@ -39,6 +39,13 @@ if [ "$do_packages" = 1 ]; then
   mapfile -t pkgs < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DOTS/packages.txt" | grep -v '^$')
   say "installing ${#pkgs[@]} packages"
   sudo pacman -S --needed --noconfirm "${pkgs[@]}"
+  # AUR: mpvpaper plays the live wallpaper (without it the still image is used)
+  if command -v yay >/dev/null; then
+    say "installing mpvpaper from the AUR"
+    yay -S --needed --noconfirm mpvpaper || say "mpvpaper failed to install: the wallpaper stays still"
+  else
+    say "yay not found: skipping mpvpaper, the wallpaper stays still"
+  fi
 fi
 
 command -v stow >/dev/null || { echo "stow is missing: run without --no-packages or install it" >&2; exit 1; }
@@ -96,7 +103,9 @@ fi
 # (real files, not links; qt6ct may rewrite its own conf).
 mkdir -p "$HOME/.config/qt6ct/qss"
 sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/qt6ct.conf.in" > "$HOME/.config/qt6ct/qt6ct.conf"
-sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/fui.qss.in"    > "$HOME/.config/qt6ct/qss/fui.qss"
+for qss in fui fui-light; do
+  sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/$qss.qss.in" > "$HOME/.config/qt6ct/qss/$qss.qss"
+done
 
 # git colours: include the generated file once
 if command -v git >/dev/null && ! git config --global --get-all include.path 2>/dev/null | grep -q 'fui.gitconfig'; then
@@ -105,6 +114,9 @@ fi
 
 command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1 || true
 
+# light / dark links: keep the current mode (dark on a fresh install)
+"$HOME/.local/bin/fui-mode" apply --quiet || true
+
 # ── 6. shell ────────────────────────────────────────────────────────────
 if [ "$do_chsh" = 1 ] && [ "$(basename "${SHELL:-}")" != zsh ]; then
   say "setting zsh as login shell"
@@ -112,5 +124,6 @@ if [ "$do_chsh" = 1 ] && [ "$(basename "${SHELL:-}")" != zsh ]; then
 fi
 
 say "done. Log out and back in (or reboot). On tty1, Hyprland starts on its own."
+say "SUPER+SHIFT+T switches light / dark, SUPER+SHIFT+W live / still wallpaper."
 [ -d "$backup" ] && say "your old files are in $backup"
 exit 0

@@ -40,7 +40,7 @@ for plugin in \
   /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh; do
   [ -r "$plugin" ] && source "$plugin"
 done
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#2A3A40'
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="${FUI_AUTOSUGGEST:-fg=#2A3A40}"   # set per mode in env.sh
 
 # machine-specific settings, not tracked
 [ -r ~/.zshrc.local ] && source ~/.zshrc.local

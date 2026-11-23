@@ -7,24 +7,41 @@ dot matrices, micro-square clusters, crosshair reticles, tick rulers and
 L-shaped corner brackets. Colours are "muted neon": ice cyan, steel blue,
 one dim amber mark.
 
-Usage: python3 theme/make-wallpaper.py [out.png] [width] [height]
-Needs Pillow.
+Usage:
+  python3 theme/make-wallpaper.py [out.png] [width] [height]          dark still
+  python3 theme/make-wallpaper.py --mode light [out.png] [w] [h]      light still
+  python3 theme/make-wallpaper.py --live [--mode M] out.mp4 [w] [h]   live loop
+
+--live adds the portfolio's background on top of the still: a fine 24 px grid drifting
+diagonally (96 px every 20 s, as in the portfolio's CSS), plus a slow radar sweep and one
+blinking status mark. The 20 s loop is seamless. Frames are piped to ffmpeg.
+Needs Pillow (and ffmpeg for --live).
 """
 import math
 import random
+import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
-OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "hypr/.config/hypr/wallpaper.png"
-W = int(sys.argv[2]) if len(sys.argv) > 2 else 2560
-H = int(sys.argv[3]) if len(sys.argv) > 3 else 1440
+args = sys.argv[1:]
+LIVE = "--live" in args
+MODE = "dark"
+if "--mode" in args:
+    MODE = args[args.index("--mode") + 1]
+    del args[args.index("--mode"):args.index("--mode") + 2]
+args = [a for a in args if a != "--live"]
+HYPR = Path(__file__).resolve().parent.parent / "hypr/.config/hypr"
+OUT = Path(args[0]) if args else HYPR / ("wallpaper-light.png" if MODE == "light" else "wallpaper.png")
+W = int(args[1]) if len(args) > 1 else 2560
+H = int(args[2]) if len(args) > 2 else 1440
 S = 2  # supersample for clean 1px lines
 w, h = W * S, H * S
 
-import tomllib
-_tok = tomllib.loads((Path(__file__).resolve().parent / "tokens.toml").read_text())["color"]
+_all = tomllib.loads((Path(__file__).resolve().parent / "tokens.toml").read_text())
+_tok = {**_all["color"], **(_all.get("light", {}).get("color", {}) if MODE == "light" else {})}
 _rgb = lambda k: tuple(int(_tok[k][i:i + 2], 16) for i in (1, 3, 5))
 VOID, GREY, ICE, ICE_HI = _rgb("void"), _rgb("fg_dim"), _rgb("ice"), _rgb("ice_hi")
 STEEL, DEEP, AMBER = _rgb("steel"), _rgb("ice_dim"), _rgb("amber")
@@ -144,5 +161,61 @@ noise = Image.effect_noise((W, H), 14).convert("RGB")
 img = ImageChops.add(img, Image.blend(Image.new("RGB", (W, H)), noise, 0.03))
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-img.save(OUT, optimize=True)
-print(f"wrote {OUT} ({W}x{H})")
+if not LIVE:
+    img.save(OUT, optimize=True)
+    print(f"wrote {OUT} ({W}x{H})")
+    sys.exit(0)
+
+
+# ── live loop ───────────────────────────────────────────────────────────
+FPS, SECONDS = 24, 20
+CELL, DRIFT = 24, 96                       # the portfolio's grid: 24 px cells, -96 px per 20 s
+base = img.convert("RGBA")
+
+# grid layer, a little larger than the screen so it can slide. Transparent pixels carry the
+# line colour so bilinear sampling fades alpha only (sub-pixel motion without dark fringes).
+grid_rgb = STEEL if MODE == "light" else ICE
+grid_a = 0.10 if MODE == "light" else 0.075
+grid = Image.new("RGBA", (W + 2 * CELL, H + 2 * CELL), (*grid_rgb, 0))
+gd = ImageDraw.Draw(grid)
+for x in range(0, grid.width, CELL):
+    gd.line([(x, 0), (x, grid.height)], fill=rgba(grid_rgb, grid_a))
+for y in range(0, grid.height, CELL):
+    gd.line([(0, y), (grid.width, y)], fill=rgba(grid_rgb, grid_a))
+
+# radar sweep: a lit leading edge with a fading wedge behind it, drawn once at 2x,
+# then rotated per frame
+cx, cy, Rr = W * 0.72, H * 0.42, H * 0.20
+half = int(Rr * 1.02) + 2
+sw = Image.new("RGBA", (4 * half, 4 * half), (0, 0, 0, 0))
+sd = ImageDraw.Draw(sw)
+c2, R2 = 2 * half, 2 * Rr
+TRAIL = 48
+for i in range(TRAIL):                          # 48 one-degree slices, fading out behind the edge
+    a = 0.16 * (1 - i / TRAIL) ** 2
+    sd.pieslice((c2 - R2, c2 - R2, c2 + R2, c2 + R2), -i - 1, -i, fill=rgba(ICE, a))
+sd.line([(c2, c2), (c2 + R2, c2)], fill=rgba(ICE_HI, 0.55), width=2)
+sweep = sw.resize((2 * half, 2 * half), Image.LANCZOS)
+sx, sy = int(cx) - half, int(cy) - half
+
+# blinking status mark (the portfolio's 2 s blink) on the top-right corner bracket
+bm = 28
+bx, by = W - bm - 6, 60 + 6
+
+ff = subprocess.Popen(
+    ["ffmpeg", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
+     "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-tune", "animation",
+     "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(OUT)],
+    stdin=subprocess.PIPE)
+for n in range(FPS * SECONDS):
+    t = n / FPS
+    o = (DRIFT * t / SECONDS) % CELL                 # grid slides up-left, wraps every cell
+    frame = base.copy()
+    frame.alpha_composite(grid.transform((W, H), Image.AFFINE, (1, 0, o, 0, 1, o), resample=Image.BILINEAR))
+    angle = 360 * t / SECONDS                        # one turn per loop, clockwise
+    frame.alpha_composite(sweep.rotate(-angle, resample=Image.BICUBIC), dest=(sx, sy))
+    if t % 2 < 1:
+        ImageDraw.Draw(frame).rectangle((bx - 2, by - 2, bx + 2, by + 2), fill=rgba(ICE_HI, 0.85))
+    ff.stdin.write(frame.convert("RGB").tobytes())
+ff.stdin.close()
+sys.exit(ff.wait())

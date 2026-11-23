@@ -7,4 +7,11 @@ return {
   geometry = { border = 1, radius = 0, chamfer = 6, chamfer_lg = 10, bracket = 5, notch = 8, tab_slant = 5, segment = 4, segment_gap = 2, tick_step = 8, gaps_in = 5, gaps_out = 14 },
   font = { mono = "JetBrainsMono Nerd Font", size = 10 },
   desktop = { icon_theme = "Papirus-Dark", cursor_theme = "Adwaita", cursor_size = 24, gtk_base = "adw-gtk3-dark" },
+  -- light mode: hyprland.lua swaps these in when ~/.local/state/fui/mode says light
+  light = {
+    color = { void = "E6EAEB", term_bg = "EEF1F2", term_black = "E2E7E9", surface_deep = "F2F4F5", surface = "F7F9F9", raised = "E1E8EA", surface_hi = "FFFFFF", line = "C9D2D5", line_hi = "A9B6BB", black_hi = "8A979C", fg = "141B1E", fg_dim = "5B686D", silver = "3A464B", white = "0B1113", ice = "1F7A87", ice_hi = "0F5C68", ice_dim = "BFDDE2", steel = "3F6488", steel_hi = "2C4E70", amber = "9A6516", amber_hi = "7C4F0C", amber_dim = "E8D3AE", crimson = "A63C43", crimson_hi = "862C33", ok = "3D7A57", ok_hi = "2C6044", fault = "6E5A92", fault_hi = "574578" },
+    blur = { size = 10, passes = 3, noise = 0.03, contrast = 0.95, brightness = 1.02, vibrancy = 0.3 },
+    glow = { range = 28, alpha = 0.12 },
+    desktop = { icon_theme = "Papirus-Light", cursor_theme = "Adwaita", cursor_size = 24, gtk_base = "adw-gtk3" },
+  },
 }

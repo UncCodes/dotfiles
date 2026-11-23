@@ -51,3 +51,67 @@
   --fui-tracking: 1px;
   --fui-label-tracking: 2px;
 }
+
+/* light mode: set data-theme="light", or follow the OS when no data-theme is set */
+:root[data-theme="light"] {
+  --fui-void: #E6EAEB;
+  --fui-term-bg: #EEF1F2;
+  --fui-term-black: #E2E7E9;
+  --fui-surface-deep: #F2F4F5;
+  --fui-surface: #F7F9F9;
+  --fui-raised: #E1E8EA;
+  --fui-surface-hi: #FFFFFF;
+  --fui-line: #C9D2D5;
+  --fui-line-hi: #A9B6BB;
+  --fui-black-hi: #8A979C;
+  --fui-fg: #141B1E;
+  --fui-fg-dim: #5B686D;
+  --fui-silver: #3A464B;
+  --fui-white: #0B1113;
+  --fui-ice: #1F7A87;
+  --fui-ice-hi: #0F5C68;
+  --fui-ice-dim: #BFDDE2;
+  --fui-steel: #3F6488;
+  --fui-steel-hi: #2C4E70;
+  --fui-amber: #9A6516;
+  --fui-amber-hi: #7C4F0C;
+  --fui-amber-dim: #E8D3AE;
+  --fui-crimson: #A63C43;
+  --fui-crimson-hi: #862C33;
+  --fui-ok: #3D7A57;
+  --fui-ok-hi: #2C6044;
+  --fui-fault: #6E5A92;
+  --fui-fault-hi: #574578;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --fui-void: #E6EAEB;
+    --fui-term-bg: #EEF1F2;
+    --fui-term-black: #E2E7E9;
+    --fui-surface-deep: #F2F4F5;
+    --fui-surface: #F7F9F9;
+    --fui-raised: #E1E8EA;
+    --fui-surface-hi: #FFFFFF;
+    --fui-line: #C9D2D5;
+    --fui-line-hi: #A9B6BB;
+    --fui-black-hi: #8A979C;
+    --fui-fg: #141B1E;
+    --fui-fg-dim: #5B686D;
+    --fui-silver: #3A464B;
+    --fui-white: #0B1113;
+    --fui-ice: #1F7A87;
+    --fui-ice-hi: #0F5C68;
+    --fui-ice-dim: #BFDDE2;
+    --fui-steel: #3F6488;
+    --fui-steel-hi: #2C4E70;
+    --fui-amber: #9A6516;
+    --fui-amber-hi: #7C4F0C;
+    --fui-amber-dim: #E8D3AE;
+    --fui-crimson: #A63C43;
+    --fui-crimson-hi: #862C33;
+    --fui-ok: #3D7A57;
+    --fui-ok-hi: #2C6044;
+    --fui-fault: #6E5A92;
+    --fui-fault-hi: #574578;
+  }
+}
