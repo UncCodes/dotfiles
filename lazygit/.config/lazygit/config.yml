@@ -1,4 +1,4 @@
-# HUD // LAZYGIT
+# fui // LAZYGIT
 # Colours are ANSI names, so they follow kitty's palette in dark and light mode.
 gui:
   nerdFontsVersion: "3"

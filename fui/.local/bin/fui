@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# HUD // fui: one command for the desktop.
+# fui // one command for the desktop.
 #
-#   fui mode [toggle|dark|light|apply|status]   light / dark (SUPER+SHIFT+T)
-#   fui wallpaper [start|toggle|live|still]     live or still wallpaper (SUPER+SHIFT+W)
-#   fui sound <event>|on|off|status             desktop sounds
-#   fui bar                                     (re)start the bar, sized for the screen
-#   fui tabs                                    open the startup tabs (SUPER+SHIFT+Return)
-#   fui tui <command>                           a terminal tool in a floating window
-#   fui update                                  pull the dotfiles, install, reload
-#   fui doctor [--fix]                          check the machine, optionally fix what it can
-#   fui setup [gpu|audio|bluetooth|firmware|all] [--yes]   hardware setup
-#   fui shot [label] | --tour                   screenshots into ~/Pictures/fui/
+#   fui mode [toggle|dark|mid|light|apply|status]   the theme (SUPER+SHIFT+T cycles dark → mid → light)
+#   fui wallpaper [start|toggle|live|still]          the lattice backdrop, live or still (SUPER+SHIFT+W)
+#   fui screen [toggle|on|off]                       old-screen glass over everything (SUPER+SHIFT+C)
+#   fui sound <event>|on|off|toggle|status           interface sounds
+#   fui palette | power | keys | clipboard           launcher windows (SUPER+Space, SUPER+X, SUPER+/, SUPER+SHIFT+V)
+#   fui shot [region|screen|edit|tour]               screenshots (Print, SHIFT+Print, SUPER+Print)
+#   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
+#   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
+#   fui updates                                      count pending package updates
+#   fui update                                       pull the dotfiles, install, reload
+#   fui doctor [--fix]                               check the machine, optionally fix what it can
+#   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
 #   fui help
 set -u
 
@@ -18,110 +20,148 @@ DOTS="${DOTFILES_DIR:-$HOME/.dotfiles}"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/fui"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
+SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/fui"
 SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 
 have()   { command -v "$1" >/dev/null 2>&1; }
 upper()  { echo "$1" | tr '[:lower:]' '[:upper:]'; }
 detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/null 2>&1 & fi; }
 die()    { echo "fui: $*" >&2; exit 1; }
+note()   { have notify-send && notify-send -t 2200 -a fui "$1" "${2:-}"; return 0; }
+usage()  { sed -n '3,17p' "$SELF" | sed 's/^# \{0,1\}//'; }
 
-usage() { sed -n '3,15p' "$SELF" | sed 's/^# \{0,1\}//'; }
-
-
-# ── mode ────────────────────────────────────────────────────────────────
-# theme/build.py writes every themed file twice: the dark original and a "-light" copy.
-# Each app reads a fui-mode.* link next to them; this points the links at one set.
-current_mode() {
-  local m
-  m=$(cat "$STATE/mode" 2>/dev/null)
-  [ "$m" = light ] && echo light || echo dark
+# token lookups from ~/.config/fui/tokens.json (generated from tokens.toml)
+tok() {
+  python3 -c '
+import json, sys
+t = json.load(open(sys.argv[1]))
+v = t
+for k in sys.argv[2].split("."):
+    v = v[k]
+print(" ".join(v) if isinstance(v, list) else v)
+' "$CFG/fui/tokens.json" "$1" 2>/dev/null
 }
 
-mode_link() {   # <dir> <dark file> <light file> <link name>
-  local dir="$1" target="$2"
-  [ "$NEW_MODE" = light ] && target="$3"
+# rofi in the fui window, with its own [0xNN] title
+rofi_window() {   # rofi_window "<title>" [rofi args...]
+  local title="$1"; shift
+  rofi -config "$CFG/rofi/config.rasi" -theme-str "textbox-title { content: \"$title\"; }" "$@"
+}
+
+
+# ── mode: dark, mid, light ──────────────────────────────────────────────
+# theme/build.py writes every themed file once per theme. Each app reads a fui-colors.*
+# (or fui-mode.css) link next to them; this points the links at one theme.
+modes() { local m; m=$(tok meta.modes); echo "${m:-dark mid light}"; }
+
+current_mode() {
+  local m all
+  m=$(cat "$STATE/mode" 2>/dev/null)
+  all=" $(modes) "
+  if [ -n "$m" ] && [[ "$all" == *" $m "* ]]; then echo "$m"; else set -- $all; echo "$1"; fi
+}
+
+mode_link() {   # <dir> <target> <link name>
+  local dir="$1" target="$2" link="$3"
   [ -e "$dir/$target" ] || return 0
-  [ "$(readlink "$dir/$4" 2>/dev/null)" = "$target" ] || ln -sfn "$target" "$dir/$4"
+  [ "$(readlink "$dir/$link" 2>/dev/null)" = "$target" ] || ln -sfn "$target" "$dir/$link"
+}
+
+render_startpage() {   # the browser home page for this user, in the current theme
+  local m="$1" src="$CFG/fui/start/start-$1.html"
+  [ -f "$src" ] || return 0
+  mkdir -p "$SHARE"
+  sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(cat /etc/hostname 2>/dev/null || hostname)|g" "$src" > "$SHARE/start.html.tmp" &&
+    mv "$SHARE/start.html.tmp" "$SHARE/start.html"
+}
+
+firefox_profiles() {   # every Firefox profile folder
+  local base ini p
+  for base in "$HOME/.config/mozilla/firefox" "$HOME/.mozilla/firefox"; do
+    ini="$base/profiles.ini"
+    [ -f "$ini" ] || continue
+    sed -n 's/^Path=//p' "$ini" | while read -r p; do
+      case "$p" in /*) echo "$p" ;; *) echo "$base/$p" ;; esac
+    done
+  done
 }
 
 cmd_mode() {
-  local cmd="${1:-status}" quiet=0 cur a
+  local cmd="${1:-status}" quiet=0 cur a new
   for a in "$@"; do [ "$a" = --quiet ] && quiet=1; done
   cur=$(current_mode)
   case "$cmd" in
     status)
       if [ "${2:-}" = --bar ]; then
-        echo "<span alpha='55%' size='small' letter_spacing='2048'>MODE</span> $(upper "$cur")"
+        case "$cur" in dark) a="󰖔" ;; mid) a="󰖚" ;; *) a="󰖙" ;; esac
+        echo "$a $cur"
       else
         echo "$cur"
       fi
       return 0 ;;
-    toggle) [ "$cur" = dark ] && NEW_MODE=light || NEW_MODE=dark ;;
-    dark|light) NEW_MODE="$cmd" ;;
-    apply) NEW_MODE="$cur" ;;
-    *) die "usage: fui mode [toggle|dark|light|apply|status]" ;;
+    toggle)   # the next theme in the cycle
+      local first="" take=0 m
+      new=""
+      for m in $(modes); do
+        [ -n "$first" ] || first="$m"
+        if [ "$take" = 1 ]; then new="$m"; break; fi
+        [ "$m" = "$cur" ] && take=1
+      done
+      new="${new:-$first}" ;;
+    apply) new="$cur" ;;
+    *)
+      [[ " $(modes) " == *" $cmd "* ]] || die "usage: fui mode [toggle|$(modes | tr ' ' '|')|apply|status]"
+      new="$cmd" ;;
   esac
 
   mkdir -p "$STATE"
-  [ "$NEW_MODE" = "$cur" ] && [ -e "$STATE/mode" ] || echo "$NEW_MODE" > "$STATE/mode"
+  [ "$new" = "$cur" ] && [ -e "$STATE/mode" ] || echo "$new" > "$STATE/mode"
 
-  mode_link "$CFG/kitty"   colors.conf          colors-light.conf          fui-mode.conf
-  mode_link "$CFG/waybar"  style.css            style-light.css            fui-mode.css
-  mode_link "$CFG/rofi"    config.rasi          config-light.rasi          fui-mode.rasi
-  mode_link "$CFG/mako"    config               config-light               fui-mode
-  mode_link "$CFG/hypr"    hyprlock.conf        hyprlock-light.conf        fui-mode-hyprlock.conf
-  mode_link "$CFG/gtk-3.0" fui.css              fui-light.css              fui-mode.css
-  mode_link "$CFG/gtk-4.0" fui.css              fui-light.css              fui-mode.css
-  mode_link "$CFG/fui"     term.sh              term-light.sh              fui-mode.sh
-  mode_link "$CFG/fui"     ../starship.toml     ../starship-light.toml     starship.toml
-  mode_link "$CFG/git"     fui-colors.gitconfig fui-colors-light.gitconfig fui-mode.gitconfig
-
-  # Qt and btop keep the theme path inside their own config file
-  local sfx=""
-  [ "$NEW_MODE" = light ] && sfx="-light"
+  local app
+  for app in waybar swaync swayosd; do mode_link "$CFG/$app" "colors-$new.css" fui-colors.css; done
+  mode_link "$CFG/rofi"    "colors-$new.rasi" fui-colors.rasi
+  mode_link "$CFG/hypr"    "colors-$new.conf" fui-colors.conf
+  mode_link "$CFG/kitty"   "colors-$new.conf" fui-colors.conf
+  mode_link "$CFG/gtk-3.0" "fui-$new.css"     fui-mode.css
+  mode_link "$CFG/gtk-4.0" "fui-$new.css"     fui-mode.css
   if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
-    sed -i -E "s|(colors/fui)[^/]*\.conf|\1$sfx.conf|; s|(qss/fui)[^/]*\.qss|\1$sfx.qss|" "$CFG/qt6ct/qt6ct.conf"
+    sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$CFG/qt6ct/qt6ct.conf"
   fi
-  if [ -f "$CFG/btop/btop.conf" ]; then
-    sed -i -E "s|^color_theme = .*|color_theme = \"hud$sfx\"|" "$CFG/btop/btop.conf"
-  fi
+  local prof
+  while IFS= read -r prof; do
+    [ -L "$prof/chrome/fui-colors.css" ] && ln -sfn "$CFG/fui/firefox/colors-$new.css" "$prof/chrome/fui-colors.css"
+  done < <(firefox_profiles)
+  render_startpage "$new"
+  # links from the earlier look, which no longer exist in the repo
+  rm -f "$CFG/kitty/fui-mode.conf" "$CFG/waybar/fui-mode.css" "$CFG/rofi/fui-mode.rasi" "$CFG/mako/fui-mode" \
+        "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" 2>/dev/null
 
   [ "$cmd" = apply ] && return 0
 
-  # tell running apps; base GTK theme and icons come from the tokens
-  local gtk icons
-  gtk=$(python3 -c '
-import json, sys
-t = json.load(open(sys.argv[2]))
-d = dict(t["desktop"])
-if sys.argv[1] == "light":
-    d.update(t.get("light", {}).get("desktop", {}))
-print(d["gtk_base"], d["icon_theme"])
-' "$NEW_MODE" "$CFG/fui/tokens.json" 2>/dev/null)
-  icons="${gtk#* }"; gtk="${gtk%% *}"
-  if [ -z "$gtk" ]; then
-    if [ "$NEW_MODE" = light ]; then gtk=adw-gtk3; icons=Papirus-Light; else gtk=adw-gtk3-dark; icons=Papirus-Dark; fi
-  fi
+  # tell running apps
+  local gtk icons scheme
+  gtk=$(tok "desktop.$new.gtk_base"); icons=$(tok "desktop.$new.icon_theme"); scheme=$(tok "desktop.$new.scheme")
   if have gsettings; then
-    gsettings set org.gnome.desktop.interface color-scheme "prefer-$NEW_MODE"
-    gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
-    gsettings set org.gnome.desktop.interface icon-theme "$icons"
+    [ -n "$scheme" ] && gsettings set org.gnome.desktop.interface color-scheme "$scheme"
+    [ -n "$gtk" ] && gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
+    [ -n "$icons" ] && gsettings set org.gnome.desktop.interface icon-theme "$icons"
   fi
-  pkill -USR1 -x kitty 2>/dev/null           # kitty re-reads kitty.conf
-  pkill -USR2 -x waybar 2>/dev/null          # waybar re-reads its style
-  have makoctl && makoctl reload 2>/dev/null
-  have hyprctl && hyprctl reload >/dev/null 2>&1
+  pkill -USR1 -x kitty 2>/dev/null               # kitty re-reads kitty.conf (the tab bar)
+  pkill -USR2 -x waybar 2>/dev/null              # waybar re-reads its style
+  have swaync-client && swaync-client -rs >/dev/null 2>&1
+  if pgrep -x swayosd-server >/dev/null; then pkill -x swayosd-server; detach swayosd-server; fi
+  have hyprctl && hyprctl reload >/dev/null 2>&1   # window edges, background
   detach "$SELF" wallpaper start
-  cmd_sound mode
-  [ "$quiet" = 1 ] || { have notify-send && notify-send -t 2000 "MODE" "$(upper "$NEW_MODE")"; }
+  cmd_sound move
+  [ "$quiet" = 1 ] || note "theme" "$new"
   return 0
 }
 
 
-# ── wallpaper ───────────────────────────────────────────────────────────
-# Live: the portfolio's drifting grid + a radar sweep, rendered once per mode and screen
-# size by theme/make-wallpaper.py into ~/.cache/fui/, played by mpvpaper.
-# Still: swaybg with the PNG (also shown while the loop renders, and as the fallback).
+# ── wallpaper: the network lattice ──────────────────────────────────────
+# Live: the lattice with beads travelling its lines (the portfolio's backdrop), rendered
+# once per theme and screen size by theme/make-wallpaper.py into ~/.cache/fui/, played by
+# mpvpaper. Still: swaybg with the PNG (also shown while the loop renders, and the fallback).
 cmd_wallpaper() {
   mkdir -p "$STATE" "$CACHE"
   local pref
@@ -129,7 +169,7 @@ cmd_wallpaper() {
   [ "$pref" = still ] || pref=live
   case "${1:-start}" in
     start) ;;
-    toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper" ;;
+    toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "wallpaper" "$pref" ;;
     live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
     status) echo "$pref"; return 0 ;;
     *) die "usage: fui wallpaper [start|toggle|live|still|status]" ;;
@@ -137,10 +177,10 @@ cmd_wallpaper() {
 
   local mode png
   mode=$(current_mode)
-  png="$CFG/hypr/wallpaper.png"
-  [ "$mode" = light ] && [ -e "$CFG/hypr/wallpaper-light.png" ] && png="$CFG/hypr/wallpaper-light.png"
+  png="$CFG/hypr/wallpaper-$mode.png"
+  [ -e "$png" ] || png="$CFG/hypr/wallpaper-dark.png"
 
-  # one instance at a time: a newer call (mode switch) takes over from an older one
+  # one instance at a time: a newer call (a theme change) takes over from an older one
   exec 9>"$CACHE/.wallpaper.lock"
   pkill -f "make-wallpaper.py --live" 2>/dev/null
   have flock && flock 9
@@ -162,7 +202,7 @@ except Exception:
     print(1920, 1080)
 ' 2>/dev/null)
   w=${w:-1920}; h=${h:-1080}
-  key=$(cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
+  key=$(cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/lattice.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
   video="$CACHE/live-$mode-${w}x$h-$key.mp4"
 
   if [ ! -s "$video" ]; then
@@ -187,16 +227,42 @@ except Exception:
 }
 
 
-# ── sound ───────────────────────────────────────────────────────────────
-# Theme: [desktop] sound_theme in tokens.toml (Ocean), freedesktop as fallback.
-cmd_sound() {
-  local ev="${1:-}" names theme file n t d f
-  case "$ev" in
-    on|off) mkdir -p "$STATE"; echo "$ev" > "$STATE/sound"; return 0 ;;
-    status) cat "$STATE/sound" 2>/dev/null || echo on; return 0 ;;
-    "") die "usage: fui sound <event>|on|off|status" ;;
+# ── screen: the old-screen glass shader ─────────────────────────────────
+cmd_screen() {
+  mkdir -p "$STATE"
+  local cur
+  cur=$(cat "$STATE/screen" 2>/dev/null); [ "$cur" = off ] || cur=on
+  case "${1:-status}" in
+    status) echo "$cur"; return 0 ;;
+    toggle) [ "$cur" = on ] && cur=off || cur=on ;;
+    on|off) cur="$1" ;;
+    *) die "usage: fui screen [toggle|on|off|status]" ;;
   esac
-  [ "$(cat "$STATE/sound" 2>/dev/null)" = off ] && return 0
+  echo "$cur" > "$STATE/screen"
+  have hyprctl && hyprctl reload >/dev/null 2>&1
+  note "screen glass" "$cur"
+}
+
+
+# ── sound: the portfolio's synthesised interface sounds ─────────────────
+# Theme: [desktop] sound_theme in tokens.toml ("fui", made by theme/make-sounds.py),
+# freedesktop as the fallback.
+cmd_sound() {
+  local ev="${1:-}" names theme file n t d f cur
+  cur=$(cat "$STATE/sound" 2>/dev/null); [ "$cur" = off ] || cur=on
+  case "$ev" in
+    on|off|toggle)
+      [ "$ev" = toggle ] && { [ "$cur" = on ] && ev=off || ev=on; }
+      mkdir -p "$STATE"; echo "$ev" > "$STATE/sound"
+      pkill -RTMIN+9 waybar 2>/dev/null
+      [ "$ev" = on ] && cmd_sound tick
+      return 0 ;;
+    status)
+      if [ "${2:-}" = --bar ]; then [ "$cur" = on ] && echo "󰕾" || echo "󰖁"; else echo "$cur"; fi
+      return 0 ;;
+    "") die "usage: fui sound <event>|on|off|toggle|status" ;;
+  esac
+  [ "$cur" = off ] && return 0
 
   case "$ev" in
     login)      names="desktop-login service-login" ;;
@@ -205,14 +271,14 @@ cmd_sound() {
     alert)      names="dialog-warning dialog-error" ;;
     volume)     names="audio-volume-change" ;;
     screenshot) names="screen-capture camera-shutter" ;;
-    mode)       names="button-pressed dialog-information" ;;
+    mode|move)  names="theme-change button-pressed" ;;
+    tick)       names="button-pressed bell" ;;
+    open)       names="window-new" ;;
     error)      names="dialog-error" ;;
     *)          names="$ev" ;;
   esac
 
-  theme=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["desktop"].get("sound_theme","ocean"))' \
-          "$CFG/fui/tokens.json" 2>/dev/null)
-  theme="${theme:-ocean}"
+  theme=$(tok desktop.sound_theme); theme="${theme:-fui}"
   file=""
   for n in $names; do
     for t in "$theme" freedesktop; do
@@ -232,19 +298,19 @@ cmd_sound() {
       sleep 0.5
     done
   fi
-  # volume key repeats: cut the previous blip instead of stacking them
+  # volume key repeats: cut the previous tick instead of stacking them
   [ "$ev" = volume ] && pkill -f "pw-play .*audio-volume-change" 2>/dev/null
 
-  if have pw-play; then detach pw-play --volume 0.7 "$file"
+  if have pw-play; then detach pw-play --volume 0.8 "$file"
   elif have paplay; then detach paplay "$file"
   fi
   return 0
 }
 
 
-# ── bar / tabs / tui ────────────────────────────────────────────────────
+# ── bar / tabs / layout / tui ───────────────────────────────────────────
 cmd_bar() {
-  local dir="$CFG/waybar" width config style
+  local dir="$CFG/waybar" width config
   cmd_mode apply --quiet
   width=$(hyprctl -j monitors 2>/dev/null | python3 -c '
 import json, sys
@@ -256,10 +322,8 @@ except Exception:
 ' 2>/dev/null)
   config="$dir/config.jsonc"
   [ "${width:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
-  style="$dir/fui-mode.css"
-  [ -e "$style" ] || style="$dir/style.css"
   pkill -x waybar 2>/dev/null
-  exec waybar -c "$config" -s "$style"
+  exec waybar -c "$config" -s "$dir/style.css"
 }
 
 cmd_tabs() {
@@ -269,13 +333,216 @@ cmd_tabs() {
   exec kitty --class fui-main --session "$session"
 }
 
+cmd_layout() {   # the startup layout: one app per line, "workspace  command"
+  local file="$CFG/fui/layout.conf.local"
+  [ -e "$file" ] || file="$CFG/fui/layout.conf"
+  [ -s "$file" ] || return 0
+  have hyprctl || return 0
+  local ws cmd first=""
+  while read -r ws cmd; do
+    case "$ws" in ''|'#'*) continue ;; esac
+    [ -n "$cmd" ] || continue
+    [ -n "$first" ] || first="$ws"
+    cmd="${cmd//\$HOME/$HOME}"; cmd="${cmd/#fui /$SELF }"
+    hyprctl dispatch "hl.dsp.exec_cmd(\"${cmd//\"/\\\"}\", { workspace = \"$ws silent\" })" >/dev/null 2>&1
+    sleep 0.4
+  done < "$file"
+  [ -n "$first" ] && hyprctl dispatch "hl.dsp.focus({ workspace = '$first' })" >/dev/null 2>&1
+  return 0
+}
+
 cmd_tui() {
   [ $# -gt 0 ] || die "usage: fui tui <command> [args]"
-  exec kitty --class fui-tui --title "$(upper "$1")" "$@"
+  exec kitty --class fui-tui --title "$1" "$@"
 }
 
 
-# ── update ──────────────────────────────────────────────────────────────
+# ── launcher windows: palette, power, keys, clipboard ───────────────────
+cmd_palette() {
+  local -a rows=(
+    "/apps|rofi -config $CFG/rofi/config.rasi -show drun"
+    "/windows|rofi -config $CFG/rofi/config.rasi -show window"
+    "/run|rofi -config $CFG/rofi/config.rasi -show run"
+    "/theme   dark · mid · light|$SELF mode toggle"
+    "/wallpaper   live · still|$SELF wallpaper toggle"
+    "/screen   old-screen glass|$SELF screen toggle"
+    "/sound   interface sounds|$SELF sound toggle"
+    "/screenshot   region|$SELF shot region"
+    "/screenshot   screen|$SELF shot screen"
+    "/screenshot   annotate|$SELF shot edit"
+    "/record   start · stop|$SELF record toggle"
+    "/clipboard|$SELF clipboard"
+    "/emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
+    "/calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
+    "/files|$SELF tui yazi"
+    "/network|$SELF tui nmtui"
+    "/audio|$SELF tui wiremix"
+    "/monitor|$SELF tui btop"
+    "/notifications|swaync-client -t -sw"
+    "/keys|$SELF keys"
+    "/update|$SELF tui sh -c '$SELF update; echo; read -r -p \"done: press enter\" _'"
+    "/doctor|$SELF tui sh -c '$SELF doctor; echo; read -r -p \"press enter\" _'"
+    "/power|$SELF power"
+  )
+  local labels pick row
+  labels=$(printf '%s\n' "${rows[@]}" | cut -d'|' -f1)
+  pick=$(printf '%s\n' "$labels" | rofi_window "[0x02] palette" -dmenu -i -p ">" -no-custom) || return 0
+  for row in "${rows[@]}"; do
+    if [ "${row%%|*}" = "$pick" ]; then cmd_sound tick; eval "detach ${row#*|}"; return 0; fi
+  done
+}
+
+cmd_power() {
+  local pick="${1:-}"
+  if [ -z "$pick" ]; then
+    pick=$(printf '/lock\n/logout\n/suspend\n/reboot\n/shutdown\n' | rofi_window "[0x05] power" -dmenu -i -p ">" -no-custom -lines 5) || return 0
+    pick="${pick#/}"
+    case "$pick" in
+      reboot|shutdown|logout)
+        local sure
+        sure=$(printf "/yes, $pick\n/cancel\n" | rofi_window "[0x05] $pick?" -dmenu -i -p ">" -no-custom -lines 2) || return 0
+        [ "$sure" = "/yes, $pick" ] || return 0 ;;
+    esac
+  fi
+  case "$pick" in
+    lock) hyprlock ;;
+    logout) cmd_sound logout; sleep 0.6; hyprctl dispatch 'hl.dsp.exit()' ;;
+    suspend) systemctl suspend ;;
+    reboot) cmd_sound logout; sleep 0.6; systemctl reboot ;;
+    shutdown) cmd_sound logout; sleep 0.6; systemctl poweroff ;;
+    *) die "usage: fui power [lock|logout|suspend|reboot|shutdown]" ;;
+  esac
+}
+
+keys_list() {   # "KEYS | does" for every binding in hyprland.lua that carries a comment
+  python3 - "$CFG/hypr/hyprland.lua" <<'PY'
+import re, sys
+mod = "SUPER"
+out = []
+for line in open(sys.argv[1], encoding="utf-8"):
+    s = line.strip()
+    m = re.match(r'--@\s*(.+?)\s*\|\s*(.+)$', s)
+    if m:
+        out.append((m.group(1), m.group(2)))
+        continue
+    m = re.match(r'hl\.bind\((?:k\("([^"]+)"\)|"([^"]+)")\s*,.*--\s*(.+)$', s)
+    if m:
+        keys = f"{mod}+{m.group(1)}" if m.group(1) else m.group(2)
+        keys = keys.replace(" + ", "+").replace("grave", "`").replace("slash", "/").replace("period", ".").replace("space", "Space")
+        out.append((keys, m.group(3)))
+width = max(len(k) for k, _ in out) if out else 10
+for k, d in out:
+    print(f"{k:<{width}}   {d}")
+PY
+}
+
+cmd_keys() {
+  if [ "${1:-}" = --text ] || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then keys_list; return 0; fi
+  keys_list | rofi_window "[0x03] keys" -dmenu -i -p "find" -no-custom >/dev/null
+  return 0
+}
+
+cmd_clipboard() {
+  have cliphist || die "cliphist is not installed"
+  cliphist list | rofi_window "[0x04] clipboard" -dmenu -i -p ">" -display-columns 2 | cliphist decode | wl-copy
+}
+
+
+# ── shot and record ─────────────────────────────────────────────────────
+dispatch() { hyprctl dispatch "$1" >/dev/null 2>&1; }
+
+cmd_shot() {
+  have grim || die "grim is not installed"
+  local dir="$HOME/Pictures/Screenshots" f region
+  mkdir -p "$dir"
+  f="$dir/$(date +%Y%m%d-%H%M%S).png"
+  case "${1:-region}" in
+    region)
+      region=$(slurp) || return 0
+      grim -g "$region" "$f" && wl-copy < "$f" ;;
+    screen)
+      grim "$f" && wl-copy < "$f" ;;
+    edit)
+      region=$(slurp) || return 0
+      grim -g "$region" - | satty --filename - --output-filename "$f" --copy-command wl-copy --early-exit
+      return 0 ;;
+    tour) shot_tour; return 0 ;;
+    *) die "usage: fui shot [region|screen|edit|tour]" ;;
+  esac
+  cmd_sound screenshot
+  note "screenshot" "saved and copied: ${f/#$HOME/\~}"
+}
+
+shot_tour() {   # a fixed set of screenshots for design reviews, in every theme
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || die "run the tour inside Hyprland"
+  local dir ws start m i=1
+  dir="$HOME/Pictures/fui/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dir"
+  ws=$(hyprctl -j activeworkspace 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' 2>/dev/null || echo 1)
+  start=$(current_mode)
+  echo "Taking the tour shots; hands off for about a minute."
+  snap() { sleep "${2:-1}"; grim "$dir/$(printf '%02d' "$i")-$1.png" && echo "  $1"; i=$((i + 1)); }
+  for m in $(modes); do
+    cmd_mode "$m" --quiet >/dev/null; sleep 2.5
+    dispatch "hl.dsp.focus({ workspace = '$ws' })"; snap "$m-desktop" 1
+    dispatch "hl.dsp.focus({ workspace = 'empty' })"; snap "$m-empty" 1.5
+    detach rofi -config "$CFG/rofi/config.rasi" -show drun; snap "$m-launcher" 1.2; pkill -x rofi
+    notify-send -a fui "[0x07] sample" "A notification for the screenshot tour."; snap "$m-notification" 1
+    swaync-client -op >/dev/null 2>&1; snap "$m-control-centre" 1.2; swaync-client -cp >/dev/null 2>&1
+  done
+  cmd_mode "$start" --quiet >/dev/null
+  dispatch "hl.dsp.focus({ workspace = '$ws' })"
+  echo "Saved in $dir"
+}
+
+cmd_record() {
+  mkdir -p "$STATE"
+  local running=0
+  pgrep -x wf-recorder >/dev/null && running=1
+  case "${1:-toggle}" in
+    toggle) [ "$running" = 1 ] && cmd_record stop || cmd_record start ;;
+    start)
+      [ "$running" = 1 ] && return 0
+      have wf-recorder || die "wf-recorder is not installed"
+      local dir="$HOME/Videos/Recordings"; mkdir -p "$dir"
+      local f; f="$dir/$(date +%Y%m%d-%H%M%S).mp4"
+      date +%s > "$STATE/record-start"; echo "$f" > "$STATE/record-file"
+      detach wf-recorder -f "$f"
+      cmd_sound tick; note "recording" "started (SUPER+R stops)" ;;
+    stop)
+      [ "$running" = 1 ] || return 0
+      pkill -INT -x wf-recorder
+      cmd_sound tick; note "recording" "saved: $(sed "s|$HOME|~|" "$STATE/record-file" 2>/dev/null)"
+      rm -f "$STATE/record-start" ;;
+    status)   # JSON for the bar: shown only while recording
+      if [ "$running" = 1 ]; then
+        local now began s
+        now=$(date +%s); began=$(cat "$STATE/record-start" 2>/dev/null || echo "$now"); s=$((now - began))
+        printf '{"text": "● rec %02d:%02d", "class": "recording", "tooltip": "click to stop"}\n' $((s / 60)) $((s % 60))
+      else
+        echo '{"text": ""}'
+      fi ;;
+    *) die "usage: fui record [toggle|start|stop|status]" ;;
+  esac
+}
+
+
+# ── updates / update ────────────────────────────────────────────────────
+cmd_updates() {
+  local repo=0 aur=0
+  have checkupdates && repo=$(checkupdates 2>/dev/null | wc -l | tr -d ' ')
+  have yay && aur=$(yay -Qua 2>/dev/null | wc -l | tr -d ' ')
+  local n=$((repo + aur))
+  if [ "${1:-}" = --bar ]; then
+    if [ "$n" -gt 0 ]; then
+      printf '{"text": "<span alpha=\\"55%%\\" size=\\"small\\" letter_spacing=\\"2048\\">UPD</span> %s", "class": "pending", "tooltip": "%s repo + %s AUR updates: click to update"}\n' "$n" "$repo" "$aur"
+    else
+      echo '{"text": ""}'
+    fi
+  else
+    echo "$n updates ($repo repo, $aur AUR)"
+  fi
+}
+
 cmd_update() {
   [ -d "$DOTS/.git" ] || die "no git checkout at $DOTS"
   local before
@@ -297,7 +564,7 @@ cmd_update() {
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     hyprctl reload >/dev/null 2>&1
     detach "$SELF" bar
-    have makoctl && makoctl reload 2>/dev/null
+    have swaync-client && swaync-client -R >/dev/null 2>&1 && swaync-client -rs >/dev/null 2>&1
     echo "Reloaded. Log out and back in (SUPER+SHIFT+E) for anything that still looks old."
   fi
   return $rc
@@ -432,7 +699,8 @@ for m in json.load(sys.stdin):
   else
     info "pactl can't reach the audio server: output checks skipped"
   fi
-  if [ -d /usr/share/sounds/ocean ] || [ -d /usr/share/sounds/freedesktop ]; then ok "sound themes installed"
+  if [ -f "$HOME/.local/share/sounds/fui/index.theme" ]; then ok "the fui sound theme is installed"
+  elif [ -d /usr/share/sounds/freedesktop ]; then warn "the fui sound theme isn't linked; freedesktop sounds are used"; fix fix_links "re-link the dotfiles"
   else bad "no sound theme installed"; fix fix_packages "install the package list"; fi
   [ "$(cmd_sound status)" = off ] && { warn "desktop sounds are turned off"; fix fix_sound_on "fui sound on"; }
 
@@ -441,7 +709,7 @@ for m in json.load(sys.stdin):
     case "$(nmcli networking connectivity 2>/dev/null)" in
       full) ok "online" ;;
       limited|portal) warn "limited connectivity (captive portal or no internet)" ;;
-      *) bad "offline"; info "connect with: fui tui nmtui  (or SUPER+N)" ;;
+      *) bad "offline"; info "connect with: fui tui nmtui  (or SUPER+SHIFT+N)" ;;
     esac
   else
     warn "NetworkManager (nmcli) not installed"
@@ -478,10 +746,10 @@ for m in json.load(sys.stdin):
     broken=$(stale_links | wc -l | tr -d ' ')
     [ "$broken" = 0 ] && ok "no broken links" || { warn "$broken links point at files that no longer exist"; fix fix_broken_links "remove them"; }
     local l nml=0
-    for l in kitty/fui-mode.conf waybar/fui-mode.css rofi/fui-mode.rasi mako/fui-mode gtk-3.0/fui-mode.css fui/fui-mode.sh; do
+    for l in waybar/fui-colors.css rofi/fui-colors.rasi swaync/fui-colors.css hypr/fui-colors.conf kitty/fui-colors.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css; do
       [ -e "$CFG/$l" ] || nml=$((nml + 1))
     done
-    [ "$nml" = 0 ] && ok "$(current_mode) mode links in place" || { bad "$nml light/dark links missing"; fix fix_mode_links "fui mode apply"; }
+    [ "$nml" = 0 ] && ok "$(current_mode) theme links in place" || { bad "$nml theme links missing"; fix fix_mode_links "fui mode apply"; }
     if [ -d "$DOTS/.git" ]; then
       local dirty behind
       dirty=$(git -C "$DOTS" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
@@ -496,7 +764,21 @@ for m in json.load(sys.stdin):
   else
     bad "no dotfiles at $DOTS"
   fi
-  fc-list 2>/dev/null | grep -q "JetBrainsMono Nerd" && ok "JetBrainsMono Nerd Font installed" || bad "JetBrainsMono Nerd Font missing"
+  local face
+  for face in "JetBrainsMono Nerd Font" "ProFontIIx Nerd Font" "Michroma" "DSEG7 Classic" "Noto Sans"; do
+    fc-list 2>/dev/null | grep -qi "$face" && ok "font: $face" || { bad "font missing: $face"; fix fix_links "re-link the dotfiles and rebuild the font cache"; }
+  done
+
+  section "look"
+  info "theme: $(current_mode) (SUPER+SHIFT+T)   screen glass: $(cmd_screen status) (SUPER+SHIFT+C)"
+  if have plymouth-set-default-theme; then
+    [ "$(plymouth-set-default-theme 2>/dev/null)" = fui ] && ok "boot splash: fui" || info "boot splash not set up: fui setup boot"
+  else
+    info "boot splash not set up: fui setup boot"
+  fi
+  local prof themed=0
+  while IFS= read -r prof; do [ -e "$prof/chrome/userChrome.css" ] && themed=1; done < <(firefox_profiles)
+  [ "$themed" = 1 ] && ok "Firefox is themed" || info "Firefox not themed yet: fui setup firefox (after opening Firefox once)"
 
   section "wallpaper"
   local pref; pref=$(cat "$STATE/wallpaper" 2>/dev/null || echo live)
@@ -536,6 +818,7 @@ for m in json.load(sys.stdin):
   fi
   [ "$D_FAIL" = 0 ]
 }
+
 
 
 # ── setup (hardware) ────────────────────────────────────────────────────
@@ -613,51 +896,104 @@ setup_firmware() {
   echo "  check for BIOS / device firmware: fwupdmgr refresh && fwupdmgr get-updates"
 }
 
+
+setup_system() {
+  echo "▣ system services"
+  # passwords for browsers and apps: the secret service starts on demand (no PAM changes)
+  sudo pacman -S --needed --noconfirm gnome-keyring libsecret >/dev/null && echo "  keyring: gnome-keyring (unlocks on first use)"
+  # firewall: keep firewalld if it is already running, otherwise ufw denying incoming connections
+  if systemctl is-active --quiet firewalld 2>/dev/null; then
+    echo "  firewall: firewalld is already running"
+  elif have ufw || sudo pacman -S --needed --noconfirm ufw >/dev/null; then
+    sudo ufw default deny incoming >/dev/null && sudo ufw default allow outgoing >/dev/null &&
+      sudo ufw --force enable >/dev/null && sudo systemctl enable --now ufw.service >/dev/null 2>&1 &&
+      echo "  firewall: ufw (incoming blocked, outgoing allowed)"
+  fi
+  # the package cache: keep the last three versions, cleaned weekly
+  sudo systemctl enable --now paccache.timer >/dev/null 2>&1 && echo "  package cache: cleaned weekly (paccache.timer)"
+  have xdg-user-dirs-update && xdg-user-dirs-update && echo "  home folders: Documents, Downloads, Pictures, Videos, ..."
+  mkdir -p "$HOME/Pictures/Screenshots" "$HOME/Videos/Recordings"
+}
+
+setup_firefox() {
+  echo "▣ Firefox"
+  have firefox || { echo "  Firefox is not installed"; return 0; }
+  local profs
+  profs=$(firefox_profiles)
+  if [ -z "$profs" ]; then
+    echo "  creating a profile"
+    firefox --headless -CreateProfile default-release >/dev/null 2>&1
+    profs=$(firefox_profiles)
+  fi
+  [ -n "$profs" ] || { echo "  no profile yet: open Firefox once, then run fui setup firefox"; return 0; }
+  render_startpage "$(current_mode)"
+  local prof src="$CFG/fui/firefox"
+  while IFS= read -r prof; do
+    [ -d "$prof" ] || continue
+    mkdir -p "$prof/chrome"
+    ln -sfn "$src/userChrome.css" "$prof/chrome/userChrome.css"
+    ln -sfn "$src/userContent.css" "$prof/chrome/userContent.css"
+    ln -sfn "$src/colors-$(current_mode).css" "$prof/chrome/fui-colors.css"
+    sed "s|@START@|file://$SHARE/start.html|g" "$src/user.js.in" > "$prof/user.js"
+    echo "  themed: ${prof/#$HOME/\~} (restart Firefox to see it)"
+  done <<< "$profs"
+}
+
+setup_boot() {
+  echo "▣ boot splash and console"
+  have python3 || { echo "  python3 is needed"; return 1; }
+  sudo pacman -S --needed --noconfirm plymouth terminus-font >/dev/null || return 1
+  local tmp; tmp=$(mktemp -d)
+  python3 "$DOTS/theme/make-boot.py" "$tmp" || { echo "  couldn't render the splash"; rm -rf "$tmp"; return 1; }
+  sudo rm -rf /usr/share/plymouth/themes/fui
+  sudo mkdir -p /usr/share/plymouth/themes/fui && sudo cp -r "$tmp/plymouth/." /usr/share/plymouth/themes/fui/ || return 1
+  sudo plymouth-set-default-theme fui && echo "  splash: fui"
+  # kernel command line: quiet boot with the splash
+  if [ -f /etc/kernel/cmdline ]; then
+    if ! grep -qw splash /etc/kernel/cmdline; then
+      sudo cp /etc/kernel/cmdline /etc/kernel/cmdline.fui-backup
+      sudo sed -i 's/$/ quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0/' /etc/kernel/cmdline
+      echo "  kernel command line: quiet splash (backup: /etc/kernel/cmdline.fui-backup)"
+    fi
+  else
+    echo "  /etc/kernel/cmdline not found: add 'quiet splash' to your boot entry by hand"
+  fi
+  # rebuild the boot images so they carry the splash
+  if have reinstall-kernels; then sudo reinstall-kernels && echo "  boot images rebuilt (reinstall-kernels)"
+  elif have dracut-rebuild; then sudo dracut-rebuild && echo "  boot images rebuilt (dracut-rebuild)"
+  elif have mkinitcpio; then sudo mkinitcpio -P && echo "  boot images rebuilt (mkinitcpio)"
+  else echo "  rebuild your initramfs to include the splash"; fi
+  # boot menu hidden unless a key is held (systemd-boot)
+  have bootctl && sudo bootctl set-timeout 0 >/dev/null 2>&1 && echo "  boot menu: hidden (hold Space while booting to show it)"
+  # text consoles: the CRT palette, a clean font, a login banner in the house style
+  sudo install -m 644 "$tmp/console/issue" /etc/issue
+  sudo install -m 644 "$tmp/console/vtrgb" /etc/vtrgb
+  sudo install -m 644 "$tmp/console/fui-vtrgb.service" /etc/systemd/system/fui-vtrgb.service
+  sudo systemctl enable fui-vtrgb.service >/dev/null 2>&1
+  if grep -q '^FONT=' /etc/vconsole.conf 2>/dev/null; then
+    sudo sed -i 's/^FONT=.*/FONT=ter-v18n/' /etc/vconsole.conf
+  else
+    echo "FONT=ter-v18n" | sudo tee -a /etc/vconsole.conf >/dev/null
+  fi
+  echo "  consoles: CRT palette, Terminus 18, login banner"
+  rm -rf "$tmp"
+  echo "  reboot to see it: systemctl reboot"
+}
+
 cmd_setup() {
   YES=0
   local what="all" a
-  for a in "$@"; do case "$a" in --yes|-y) YES=1 ;; gpu|audio|bluetooth|firmware|all) what="$a" ;; esac; done
+  for a in "$@"; do case "$a" in --yes|-y) YES=1 ;; gpu|audio|bluetooth|firmware|system|firefox|boot|all) what="$a" ;; esac; done
   case "$what" in
     gpu) setup_gpu ;;
     audio) setup_audio ;;
     bluetooth) setup_bluetooth ;;
     firmware) setup_firmware ;;
-    all) setup_gpu; setup_audio; setup_bluetooth; setup_firmware ;;
+    system) setup_system ;;
+    firefox) setup_firefox ;;
+    boot) setup_boot ;;
+    all) setup_gpu; setup_audio; setup_bluetooth; setup_firmware; setup_system; setup_firefox ;;
   esac
-}
-
-
-# ── shot ────────────────────────────────────────────────────────────────
-dispatch() { hyprctl dispatch "$1" >/dev/null 2>&1; }
-
-cmd_shot() {
-  have grim || die "grim is not installed"
-  local dir
-  dir="$HOME/Pictures/fui/$(date +%Y%m%d-%H%M%S)"
-  mkdir -p "$dir"
-  if [ "${1:-}" != --tour ]; then
-    local f="$dir/${1:-desktop}.png"
-    grim "$f" && echo "$f"
-    cmd_sound screenshot
-    return 0
-  fi
-  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || die "run the tour inside Hyprland"
-  local ws mode
-  ws=$(hyprctl -j activeworkspace 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' 2>/dev/null || echo 1)
-  mode=$(current_mode)
-  echo "Taking the tour shots; hands off for about 20 seconds."
-  snap() { sleep "${2:-1}"; grim "$dir/$1.png" && echo "  $1"; }
-
-  [ "$mode" = dark ] || { cmd_mode dark --quiet >/dev/null; sleep 2; }
-  snap 01-dark-desktop 0.5
-  dispatch "hl.dsp.focus({ workspace = 'empty' })"; snap 02-dark-empty 1.5
-  detach rofi -config "$CFG/rofi/fui-mode.rasi" -show drun; snap 03-dark-launcher 1.2; pkill -x rofi
-  have notify-send && notify-send "HUD // TEST" "Sample notification for the screenshot tour"; snap 04-dark-notification 1
-  cmd_mode light --quiet >/dev/null; snap 05-light-empty 3
-  dispatch "hl.dsp.focus({ workspace = '$ws' })"; snap 06-light-desktop 1.5
-  detach rofi -config "$CFG/rofi/fui-mode.rasi" -show drun; snap 07-light-launcher 1.2; pkill -x rofi
-  [ "$mode" = light ] || cmd_mode dark --quiet >/dev/null
-  echo "Saved in $dir"
 }
 
 
@@ -667,14 +1003,22 @@ sub="${1:-help}"
 case "$sub" in
   mode)      cmd_mode "$@" ;;
   wallpaper) cmd_wallpaper "$@" ;;
+  screen)    cmd_screen "$@" ;;
   sound)     cmd_sound "$@" ;;
   bar)       cmd_bar "$@" ;;
   tabs)      cmd_tabs "$@" ;;
+  layout)    cmd_layout "$@" ;;
   tui)       cmd_tui "$@" ;;
+  palette)   cmd_palette "$@" ;;
+  power)     cmd_power "$@" ;;
+  keys)      cmd_keys "$@" ;;
+  clipboard) cmd_clipboard "$@" ;;
+  shot)      cmd_shot "$@" ;;
+  record)    cmd_record "$@" ;;
+  updates)   cmd_updates "$@" ;;
   update)    cmd_update "$@" ;;
   doctor)    cmd_doctor "$@" ;;
   setup)     cmd_setup "$@" ;;
-  shot)      cmd_shot "$@" ;;
   help|-h|--help) usage ;;
   *) echo "fui: unknown command '$sub'" >&2; usage >&2; exit 2 ;;
 esac

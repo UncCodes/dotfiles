@@ -1,57 +1,66 @@
-// HUD // WAYBAR
-// Every reading carries a word, so state is never colour alone.
-// Colours live in style.css (dark) and style-light.css; labels here only dim with alpha,
-// so they work in both modes. fui bar starts this file, or config-compact.jsonc on
-// screens narrower than 1400 px.
+// fui // WAYBAR: the desktop menubar strip
+// After aljulandani.dev's menubar: the @user wordmark and white nav buttons on the left,
+// the window's path in the middle, a system tray of plain readouts and an LCD clock on
+// the right. Colours come from style.css (through fui-colors.css, one file per theme);
+// labels only dim with alpha, so they suit every theme. `fui bar` starts this file, or
+// config-compact.jsonc on screens narrower than 1400 px.
 {
   "layer": "top",
   "position": "top",
-  "height": 30,
+  "height": 34,
   "margin-top": 8,
-  "margin-left": 14,
-  "margin-right": 14,
+  "margin-left": 12,
+  "margin-right": 12,
   "spacing": 0,
 
-  "modules-left":   ["custom/tag", "hyprland/workspaces", "hyprland/window"],
-  "modules-center": ["clock"],
-  "modules-right":  ["cpu", "memory", "temperature", "network", "pulseaudio", "hyprland/language", "custom/mode", "tray"],
+  "modules-left":   ["custom/wordmark", "hyprland/workspaces"],
+  "modules-center": ["hyprland/window"],
+  "modules-right":  ["custom/rec", "mpris", "custom/updates", "cpu", "memory", "network", "pulseaudio",
+                     "hyprland/language", "custom/sound", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 
-  "custom/tag": {
-    "format": "⌖",
-    "tooltip": false
+  // @user in Michroma, the accent colour: the site's wordmark
+  "custom/wordmark": {
+    "exec": "echo \"@$USER\"",
+    "interval": "once",
+    "tooltip": false,
+    "on-click": "~/.local/bin/fui palette"
   },
 
+  // the white nav buttons: lowercase paths, the current one filled and blinking
   "hyprland/workspaces": {
-    "format": "{icon}",
-    "format-icons": {
-      "1": "01", "2": "02", "3": "03", "4": "04", "5": "05",
-      "6": "06", "7": "07", "8": "08", "9": "09", "default": "{name}"
-    },
-    "persistent-workspaces": { "*": 5 },
-    "on-scroll-up": "hyprctl dispatch workspace e-1",
-    "on-scroll-down": "hyprctl dispatch workspace e+1"
+    "format": "/{name}",
+    "persistent-workspaces": { "*": 4 },
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
   },
 
+  // the breadcrumb path: /app / window title
   "hyprland/window": {
-    "format": "// {}",
-    "max-length": 48,
+    "format": "/{class} <span alpha='55%'>/</span> {title}",
+    "max-length": 64,
     "separate-outputs": true,
-    "rewrite": { "": "// DESKTOP" }
+    "rewrite": { "^/ <span alpha='55%'>/</span> $": "/desktop" }
   },
 
-  "clock": {
-    "format": "{:%H:%M}",
-    "format-alt": "{:%a %d %b %Y  %H:%M:%S}",
-    "interval": 1,
-    "tooltip-format": "<tt>{calendar}</tt>",
-    "calendar": {
-      "mode": "month",
-      "format": {
-        "months": "<b>{}</b>",
-        "weekdays": "<span alpha='55%'>{}</span>",
-        "today": "<span underline='single'><b>{}</b></span>"
-      }
-    }
+  "custom/rec": {
+    "exec": "~/.local/bin/fui record status",
+    "interval": 2,
+    "return-type": "json",
+    "on-click": "~/.local/bin/fui record stop"
+  },
+
+  "mpris": {
+    "format": "<span alpha='55%' size='small' letter_spacing='2048'>PLAY</span> {title}",
+    "format-paused": "<span alpha='55%' size='small' letter_spacing='2048'>PAUSE</span> {title}",
+    "max-length": 32,
+    "on-click": "playerctl play-pause"
+  },
+
+  "custom/updates": {
+    "exec": "~/.local/bin/fui updates --bar",
+    "interval": 3600,
+    "return-type": "json",
+    "on-click": "~/.local/bin/fui tui fui update"
   },
 
   "cpu": {
@@ -69,18 +78,11 @@
     "on-click": "~/.local/bin/fui tui btop"
   },
 
-  "temperature": {
-    // If this shows the wrong sensor, set "hwmon-path" to your CPU's
-    // /sys/class/hwmon/hwmonN/temp1_input (see `sensors`).
-    "format": "<span alpha='55%' size='small' letter_spacing='2048'>TMP</span> {temperatureC}°",
-    "critical-threshold": 85
-  },
-
   "network": {
-    "format-ethernet": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> ETH",
-    "format-wifi": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> {essid} {signalStrength}%",
-    "format-disconnected": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> OFFLINE",
-    "tooltip-format": "{ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
+    "format-ethernet": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> eth",
+    "format-wifi": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> {signalStrength}%",
+    "format-disconnected": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> offline",
+    "tooltip-format": "{essid} {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
     "interval": 5,
     "on-click": "~/.local/bin/fui tui nmtui",
     "on-click-right": "nm-connection-editor"
@@ -88,7 +90,7 @@
 
   "pulseaudio": {
     "format": "<span alpha='55%' size='small' letter_spacing='2048'>VOL</span> {volume:02}%",
-    "format-muted": "<span alpha='55%' size='small' letter_spacing='2048'>VOL</span> MUTE",
+    "format-muted": "<span alpha='55%' size='small' letter_spacing='2048'>VOL</span> mute",
     "on-click": "~/.local/bin/fui tui wiremix",
     "on-click-middle": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
@@ -99,16 +101,60 @@
     "format": "<span alpha='55%' size='small' letter_spacing='2048'>KBD</span> {short}"
   },
 
-  // light / dark switch (also SUPER+SHIFT+T)
+  // interface sounds on / off (the site's speaker button)
+  "custom/sound": {
+    "exec": "~/.local/bin/fui sound status --bar",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "~/.local/bin/fui sound toggle",
+    "tooltip": false
+  },
+
+  // the theme: sun / sunset / moon and its name; click cycles dark → mid → light
   "custom/mode": {
     "exec": "~/.local/bin/fui mode status --bar",
     "interval": "once",
+    "signal": 8,
     "on-click": "~/.local/bin/fui mode toggle",
     "tooltip": false
+  },
+
+  // notification centre: the count, or a struck bell when do-not-disturb is on
+  "custom/notify": {
+    "exec": "swaync-client -swb",
+    "return-type": "json",
+    "format": "{icon} {}",
+    "format-icons": { "notification": "󰂚", "none": "󰂜", "dnd-notification": "󰂛", "dnd-none": "󰂛",
+                      "inhibited-notification": "󰂚", "inhibited-none": "󰂜", "dnd-inhibited-notification": "󰂛", "dnd-inhibited-none": "󰂛" },
+    "on-click": "swaync-client -t -sw",
+    "on-click-right": "swaync-client -d -sw",
+    "escape": true
   },
 
   "tray": {
     "icon-size": 14,
     "spacing": 8
+  },
+
+  // the LCD clock: seven-segment digits on grey-green glass
+  "clock": {
+    "format": "{:%H:%M}",
+    "format-alt": "{:%d.%m.%y  %H:%M:%S}",
+    "interval": 1,
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "calendar": {
+      "mode": "month",
+      "format": {
+        "months": "<b>{}</b>",
+        "weekdays": "<span alpha='55%'>{}</span>",
+        "today": "<span underline='single'><b>{}</b></span>"
+      }
+    }
+  },
+
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": false,
+    "on-click": "~/.local/bin/fui power"
   }
 }

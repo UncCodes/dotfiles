@@ -1,17 +1,14 @@
-// HUD // WAYBAR, compact
-// fui bar picks this on screens narrower than 1400 px (e.g. 1024x768), where the full bar
-// runs off the right edge. Everything not set here comes from config.jsonc.
+// fui // WAYBAR, compact
+// `fui bar` picks this on screens narrower than 1400 px (e.g. 1024x768). Everything not set
+// here comes from config.jsonc.
 {
   "include": ["~/.config/waybar/config.jsonc"],
   "margin-left": 8,
   "margin-right": 8,
 
-  "modules-left":   ["custom/tag", "hyprland/workspaces"],
-  "modules-center": ["clock"],
-  "modules-right":  ["cpu", "memory", "network", "pulseaudio", "custom/mode", "tray"],
+  "modules-left":   ["custom/wordmark", "hyprland/workspaces"],
+  "modules-center": [],
+  "modules-right":  ["custom/rec", "cpu", "memory", "pulseaudio", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 
-  "network": {
-    "format-wifi": "<span alpha='55%' size='small' letter_spacing='2048'>NET</span> {signalStrength}%",
-    "tooltip-format": "{essid}  {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}"
-  }
+  "hyprland/workspaces": { "persistent-workspaces": { "*": 3 } }
 }

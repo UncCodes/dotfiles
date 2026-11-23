@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HUD // install
+# fui // install
 #
 # Fresh EndeavourOS / Arch:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/UncCodes/dotfiles/main/install.sh)
@@ -169,7 +169,9 @@ machine_files() {
   local bc="$HOME/.config/btop/btop.conf"
   if [ ! -e "$bc" ]; then
     mkdir -p "$(dirname "$bc")"
-    printf 'color_theme = "hud"\ntheme_background = False\n' > "$bc"
+    printf 'color_theme = "fui"\ntheme_background = False\n' > "$bc"
+  else
+    sed -i -E 's|^color_theme = .*|color_theme = "fui"|' "$bc"
   fi
   return 0
 }
@@ -180,15 +182,24 @@ toolkit_files() {
   mkdir -p "$HOME/.config/qt6ct/qss"
   sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/qt6ct.conf.in" > "$HOME/.config/qt6ct/qt6ct.conf" || return 1
   local q
-  for q in fui fui-light; do
-    sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/$q.qss.in" > "$HOME/.config/qt6ct/qss/$q.qss" || return 1
+  for q in "$DOTS"/theme/templates/fui-*.qss.in; do
+    sed "s|@HOME@|$HOME|g" "$q" > "$HOME/.config/qt6ct/qss/$(basename "$q" .in)" || return 1
   done
   if command -v git >/dev/null && ! git config --global --get-all include.path 2>/dev/null | grep -q 'fui.gitconfig'; then
     # shellcheck disable=SC2088  # git expands the ~ itself
     git config --global --add include.path "~/.config/git/fui.gitconfig"
   fi
-  command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1
+  command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1      # includes the vendored Michroma and DSEG7
   command -v tldr >/dev/null && { tldr --update >/dev/null 2>&1 || true; }
+  # default apps (real entries in ~/.config/mimeapps.list, which apps also write to)
+  if command -v xdg-mime >/dev/null; then
+    local mime
+    for mime in text/html x-scheme-handler/http x-scheme-handler/https application/xhtml+xml; do xdg-mime default firefox.desktop "$mime"; done
+    xdg-mime default org.pwmt.zathura.desktop application/pdf
+    for mime in image/png image/jpeg image/gif image/webp image/bmp image/tiff; do xdg-mime default imv.desktop "$mime"; done
+    for mime in video/mp4 video/x-matroska video/webm video/quicktime audio/mpeg audio/flac audio/ogg; do xdg-mime default mpv.desktop "$mime"; done
+    xdg-mime default thunar.desktop inode/directory
+  fi 2>/dev/null
   return 0
 }
 
@@ -206,9 +217,9 @@ fui_on_path() {
 }
 
 apply_mode() {
-  # light / dark links for the current mode (dark on a fresh install)
+  # the theme links (dark on a fresh install, otherwise whatever was chosen)
   "$HOME/.local/bin/fui" mode apply --quiet || return 1
-  NOTE="$("$HOME/.local/bin/fui" mode status) mode"
+  NOTE="$("$HOME/.local/bin/fui" mode status) theme"
 }
 
 login_shell() {
@@ -219,7 +230,7 @@ login_shell() {
 }
 
 # ── run ─────────────────────────────────────────────────────────────────
-printf '%sHUD // install%s  %s\n' "$AMB" "$OFF" "$DOTS"
+printf '%sfui // install%s  %s\n' "$AMB" "$OFF" "$DOTS"
 step "dotfiles"            get_repo
 [ -d "$DOTS" ] || { echo "no dotfiles at $DOTS"; exit 1; }
 step "package list"        resolve_packages
@@ -232,7 +243,7 @@ step "remove stale links"  remove_stale_links
 step "machine files"       machine_files
 step "toolkit files"       toolkit_files
 step "fui command"         fui_on_path
-step "light / dark"        apply_mode
+step "theme"               apply_mode
 step "login shell"         login_shell
 
 # ── summary ─────────────────────────────────────────────────────────────
@@ -253,5 +264,5 @@ if [ "$failed" = 1 ]; then
   exit 1
 fi
 echo "Done. Log out and back in (SUPER+SHIFT+E); on tty1 Hyprland starts on its own."
-echo "SUPER+SHIFT+T light/dark · SUPER+SHIFT+W live/still wallpaper · fui doctor checks the machine."
+echo "SUPER+/ lists every key · SUPER+Space the command palette · fui doctor checks the machine."
 exit 0

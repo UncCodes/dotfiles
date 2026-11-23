@@ -1,4 +1,5 @@
 # Official Arch / EndeavourOS repo packages. One per line; comments allowed.
+# AUR packages are listed in aur.txt.
 
 # compositor and session
 hyprland
@@ -12,30 +13,43 @@ qt6-wayland
 qt6ct
 qt6-svg
 
-# desktop pieces
+# desktop surfaces
 waybar
 swaybg
-mpv
-ffmpeg
-python-pillow
+swaync          # notifications and the control centre
+swayosd         # volume / brightness on screen
 rofi
-mako
+rofi-calc       # the palette's calculator
+rofi-emoji      # SUPER+.
+wtype           # rofi-emoji types into windows
 libnotify
 kitty
 thunar
 gvfs
-networkmanager           # nmtui: network setup (SUPER+N, click NET)
+networkmanager           # nmtui: network setup (SUPER+SHIFT+N)
 network-manager-applet
 pavucontrol
 playerctl
 pipewire
 pipewire-pulse
 wireplumber
-libpulse      # pactl: fui doctor / fui setup audio
+libpulse        # pactl: fui doctor / fui setup audio
+brightnessctl
 
-# event sounds: Ocean (EndeavourOS KDE's theme), freedesktop as fallback
-ocean-sound-theme
-sound-theme-freedesktop
+# the live wallpaper and its renderer
+mpv
+ffmpeg
+python-pillow
+
+# apps
+firefox
+zathura
+zathura-pdf-mupdf
+imv
+satty           # screenshot annotation (SUPER+Print)
+wf-recorder     # screen recording (SUPER+R)
+gnome-keyring
+libsecret
 
 # terminal tools (TUIs)
 yazi          # files            SUPER+Y, `y` in the shell
@@ -72,9 +86,12 @@ fzf
 neovim
 git
 stow
+pacman-contrib  # checkupdates (the bar's update count), paccache
+xdg-user-dirs
 
 # look
 ttf-jetbrains-mono-nerd
+ttf-profont-nerd   # ProFont IIx: window titles
 noto-fonts
 noto-fonts-emoji
 papirus-icon-theme
@@ -82,4 +99,3 @@ adw-gtk-theme
 fontconfig
 python
 pciutils      # lspci: graphics detection
-# AUR packages are listed in aur.txt

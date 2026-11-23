@@ -1,4 +1,4 @@
-# HUD // CAVA (audio visualiser: run `cava`)
+# fui // CAVA (audio visualiser: run `cava`)
 # Colours are ANSI names, so they follow kitty's palette in dark and light mode.
 
 [general]

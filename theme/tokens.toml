@@ -1,153 +1,223 @@
-# ┌─ FUI DESIGN TOKENS ── single source of truth ─────────────────────────┐
-# │ Every colour, opacity, blur, border, chamfer, font and gap lives here.│
-# │ After editing, run:   python3 theme/build.py                          │
-# │ build.py regenerates the toolkit themes (GTK3/4, Qt, btop, nvim, env, │
-# │ fontconfig, git, Hyprland) and sweeps changed colours through every   │
-# │ hand-written config, so nothing else needs editing by hand.           │
+# ┌─ fui // DESIGN TOKENS ── the single source of truth ──────────────────┐
+# │ Y2K cybercore, after aljulandani.dev (its VISUAL-IDENTITY.md):        │
+# │ one person's computer from the 2000s web. Every surface is a window   │
+# │ of frosted, glossy plastic with a 1px bevel, a gel title bar and an   │
+# │ inset well, over a quiet network-lattice backdrop and old-screen      │
+# │ glass. Hand-made and early-web; never a sci-fi HUD.                   │
+# │                                                                       │
+# │ After editing:  python3 theme/build.py                                │
+# │ Colours with an alpha channel are written #RRGGBBAA.                  │
 # └───────────────────────────────────────────────────────────────────────┘
 
 [meta]
-name = "FUI"
+name  = "fui"
+# The three themes, in the order `fui mode toggle` cycles them. The first is the default.
+modes = ["dark", "mid", "light"]
 
-# ── colour: "muted neon" ── desaturated, clinical, emissive ─────────────
-[color]
-void        = "#020304"   # wallpaper ground, the darkest black
-term_bg     = "#030506"   # terminal and Hyprland background
-term_black  = "#080C0E"   # ANSI 0, panel ground
-surface_deep= "#080E12"   # launcher glass base
-surface     = "#0A1014"   # panel / view base (used with alpha)
-raised      = "#0E1519"   # raised row, selected background
-surface_hi  = "#18242A"   # top of the panel glass gradient
-line        = "#1A2428"   # hairlines, grid, inactive borders
-line_hi     = "#2A3A40"   # brighter hairline, hover
-black_hi    = "#2A3338"   # ANSI 8
+# ── themes: only the colour changes; plastic, shapes and type stay ──────
+# Values are the portfolio's presets (public/js/theme-init.js, style.css).
+[mode.dark]                  # night terminal
+bg         = "#0C0A09"       # hsl(24 14% 4%): the desk
+card       = "#171412"       # bg + 4% lightness: plastic faces
+well       = "#080706"       # the inset well: bg 70% + black
+text       = "#F5F2F0"
+muted      = "#A8959A"
+accent     = "#0FF05A"       # phosphor green
+nav_accent = "#1F7A34"       # the accent on white buttons (the bright green fails AA on white)
+link       = "#6CC4FF"
+ok         = "#3DDC84"
+bad        = "#FF8A80"
+meta       = "#F5F2F0"       # bar readouts: full ink on the dark bar
+gel_hi     = "#2AB2A9"       # the aero gel bar (teal): four stops, top to bottom
+gel_mid    = "#1D7C76"
+gel        = "#186762"
+gel_lo     = "#1C7872"
+gel_edge   = "#0F3E3B"
+gel_code   = "#D0FBF8"       # [0xNN] codes on the gel
+edge       = "#4AF48366"     # window, well and pill outlines (accent 30% into white 14%)
+hi         = "#FFFFFF24"     # bevel highlight, top-left
+lo         = "#0000008C"     # bevel shade, bottom-right
+glass      = "#171412CC"     # frosted window face (card 80%)
+glass_well = "#08070657"     # the well over the glass (well 34%)
+sheen      = "#FFFFFF1A"     # the diagonal sheen across a face
+gloss      = "#FFFFFF1F"     # the top half of a gel or pill
+gloss_lo   = "#FFFFFF05"     # the bottom half
+arc        = "#DCCDD233"     # lattice lines
+bead       = "#F0E6E96B"     # lattice beads
+skin_aqua  = "#62B6FF"
+skin_teal  = "#4FD1C0"
+skin_steel = "#9FB9D3"
+kind_cyan  = "#45D3EC"
+kind_violet= "#B49CFF"
+kind_green = "#4FE0A0"
+kind_amber = "#FFBD59"
+kind_rose  = "#FF7D97"
 
-fg          = "#E6EBEC"   # stark off-white text
-fg_dim      = "#7D8A8F"   # low-opacity grey: labels, telemetry
-silver      = "#B8C2C5"   # ANSI 7
-white       = "#F4F6F6"   # ANSI 15, text on accent fills
+[mode.mid]                   # warm peach
+bg         = "#FBDBC5"       # hsl(24 88% 88%)
+card       = "#FDE7D9"
+well       = "#FCE0CE"
+text       = "#251D18"
+muted      = "#5C4347"
+accent     = "#C00C2A"       # raspberry
+nav_accent = "#C00C2A"
+link       = "#0A4F75"
+ok         = "#00692B"
+bad        = "#B3261E"
+meta       = "#5C4347"
+gel_hi     = "#BD4298"       # plum
+gel_mid    = "#8C3170"
+gel        = "#792A61"
+gel_lo     = "#88306D"
+gel_edge   = "#531D43"
+gel_code   = "#FBD0EE"
+edge       = "#6E3C3C73"
+hi         = "#FFFFFF99"
+lo         = "#5A282833"
+glass      = "#FDE7D9BD"     # card 74%
+glass_well = "#FCE0CE4D"
+sheen      = "#FFFFFF73"
+gloss      = "#FFFFFF6B"
+gloss_lo   = "#FFFFFF0F"
+arc        = "#5C434747"
+bead       = "#46282C7A"
+skin_aqua  = "#2F7FC4"
+skin_teal  = "#1F8A80"
+skin_steel = "#5B7896"
+kind_cyan  = "#00708A"
+kind_violet= "#6A3FC4"
+kind_green = "#0A7344"
+kind_amber = "#8A5300"
+kind_rose  = "#B0213F"
 
-ice         = "#8FD3DC"   # pale ice cyan: line work, focus, data
-ice_hi      = "#C8EEF2"   # lit edges, L-brackets
-ice_dim     = "#2E5560"   # fills behind ice
-steel       = "#6F8FB0"   # washed-out steel blue
-steel_hi    = "#93AECB"
-amber       = "#C99A4E"   # dim amber: the one accent per screen
-amber_hi    = "#DDB677"
-amber_dim   = "#7A5E30"
-crimson     = "#B5555A"   # muted crimson: alerts
-crimson_hi  = "#CC7378"
-ok          = "#6FAF8A"
-ok_hi       = "#92C7A6"
-fault       = "#9A86B8"
-fault_hi    = "#B5A6CC"
+[mode.light]                 # clean desk
+bg         = "#FDFCFC"       # hsl(24 6% 99%)
+card       = "#FFFFFF"
+well       = "#FDFDFD"
+text       = "#251D18"
+muted      = "#6B575B"
+accent     = "#0940D7"       # blue
+nav_accent = "#0940D7"
+link       = "#0B5C8A"
+ok         = "#00692B"
+bad        = "#B3261E"
+meta       = "#6B575B"
+gel_hi     = "#865EC9"       # grape
+gel_mid    = "#6339AC"
+gel        = "#583399"
+gel_lo     = "#6138A8"
+gel_edge   = "#422673"
+gel_code   = "#E0D0FB"
+edge       = "#6E555A6B"
+hi         = "#FFFFFFE6"
+lo         = "#462D3229"
+glass      = "#FFFFFFBD"
+glass_well = "#FDFDFD4D"
+sheen      = "#FFFFFF73"
+gloss      = "#FFFFFF6B"
+gloss_lo   = "#FFFFFF0F"
+arc        = "#3C2E3266"
+bead       = "#281C209E"
+skin_aqua  = "#2F7FC4"
+skin_teal  = "#1F8A80"
+skin_steel = "#5B7896"
+kind_cyan  = "#00708A"
+kind_violet= "#6A3FC4"
+kind_green = "#0A7344"
+kind_amber = "#8A5300"
+kind_rose  = "#B0213F"
 
-# ANSI 16, by token name. Every terminal app inherits these.
-[ansi]
-normal = ["term_black", "crimson", "ok", "amber", "steel", "fault", "ice", "silver"]
-bright = ["black_hi", "crimson_hi", "ok_hi", "amber_hi", "steel_hi", "fault_hi", "ice_hi", "white"]
+# ── fixed materials: the same in every theme, like real hardware ────────
+[fixed]
+white        = "#FFFFFF"     # the nav buttons
+light_gray   = "#545454"     # nav hover sweep
+lighter_gray = "#C1C1C1"     # the blink's second colour
+lcd_bg       = "#B9C4A6"     # grey-green handheld LCD
+lcd_ink      = "#17220F"
+lcd_ghost    = "#17220F1A"   # unlit segments
+graphite_hi  = "#565C65"     # the slab: a graphite plate, dark in every theme
+graphite     = "#353A41"
+graphite_mid = "#22262B"
+graphite_lo  = "#2E3238"
+plate_ink    = "#EEF2F6"
+metal_hi     = "#FFFFFF"     # the slab's steel cap
+metal        = "#D6DCE4"
+gel_text     = "#FFFFFF"     # titles on the aero gel
+crt_bg       = "#0D0D0D"     # the terminal: a dark CRT screen in every theme
+crt_fg       = "#D4D4D4"
+crt_bright   = "#F2F2F2"
+crt_dim      = "#8A8A8A"
 
-# ── surfaces ────────────────────────────────────────────────────────────
-[opacity]
-panel        = 0.55   # hazy glass fill (bar segments, popovers)
-panel_strong = 0.88   # menus, tooltips: still hazy, readable
-terminal     = 0.70   # kitty background
-window_active   = 0.96
-window_inactive = 0.88
-hairline     = 0.22   # resting hairline strength (relative to ice)
-hairline_lit = 0.65   # lit edge (bracket side)
-
-[blur]
-size       = 10
-passes     = 3
-noise      = 0.03
-contrast   = 0.90
-brightness = 0.78
-vibrancy   = 0.30
-
-[glow]
-range   = 28
-alpha   = 0.20      # focused-window haze strength
+# The CRT's 16 colours (the portfolio's home terminal). Every terminal program inherits them.
+[terminal]
+normal = ["#1A1A1A", "#FF6B6B", "#5FD75F", "#E5C07B", "#6AB0FF", "#C678DD", "#56D4DD", "#D4D4D4"]
+bright = ["#5A5A5A", "#FF8F8F", "#87E787", "#F0D19B", "#94C6FF", "#D79BE7", "#84E2E9", "#F2F2F2"]
 
 # ── geometry ────────────────────────────────────────────────────────────
 [geometry]
-border      = 1     # px, every hairline
-radius      = 0     # never rounded
-chamfer     = 6     # px, 45° clip on controls (top-left + bottom-right)
-chamfer_lg  = 10    # px, 45° clip on popovers, menus, frames
-bracket     = 5     # px, serif length of [ ] button brackets
-notch       = 8     # px, step height of notched headerbars / tabs
-tab_slant   = 5     # px, horizontal slant of parallelogram tabs
-segment     = 4     # px, segment length in slotted progress / level bars
-segment_gap = 2     # px
-tick_step   = 8     # px, scrollbar / ruler tick spacing
-gaps_in     = 5
-gaps_out    = 14
+radius      = 10      # window frame
+well_radius = 6       # inset well
+bar_radius  = 6       # menubar strip, inner bar corners
+pill_radius = 999     # gel pills
+bar_height  = 32      # title bars (28-32)
+border      = 2       # Hyprland window edge (the focused one carries the gel colour)
+gaps_in     = 6
+gaps_out    = 12
+
+# ── surfaces ────────────────────────────────────────────────────────────
+[opacity]
+window_active   = 0.97   # frosted plastic: the lattice glows faintly through
+window_inactive = 0.92
+
+[blur]
+size       = 8
+passes     = 3
+noise      = 0.02
+contrast   = 1.0
+brightness = 1.0
+vibrancy   = 0.2
+
+# Old-screen glass over the whole screen (a Hyprland screen shader; `fui screen off` removes it)
+[screen]
+scanline   = 0.157   # one dark line every 3 device pixels (the site's scan-3.png: 40/255)
+phosphor   = 0.055   # RGB stripes on the pixel columns
+vignette   = 0.16    # darker corners
+on         = true
 
 # ── type ────────────────────────────────────────────────────────────────
 [font]
-mono          = "JetBrainsMono Nerd Font"
-size          = 10        # UI point size
-terminal_size = 11.5
-tracking      = 1         # px letter-spacing on ordinary labels
-label_tracking= 2         # px letter-spacing on micro-labels / titles
-system_wide_mono = true   # fontconfig: prefer the mono face for sans-serif too
-fallback      = ["Noto Sans Arabic", "Noto Sans", "Noto Color Emoji"]
+wordmark = "Michroma"                 # the @user wordmark: an extended Eurostile-style face
+mono     = "JetBrainsMono Nerd Font"  # structure: labels, readouts, paths, terminals
+pixel    = "ProFontIIx Nerd Font"     # window titles, only at 18px or 27px
+lcd      = "DSEG7 Classic"            # only on LCD glass (bold italic)
+sans     = "Noto Sans"                # reading: app text
+size     = 10
+terminal_size = 11
+fallback = ["Noto Sans Arabic", "Noto Color Emoji"]
+
+# ── motion ──────────────────────────────────────────────────────────────
+[motion]
+ease  = [0.2, 0.8, 0.2, 1.0]   # the site's cubic-bezier for folds and fills
+glide = 320                    # ms: the theme change
+blink = 2.0                    # s: the active nav button's blink
 
 # ── desktop ─────────────────────────────────────────────────────────────
 [desktop]
-icon_theme   = "Papirus-Dark"
 cursor_theme = "Adwaita"
 cursor_size  = 24
-gtk_base     = "adw-gtk3-dark"   # base GTK3 theme the overrides sit on
-sound_theme  = "ocean"           # event sounds: Plasma's Ocean, what EndeavourOS's KDE edition plays
+sound_theme  = "fui"            # theme/make-sounds.py: the site's synthesised interface sounds
 
-# ── light mode ──────────────────────────────────────────────────────────
-# Same roles, daylight values: pale fog ground, ink text, accents deepened so
-# they keep contrast on light glass. `fui mode toggle` (SUPER+SHIFT+T) switches
-# every app between the two. Keys left out fall back to the dark values above.
-[light.color]
-void        = "#E6EAEB"
-term_bg     = "#EEF1F2"
-term_black  = "#E2E7E9"
-surface_deep= "#F2F4F5"
-surface     = "#F7F9F9"
-raised      = "#E1E8EA"
-surface_hi  = "#FFFFFF"
-line        = "#C9D2D5"
-line_hi     = "#A9B6BB"
-black_hi    = "#8A979C"
-fg          = "#141B1E"
-fg_dim      = "#5B686D"
-silver      = "#3A464B"
-white       = "#0B1113"
-ice         = "#1F7A87"
-ice_hi      = "#0F5C68"
-ice_dim     = "#BFDDE2"
-steel       = "#3F6488"
-steel_hi    = "#2C4E70"
-amber       = "#9A6516"
-amber_hi    = "#7C4F0C"
-amber_dim   = "#E8D3AE"
-crimson     = "#A63C43"
-crimson_hi  = "#862C33"
-ok          = "#3D7A57"
-ok_hi       = "#2C6044"
-fault       = "#6E5A92"
-fault_hi    = "#574578"
+[desktop.dark]
+gtk_base   = "adw-gtk3-dark"
+icon_theme = "Papirus-Dark"
+scheme     = "prefer-dark"
 
-# Light terminals need dark "black" and light "white" for programs that print them.
-[light.ansi]
-normal = ["fg", "crimson", "ok", "amber", "steel", "fault", "ice", "fg_dim"]
-bright = ["black_hi", "crimson_hi", "ok_hi", "amber_hi", "steel_hi", "fault_hi", "ice_hi", "line_hi"]
-
-[light.blur]
-contrast   = 0.95
-brightness = 1.02   # dark mode dims what's behind the glass; daylight doesn't
-
-[light.glow]
-alpha = 0.12
-
-[light.desktop]
-icon_theme = "Papirus-Light"
+[desktop.mid]
 gtk_base   = "adw-gtk3"
+icon_theme = "Papirus-Light"
+scheme     = "prefer-light"
+
+[desktop.light]
+gtk_base   = "adw-gtk3"
+icon_theme = "Papirus-Light"
+scheme     = "prefer-light"

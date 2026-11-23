@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HUD // EndeavourOS installer hook
+# fui // EndeavourOS installer hook
 #
 # The EndeavourOS installer runs this at the end of the install, as root, inside
 # the new system, with the new user's name as $1. It installs the packages and

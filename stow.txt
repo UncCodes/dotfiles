@@ -3,7 +3,8 @@ hypr
 waybar
 kitty
 rofi
-mako
+swaync
+swayosd
 zsh
 starship
 fastfetch
@@ -14,3 +15,7 @@ fui
 nvim
 lazygit
 cava
+zathura
+imv
+mpv
+satty

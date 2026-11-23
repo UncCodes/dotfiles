@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
-"""Build the system-wide FUI theme from theme/tokens.toml.
+"""Build the fui theme from theme/tokens.toml.
 
   python3 theme/build.py            # regenerate everything
-  python3 theme/build.py --check    # exit 1 if anything is out of date (CI / pre-commit)
+  python3 theme/build.py --check    # exit 1 if anything is stale or a contrast pair fails
 
-What it does:
-  1. Sweeps changed colours through the hand-written configs (kitty, waybar, rofi,
-     mako, starship, hyprlock, hyprland.lua, preview). Those files keep their
-     structure; only the colour values that came from a token are swapped.
-     theme/.applied.json remembers what was applied last time.
-  2. Generates the toolkit layers that make *future* apps inherit the look:
-       gtk/   GTK3 + GTK4/libadwaita overrides and SVG geometry assets
-       qt/    qt6ct palette, stylesheet (QSS) and assets (paths rendered at install)
-       fui/   shell colour env (LS_COLORS, less/man, grep, fzf, jq, gcc, eza),
-              systemd environment.d, fontconfig, git colours, Chromium/Electron flags
-       nvim/  a colorscheme every Neovim picks up
-       btop/  the hud theme
-       hypr/  fui.lua, the token table hyprland.lua reads
-  3. Light mode: every per-mode layer is written twice (dark under the original name,
-     light with a "-light" suffix), and the hand-written configs get light twins.
-     ~/.local/bin/fui mode links each app to one set or the other.
+The look is Y2K cybercore after aljulandani.dev: frosted glossy plastic windows with
+1px bevels, gel title bars and inset wells over a network lattice; three themes
+(dark, mid, light) where only the colour changes.
+
+Per theme (fui mode links each app to one of them):
+  waybar, swaync, swayosd   colors-<mode>.css     @define-color tokens their style.css imports
+  rofi                      colors-<mode>.rasi
+  hypr (hyprlock)           colors-<mode>.conf    $variables
+  kitty                     colors-<mode>.conf    the tab bar (the screen itself is a fixed CRT)
+  gtk-3.0, gtk-4.0          fui-<mode>.css        the whole GTK / libadwaita theme
+  qt6ct                     colors/fui-<mode>.conf + theme/templates/fui-<mode>.qss.in
+  firefox                   fui/.config/fui/firefox/colors-<mode>.css, start page start-<mode>.html
+Fixed (the same in every theme, like hardware): the CRT terminal palette (kitty, shell
+colours, git, btop, Neovim), fonts, the Hyprland token table and the screen shader.
+Docs: theme/PALETTE.md (with a WCAG contrast table), theme/web/fui-tokens.css.
 Every generated file starts with a GENERATED banner: edit tokens.toml, not the file.
 """
 import json
@@ -29,46 +28,63 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "theme"))
+from lattice import lattice, svg_beads, svg_lines  # noqa: E402
+
 TOK = tomllib.loads((ROOT / "theme/tokens.toml").read_text())
-C, O, B, GL, G, F, D = (TOK[k] for k in ("color", "opacity", "blur", "glow", "geometry", "font", "desktop"))
-ANSI = TOK["ansi"]
+MODES = TOK["meta"]["modes"]
+FX, TERM, G, O, BL, SCR, F, MO, D = (TOK[k] for k in ("fixed", "terminal", "geometry", "opacity", "blur",
+                                                         "screen", "font", "motion", "desktop"))
 CHECK = "--check" in sys.argv
 changed: list[str] = []
 
-# ── light / dark ────────────────────────────────────────────────────────
-# Each mode is a full palette; [light.*] in tokens.toml overrides the dark values.
-# Generated files take a suffix: "" for dark (the original names), "-light" for light.
-# ~/.local/bin/fui mode points each app's fui-mode.* link at one or the other.
-DARK = {"color": dict(C), "ansi": dict(ANSI), "blur": dict(B), "glow": dict(GL), "desktop": dict(D)}
-LIGHT = {k: {**v, **TOK.get("light", {}).get(k, {})} for k, v in DARK.items()}
-MODES = {"": DARK, "-light": LIGHT}
 
-
-def use(sfx):
-    """Point the palette globals (C, ANSI, B, GL, D) at one mode."""
-    global C, ANSI, B, GL, D
-    m = MODES[sfx]
-    C, ANSI, B, GL, D = m["color"], m["ansi"], m["blur"], m["glow"], m["desktop"]
+def P(mode):
+    """The full palette of one theme: its colours plus the fixed materials."""
+    return {**FX, **TOK["mode"][mode]}
 
 
 # ── helpers ─────────────────────────────────────────────────────────────
-def rgb(h):
-    h = h.lstrip("#")
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+def parse(c):
+    h = c.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    a = int(h[6:8], 16) / 255 if len(h) == 8 else 1.0
+    return r, g, b, a
 
 
-def bare(h):
-    return h.lstrip("#").upper()
+def hx(c):                       # "#RRGGBB" (alpha dropped)
+    return c[:7].upper()
 
 
-def rgba_css(h, a):
-    r, g, b = rgb(h)
-    return f"rgba({r}, {g}, {b}, {a:g})"
+def hx8(c):                      # "#RRGGBBAA"
+    r, g, b, a = parse(c)
+    return f"#{r:02X}{g:02X}{b:02X}{round(a * 255):02X}"
 
 
-def tc(h, bold=False):
-    r, g, b = rgb(h)
-    return f"{'1;' if bold else ''}38;2;{r};{g};{b}"
+def css(c):                      # GTK3 has no #RRGGBBAA: alpha colours become rgba()
+    r, g, b, a = parse(c)
+    return f"#{r:02X}{g:02X}{b:02X}" if a >= 0.999 else f"rgba({r}, {g}, {b}, {a:.3f})"
+
+
+def hyp(c):                      # Hyprland / hyprlock
+    return f"rgba({hx8(c)[1:]})"
+
+
+def qargb(c):                    # Qt: #AARRGGBB
+    r, g, b, a = parse(c)
+    return f"#{round(a * 255):02x}{r:02x}{g:02x}{b:02x}"
+
+
+def mix(c1, c2, t):              # t of c2 into c1
+    a, b = parse(c1), parse(c2)
+    r, g, bl = (round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+    al = a[3] + (b[3] - a[3]) * t
+    return f"#{r:02X}{g:02X}{bl:02X}{round(al * 255):02X}" if al < 0.999 else f"#{r:02X}{g:02X}{bl:02X}"
+
+
+def alpha(c, a):
+    r, g, b, _ = parse(c)
+    return f"#{r:02X}{g:02X}{b:02X}{round(a * 255):02X}"
 
 
 def banner(mark="#"):
@@ -87,367 +103,311 @@ def write(rel, text):
         p.write_text(text)
 
 
-# ── 1. sweep colours through hand-written configs ───────────────────────
-SWEEP = [
-    "kitty/.config/kitty/kitty.conf",
-    "waybar/.config/waybar/config.jsonc",
-    "waybar/.config/waybar/style.css",
-    "rofi/.config/rofi/config.rasi",
-    "mako/.config/mako/config",
-    "starship/.config/starship.toml",
-    "hypr/.config/hypr/hyprlock.conf",
-    "hypr/.config/hypr/hyprland.lua",
-    "zsh/.zshrc",
-    "theme/preview.html",
+def ident(k):
+    return k.replace("_", "-")
+
+
+# ── contrast (WCAG 2) ───────────────────────────────────────────────────
+def lum(c):
+    def ch(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b, _ = parse(c)
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+
+
+def over(fg, bg):               # composite an alpha colour over an opaque one
+    f, b = parse(fg), parse(bg)
+    return "#" + "".join(f"{round(f[i] * f[3] + b[i] * (1 - f[3])):02X}" for i in range(3))
+
+
+def contrast(fg, bg):
+    l1, l2 = sorted((lum(fg), lum(bg)), reverse=True)
+    return (l1 + 0.05) / (l2 + 0.05)
+
+
+PAIRS = [   # (name, fg, bg, minimum)
+    ("text on desk", "text", "bg", 4.5),
+    ("text on plastic", "text", "card", 4.5),
+    ("muted on desk", "muted", "bg", 4.5),
+    ("bar readouts on plastic", "meta", "card", 4.5),
+    ("accent on desk (large text)", "accent", "bg", 3.0),
+    ("white title on the gel", "gel_text", "gel_mid", 4.5),
+    ("nav text on white buttons", "nav_accent", "white", 4.5),
+    ("white on the selection", "white", "nav_accent", 4.5),
+    ("link on desk", "link", "bg", 4.5),
+    ("LCD ink on LCD glass", "lcd_ink", "lcd_bg", 7.0),
+    ("plate ink on graphite", "plate_ink", "graphite", 7.0),
 ]
-APPLIED = ROOT / "theme/.applied.json"
 
 
-def sweep():
-    prev = json.loads(APPLIED.read_text()) if APPLIED.exists() else dict(C)
-    moves = {k: (prev[k], C[k]) for k in C if k in prev and prev[k].upper() != C[k].upper()}
-    if moves:
-        for rel in SWEEP:
-            p = ROOT / rel
-            if not p.exists():
-                continue
-            s = p.read_text()
-            o = s
-            # two passes through placeholders so swapped values never chain
-            for k, (old, _) in moves.items():
-                s = re.sub(bare(old), f"\0{k}\0", s, flags=re.I)
-                r, g, b = rgb(old)
-                s = re.sub(rf"\b{r},\s*{g},\s*{b}\b", f"\0{k}:dec\0", s)
-            for k, (_, new) in moves.items():
-                s = s.replace(f"\0{k}\0", bare(new))
-                s = s.replace(f"\0{k}:dec\0", ",".join(map(str, rgb(new))))
-            if s != o:
-                write(rel, s)
-    text = json.dumps({k: v.upper() for k, v in C.items()}, indent=2) + "\n"
-    write("theme/.applied.json", text)
+def contrast_rows():
+    rows, failures = [], []
+    for name, fg, bg, need in PAIRS:
+        cells = []
+        for m in MODES:
+            p = P(m)
+            ratio = contrast(over(p[fg], p[bg]), p[bg] if len(p[bg]) == 7 else over(p[bg], p["bg"]))
+            ok = ratio >= need
+            cells.append(f"{ratio:.1f}{'' if ok else ' ✗'}")
+            if not ok:
+                failures.append(f"{m}: {name} {ratio:.2f} < {need}")
+        rows.append(f"| {name} | {need:g} | " + " | ".join(cells) + " |")
+    return rows, failures
 
 
-def remap(s, src, dst):
-    """Swap every colour of palette src for the same token in palette dst (hex and r, g, b)."""
-    for k in src:
-        if src[k].upper() == dst[k].upper():
-            continue
-        s = re.sub(bare(src[k]), f"\0{k}\0", s, flags=re.I)
-        r, g, b = rgb(src[k])
-        s = re.sub(rf"\b{r},\s*{g},\s*{b}\b", f"\0{k}:dec\0", s)
-    for k in src:
-        s = s.replace(f"\0{k}\0", bare(dst[k]))
-        s = s.replace(f"\0{k}:dec\0", ",".join(map(str, rgb(dst[k]))))
-    return s
+# ── 1. per-theme colour files for the hand-written configs ──────────────
+def colour_includes():
+    for m in MODES:
+        p = P(m)
+        defs = "".join(f"@define-color {k} {css(v)};\n" for k, v in p.items())
+        fonts = (f"/* fonts: wordmark {F['wordmark']}, mono {F['mono']}, pixel {F['pixel']} (18px / 27px only), "
+                 f"LCD {F['lcd']}, sans {F['sans']} */\n")
+        head = f"{banner('/*')}/* fui // {m} theme. style.css imports this through the fui-colors.css link. */\n{fonts}"
+        for app in ("waybar", "swaync", "swayosd"):
+            write(f"{app}/.config/{app}/colors-{m}.css", head + defs)
+        rasi = "".join(f"  {ident(k)}: {hx8(v)};\n" for k, v in p.items())
+        rasi += (f'  font-pixel: "{F["pixel"]} 13.5";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
+                 f'  font-mono-small: "{F["mono"]} 9";\n  font-wordmark: "{F["wordmark"]} 12";\n')
+        write(f"rofi/.config/rofi/colors-{m}.rasi",
+              f"{banner('/*')}/* fui // {m} theme for rofi. config.rasi imports this through fui-colors.rasi. */\n* {{\n{rasi}}}\n")
+        hyprvars = "".join(f"${k} = {hyp(v)}\n${k}_hex = {hx(v)[1:]}\n" for k, v in p.items())
+        hyprvars += "".join(f"$font_{k} = {v}\n" for k, v in F.items() if isinstance(v, str))
+        write(f"hypr/.config/hypr/colors-{m}.conf",
+              f"{banner()}# fui // {m} theme for hyprlock (sourced through fui-colors.conf)\n{hyprvars}")
+        write(f"kitty/.config/kitty/colors-{m}.conf",
+              f"{banner()}# fui // {m} theme: the tab bar is the window's gel title bar. kitty.conf includes this\n"
+              f"# through fui-colors.conf; the screen itself is the fixed CRT (crt.conf).\n"
+              f"active_tab_background   {hx(p['gel_mid'])}\nactive_tab_foreground   {hx(p['gel_text'])}\n"
+              f"inactive_tab_background {TERM['normal'][0]}\ninactive_tab_foreground {FX['crt_dim']}\n"
+              f"tab_bar_background      {FX['crt_bg']}\nactive_border_color     {hx(p['gel_mid'])}\n"
+              f"inactive_border_color   {TERM['normal'][0]}\nbell_border_color       {hx(p['kind_amber'])}\n")
+        cssvars = "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in p.items())
+        write(f"fui/.config/fui/firefox/colors-{m}.css",
+              f"{banner('/*')}/* fui // {m} theme for Firefox (userChrome.css and userContent.css import it) */\n"
+              f":root {{\n{cssvars}  --fui-gel-face: linear-gradient(to bottom, {css(p['gel_hi'])} 0%, {css(p['gel_mid'])} 46%, "
+              f"{css(p['gel'])} 54%, {css(p['gel_lo'])} 100%);\n"
+              f"  --fui-pill-face: linear-gradient(to bottom, {css(p['gloss'])} 0 45%, {css(p['gloss_lo'])} 55% 100%), {css(p['card'])};\n"
+              f"  --fui-scheme: {'dark' if m == 'dark' else 'light'};\n}}\n")
 
 
-# ── 1b. light twins of the hand-written configs ─────────────────────────
-# The hand-written file stays the dark original; its twin is the same file with
-# every token colour swapped for its light value (plus a few non-colour swaps).
-def twins():
-    dd, ld = DARK["desktop"], LIGHT["desktop"]
-    spec = {
-        "waybar/.config/waybar/style.css": ("waybar/.config/waybar/style-light.css", "/*", []),
-        "rofi/.config/rofi/config.rasi": ("rofi/.config/rofi/config-light.rasi", "/*",
-                                          [(f'"{dd["icon_theme"]}"', f'"{ld["icon_theme"]}"')]),
-        "mako/.config/mako/config": ("mako/.config/mako/config-light", "#", []),
-        "hypr/.config/hypr/hyprlock.conf": ("hypr/.config/hypr/hyprlock-light.conf", "#",
-                                            [("wallpaper.png", "wallpaper-light.png"),
-                                             ("brightness = 0.55", "brightness = 0.92")]),
-        "starship/.config/starship.toml": ("starship/.config/starship-light.toml", "#", []),
-    }
-    for src, (dst, mark, extra) in spec.items():
-        s = remap((ROOT / src).read_text(), DARK["color"], LIGHT["color"])
-        for a, b in extra:
-            s = s.replace(a, b)
-        end = {"/*": " */"}.get(mark, "")
-        head = (f"{mark} GENERATED by theme/build.py: the light twin of {src}. "
-                f"Edit that file (or [light.color] in tokens.toml), not this one.{end}\n")
-        write(dst, head + s)
-
-
-# ── 2a. SVG geometry assets (shared by GTK and Qt) ──────────────────────
-def svg(w, h, body):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
-            f"{body}</svg>\n")
-
-
-def stroke(d, colour, a=1.0, fill="none", fa=0):
-    return (f'<path d="{d}" fill="{fill}" fill-opacity="{fa}" stroke="{colour}" stroke-opacity="{a}" '
-            f'stroke-width="{G["border"]}" stroke-linejoin="miter" shape-rendering="crispEdges"/>')
-
-
-def assets(sfx=""):
-    c, cl, bk, n, sl = G["chamfer"], G["chamfer_lg"], G["bracket"], G["notch"], G["tab_slant"]
-    ice, hi, dim, crim, void = C["ice"], C["ice_hi"], C["ice_dim"], C["crimson"], C["term_bg"]
-    a = {}
-    # [ ] bracket buttons: 24x24, slice 6
-    br = f"M{bk + .5} .5 H.5 V23.5 H{bk + .5} M{23.5 - bk} .5 H23.5 V23.5 H{23.5 - bk}"
-    a["bracket"] = svg(24, 24, stroke(br, ice, O["hairline_lit"] * .7))
-    a["bracket-hover"] = svg(24, 24, stroke(br, ice, .95))
-    a["bracket-accent"] = svg(24, 24, stroke(br, hi, 1))
-    a["bracket-alert"] = svg(24, 24, stroke(br, crim, .95))
-    # chamfered frames: 45° clip on top-left + bottom-right
-    ch = lambda s, k: f"M{k + .5} .5 H{s - .5} V{s - .5 - k} L{s - .5 - k} {s - .5} H.5 V{k + .5} Z"
-    a["chamfer"] = svg(24, 24, stroke(ch(24, c), ice, O["hairline"] + .1))
-    a["chamfer-focus"] = svg(24, 24, stroke(ch(24, c), ice, .9))
-    a["chamfer-alert"] = svg(24, 24, stroke(ch(24, c), crim, .9))
-    a["chamfer-lg"] = svg(32, 32, stroke(ch(32, cl), ice, O["hairline"] + .15)
-                          + stroke(f"M.5 {cl + 4} V{cl + .5} L{cl + .5} .5 H{cl + 4}", hi, .9))  # lit corner
-    # parallelogram tabs, open at the bottom
-    tab = f"M.5 23.5 L{sl + .5} .5 H{23.5 - sl} L23.5 23.5"
-    a["tab"] = svg(24, 24, stroke(tab, ice, O["hairline"] + .1))
-    a["tab-active"] = svg(24, 24, stroke(tab, hi, .95) + f'<rect x="{sl + 2}" y="1.5" width="4" height="1" fill="{C["amber"]}"/>')
-    # notched headerbar strip: a lit tab on the left that steps down into the hairline
-    a["notch"] = svg(64, n, stroke(f"M0 .5 H36 L{36 + n - 1} {n - .5} H64", ice, .8)
-                     + f'<rect x="2" y="2" width="2" height="2" fill="{hi}"/><rect x="6" y="2" width="2" height="2" fill="{ice}" fill-opacity=".5"/>')
-    # micro-controls
-    a["check"] = svg(14, 14, stroke("M7 1 L13 7 L7 13 L1 7 Z", ice, .75))
-    a["check-on"] = svg(14, 14, stroke("M7 1 L13 7 L7 13 L1 7 Z", hi, 1) + f'<path d="M7 4 L10 7 L7 10 L4 7 Z" fill="{ice}"/>')
-    a["check-mixed"] = svg(14, 14, stroke("M7 1 L13 7 L7 13 L1 7 Z", ice, .9) + f'<rect x="4" y="6.5" width="6" height="1" fill="{ice}"/>')
-    a["radio"] = svg(14, 14, stroke("M1.5 1.5 H12.5 V12.5 H1.5 Z", ice, .75))
-    a["radio-on"] = svg(14, 14, stroke("M1.5 1.5 H12.5 V12.5 H1.5 Z", hi, 1) + f'<rect x="4.5" y="4.5" width="5" height="5" fill="{ice}"/>')
-    a["thumb"] = svg(14, 14, stroke("M1.5 1.5 H12.5 V9 L7 12.5 L1.5 9 Z", hi, 1, fill=void, fa=.92)
-                     + f'<rect x="6.5" y="3.5" width="1" height="5" fill="{ice}"/>')
-    a["reticle"] = svg(16, 16, f'<path d="M8 0 V5 M8 11 V16 M0 8 H5 M11 8 H16" stroke="{ice}" stroke-opacity=".7"/>'
-                       f'<rect x="7" y="7" width="2" height="2" fill="{ice}"/>')
-    for name, body in a.items():
-        for d in ("gtk/.config/gtk-3.0/assets", "gtk/.config/gtk-4.0/assets", "qt/.config/qt6ct/assets"):
-            write(f"{d}{sfx}/{name}.svg", body)
-
-
-# ── 2b. GTK3 + GTK4/libadwaita ──────────────────────────────────────────
-def chamfer_fill(fill, k):
-    """Background that leaves 45° cuts at top-left and bottom-right (two half-plane layers)."""
-    n = k / 1.41421356
-    return (f"linear-gradient(135deg, transparent {n:.1f}px, {fill} {n:.1f}px, {fill} 50%, transparent 50%), "
-            f"linear-gradient(315deg, transparent {n:.1f}px, {fill} {n:.1f}px, {fill} 50%, transparent 50%)")
-
-
-def segmented(colour, angle=90):
-    s, gp = G["segment"], G["segment_gap"]
-    return f"repeating-linear-gradient({angle}deg, {colour} 0px, {colour} {s}px, transparent {s}px, transparent {s + gp}px)"
-
-
-def gtk_css(v):
-    c, cl, tk = G["chamfer"], G["chamfer_lg"], G["tick_step"]
-    col = lambda k: f"@fui_{k}"
-    A = lambda k, a: f"alpha(@fui_{k}, {a:g})"
+# ── 2. GTK3 + GTK4 / libadwaita ─────────────────────────────────────────
+def gtk_css(v, m):
+    p = P(m)
+    c = lambda k: f"@fui_{k}"
+    gel = f"linear-gradient(to bottom, {c('gel_hi')} 0%, {c('gel_mid')} 46%, {c('gel')} 54%, {c('gel_lo')} 100%)"
+    pill = f"linear-gradient(to bottom, {c('gloss')} 0%, {c('gloss')} 45%, {c('gloss_lo')} 55%, {c('gloss_lo')} 100%)"
+    graphite = (f"linear-gradient(to bottom, {c('graphite_hi')} 0%, {c('graphite')} 46%, "
+                f"{c('graphite_mid')} 54%, {c('graphite_lo')} 100%)")
+    bevel = f"inset 1px 1px {c('hi')}, inset -1px -1px {c('lo')}"
     gtk3 = v == 3
+    defs = "".join(f"@define-color fui_{k} {css(val)};\n" for k, val in p.items())
     pop = "popover, menu, .menu, .context-menu" if gtk3 else "popover > contents, popover.menu > contents"
-    defs = "".join(f"@define-color fui_{k} {val};\n" for k, val in C.items())
+    focus = "entry:focus, spinbutton:focus" if gtk3 else "entry:focus-within, spinbutton:focus-within"
+    title = "headerbar .title, headerbar label.title" if gtk3 else "headerbar .title, windowtitle .title"
     return f"""{banner('/*')}
-/* ┌─ FUI // GTK{v} ── applies to every GTK{v}{'' if gtk3 else ' and libadwaita'} app on top of {D['gtk_base']} ─┐ */
+/* fui // GTK{v} · {m} theme · Y2K plastic over {D[m]['gtk_base']}{'' if gtk3 else ' and libadwaita'} */
 
-/* ── tokens ── */
 {defs}
-/* ── named colours read by {'adw-gtk3' if gtk3 else 'libadwaita'} ── */
-@define-color accent_color {col('ice')};
-@define-color accent_bg_color {col('ice_dim')};
-@define-color accent_fg_color {col('white')};
-@define-color window_bg_color {col('term_bg')};
-@define-color window_fg_color {col('fg')};
-@define-color view_bg_color {col('surface')};
-@define-color view_fg_color {col('fg')};
-@define-color headerbar_bg_color {col('void')};
-@define-color headerbar_fg_color {col('fg')};
-@define-color headerbar_border_color {col('line')};
-@define-color headerbar_backdrop_color {col('void')};
+/* ── the base theme's named colours ── */
+@define-color accent_color {c('accent') if m == 'dark' else c('nav_accent')};
+@define-color accent_bg_color {c('nav_accent')};
+@define-color accent_fg_color {c('white')};
+@define-color window_bg_color {c('bg')};
+@define-color window_fg_color {c('text')};
+@define-color view_bg_color {c('well')};
+@define-color view_fg_color {c('text')};
+@define-color headerbar_bg_color {c('gel_mid')};
+@define-color headerbar_fg_color {c('gel_text')};
+@define-color headerbar_border_color {c('gel_edge')};
+@define-color headerbar_backdrop_color {c('gel')};
 @define-color headerbar_shade_color transparent;
-@define-color sidebar_bg_color {col('void')};
-@define-color sidebar_fg_color {col('fg')};
-@define-color sidebar_backdrop_color {col('void')};
-@define-color card_bg_color {A('surface', O['panel'])};
-@define-color card_fg_color {col('fg')};
-@define-color popover_bg_color {A('surface', O['panel_strong'])};
-@define-color popover_fg_color {col('fg')};
-@define-color dialog_bg_color {col('surface')};
-@define-color dialog_fg_color {col('fg')};
-@define-color thumbnail_bg_color {col('surface')};
-@define-color destructive_color {col('crimson')};
-@define-color destructive_bg_color {col('crimson')};
-@define-color success_color {col('ok')};
-@define-color success_bg_color {col('ok')};
-@define-color warning_color {col('amber')};
-@define-color warning_bg_color {col('amber_dim')};
-@define-color error_color {col('crimson')};
-@define-color error_bg_color {col('crimson')};
-@define-color borders {col('line')};
+@define-color sidebar_bg_color {c('card')};
+@define-color sidebar_fg_color {c('text')};
+@define-color sidebar_backdrop_color {c('card')};
+@define-color card_bg_color {c('card')};
+@define-color card_fg_color {c('text')};
+@define-color popover_bg_color {c('card')};
+@define-color popover_fg_color {c('text')};
+@define-color dialog_bg_color {c('card')};
+@define-color dialog_fg_color {c('text')};
+@define-color thumbnail_bg_color {c('card')};
+@define-color destructive_color {c('bad')};
+@define-color destructive_bg_color {c('bad')};
+@define-color destructive_fg_color {c('white')};
+@define-color success_color {c('ok')};
+@define-color success_bg_color {c('ok')};
+@define-color warning_color {c('kind_amber')};
+@define-color warning_bg_color {c('kind_amber')};
+@define-color error_color {c('bad')};
+@define-color error_bg_color {c('bad')};
+@define-color borders {c('edge')};
 
-/* ── type: technical mono, tabular figures ── */
-* {{
-  font-family: "{F['mono']}", monospace;
-  font-feature-settings: "tnum";
-  border-radius: {G['radius']}px;{'''
-  -gtk-outline-radius: 0;''' if gtk3 else ''}
-}}
+/* ── window: plastic, no drop shadows (depth comes from bevels and insets) ── */
+window, window.background {{ background-color: {c('bg')}; color: {c('text')}; }}
+{'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {G['radius']}px; box-shadow: 0 0 0 1px {c('edge')}; }}
 
-window, window.background {{ background-color: {col('term_bg')}; color: {col('fg')}; }}
-{'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: 0; box-shadow: 0 0 0 1px {A('ice', O['hairline'])}, 0 0 {GL['range']}px {A('ice', GL['alpha'] / 2)}; }}
-
-/* ── headerbar: void, notched lit tab stepping into a hairline ── */
+/* ── title bars: the aero gel bar, white pixel-font title ── */
 headerbar, .titlebar {{
-  background-color: {col('void')};
-  background-image: url("assets/notch.svg"), linear-gradient({col('line')}, {col('line')});
-  background-size: 64px {G['notch']}px, 100% 1px;
-  background-position: left bottom, left bottom;
-  background-repeat: no-repeat;
+  min-height: {G['bar_height']}px;
+  background-color: {c('gel_mid')};
+  background-image: {gel};
   border: none;
-  box-shadow: none;
-  min-height: 34px;
+  border-bottom: 1px solid {c('gel_edge')};
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.6), inset 0 -1px rgba(255, 255, 255, 0.18);
+  color: {c('gel_text')};
 }}
-headerbar .title, {'headerbar label.title' if gtk3 else 'windowtitle .title'} {{ letter-spacing: {F['label_tracking']}px; font-weight: bold; color: {col('fg')}; }}
-headerbar .subtitle, .dim-label, .caption, .subtitle {{ letter-spacing: {F['tracking']}px; color: {col('fg_dim')}; }}
+headerbar:backdrop, .titlebar:backdrop {{ background-image: none; background-color: {c('gel')}; }}
+{title} {{ font-family: "{F['pixel']}", monospace; font-size: 18px; font-weight: normal; color: {c('gel_text')};
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45); }}
+headerbar .subtitle {{ color: {c('gel_code')}; }}
+headerbar button, headerbar button.flat {{ background-color: transparent; background-image: none; border-color: transparent;
+  box-shadow: none; color: {c('gel_text')}; }}
+headerbar button:hover {{ background-color: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.32); }}
+headerbar button:active, headerbar button:checked {{ background-color: rgba(0, 0, 0, 0.18); }}
+headerbar entry {{ background-color: rgba(255, 255, 255, 0.92); color: #251D18; }}
 
-/* ── buttons: [ ] brackets, chamfered haze fill ── */
+/* ── buttons: gel pills ── */
 button {{
-  background-color: transparent;
-  background-image: {chamfer_fill(A('surface_hi', O['panel']), c)};
-  border-style: solid;
-  border-width: 6px;
-  border-color: transparent;
-  border-image: url("assets/bracket.svg") 6 / 6px stretch;
-  box-shadow: none;
+  background-color: {c('card')};
+  background-image: {pill};
+  border: 1px solid {c('edge')};
+  border-radius: {G['pill_radius']}px;
+  box-shadow: inset 0 1px {c('hi')};
+  color: {c('text')};
   text-shadow: none;
-  color: {col('fg')};
-  letter-spacing: {F['tracking']}px;
-  padding: 0 6px;
+  padding: 2px 12px;
 }}
-button:hover {{ border-image: url("assets/bracket-hover.svg") 6 / 6px stretch; background-image: {chamfer_fill(A('ice', .10), c)}; color: {col('ice_hi')}; }}
-button:active, button:checked {{ background-image: {chamfer_fill(A('ice_dim', .70), c)}; color: {col('white')}; }}
-button:disabled {{ border-image: none; border-color: transparent; color: {A('fg_dim', .5)}; background-image: none; }}
-button.flat, button.image-button.flat, headerbar button:not(.suggested-action):not(.destructive-action) {{ background-image: none; border-image: none; }}
-button.flat:hover, headerbar button:not(.suggested-action):not(.destructive-action):hover {{ border-image: url("assets/bracket-hover.svg") 6 / 6px stretch; background-image: {chamfer_fill(A('ice', .08), c)}; }}
-button.suggested-action {{ border-image: url("assets/bracket-accent.svg") 6 / 6px stretch; background-image: {chamfer_fill(A('ice_dim', .85), c)}; color: {col('white')}; }}
-button.destructive-action {{ border-image: url("assets/bracket-alert.svg") 6 / 6px stretch; background-image: {chamfer_fill(A('crimson', .35), c)}; color: {col('white')}; }}
+button:hover {{ background-color: {mix(p['card'], p['white'], 0.08) if m != 'dark' else mix(p['card'], p['white'], 0.06)}; }}
+button:active, button:checked {{ box-shadow: inset 0 1px 3px {c('lo')}; background-image: none; }}
+button:disabled {{ opacity: 0.55; }}
+button.flat {{ background-color: transparent; background-image: none; border-color: transparent; box-shadow: none; }}
+button.flat:hover {{ background-color: {c('glass_well')}; border-color: {c('edge')}; }}
+button.suggested-action {{
+  background-color: {c('nav_accent')};
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 45%, transparent 55%);
+  border-color: {mix(p['nav_accent'], '#000000', 0.3)}; color: {c('white')};
+}}
+button.destructive-action {{
+  background-color: {c('bad')};
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 45%, transparent 55%);
+  border-color: {mix(p['bad'], '#000000', 0.3)}; color: {c('white')};
+}}
+button.circular, button.image-button {{ padding: 2px 6px; }}
+.linked > button {{ border-radius: 0; }}
+.linked > button:first-child {{ border-top-left-radius: {G['pill_radius']}px; border-bottom-left-radius: {G['pill_radius']}px; }}
+.linked > button:last-child {{ border-top-right-radius: {G['pill_radius']}px; border-bottom-right-radius: {G['pill_radius']}px; }}
 
-/* ── text entries: chamfered hairline frame ── */
+/* ── fields: inset wells ── */
 entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{
-  background-color: transparent;
-  background-image: {chamfer_fill(A('void', .75), c)};
-  border-style: solid;
-  border-width: 6px;
-  border-color: transparent;
-  border-image: url("assets/chamfer.svg") 8 / 6px stretch;
-  box-shadow: none;
-  color: {col('fg')};
-  caret-color: {col('amber')};
+  background-color: {c('well')};
+  background-image: none;
+  border: 1px solid {c('edge')};
+  border-radius: {G['pill_radius']}px;
+  box-shadow: inset 0 1px 3px {c('lo')};
+  color: {c('text')};
+  caret-color: {c('nav_accent')};
 }}
-{'entry:focus, spinbutton:focus' if gtk3 else 'entry:focus-within, spinbutton:focus-within'} {{ border-image: url("assets/chamfer-focus.svg") 8 / 6px stretch; box-shadow: none; outline: none; }}
-entry.error, entry.warning {{ border-image: url("assets/chamfer-alert.svg") 8 / 6px stretch; }}
-{'' if gtk3 else f"selection {{ background-color: {A('ice', .35)}; color: {col('white')}; }}"}
+{focus} {{ border-color: {c('nav_accent')}; box-shadow: inset 0 1px 3px {c('lo')}; outline: none; }}
+textview text, textview {{ background-color: {c('well')}; color: {c('text')}; }}
 
-/* ── check = diamond, radio = hollow square ── */
-check, radio, checkbutton check, radiobutton radio {{
-  min-width: 14px; min-height: 14px;
-  background: none; border: none; box-shadow: none;
-  -gtk-icon-source: url("assets/check.svg");
+/* ── views, lists, frames: the inset well ── */
+.view, iconview, list, listview, treeview.view {{ background-color: {c('well')}; color: {c('text')}; }}
+frame > border, .frame, list.boxed-list, .boxed-list, .card {{
+  background-color: {c('well')};
+  border: 1px solid {c('edge')};
+  border-radius: {G['well_radius']}px;
+  box-shadow: inset 0 2px 3px {c('lo')};
 }}
-check:checked {{ -gtk-icon-source: url("assets/check-on.svg"); background: none; }}
-check:indeterminate {{ -gtk-icon-source: url("assets/check-mixed.svg"); background: none; }}
-radio {{ -gtk-icon-source: url("assets/radio.svg"); }}
-radio:checked {{ -gtk-icon-source: url("assets/radio-on.svg"); background: none; }}
-
-/* ── switch: square track, slotted when on ── */
-switch {{ border: 1px solid {A('ice', .35)}; background-color: {col('void')}; background-image: none; box-shadow: none; }}
-switch:checked {{ background-image: {segmented(A('ice_dim', .9))}; border-color: {col('ice')}; }}
-switch slider {{ background-color: {col('fg_dim')}; background-image: none; border: none; box-shadow: none; min-width: 16px; min-height: 16px; }}
-switch:checked slider {{ background-color: {col('ice_hi')}; }}
-
-/* ── scale: ticked trough, segmented fill, notched thumb ── */
-scale trough {{ min-height: 2px; min-width: 2px; border: none; background-color: {col('line')}; background-image: none; }}
-scale highlight {{ border: none; background-color: transparent; background-image: {segmented(col('ice'))}; }}
-scale.vertical highlight {{ background-image: {segmented(col('ice'), 0)}; }}
-scale slider {{
-  min-width: 14px; min-height: 14px; margin: -6px;
-  background-color: transparent; background-image: url("assets/thumb.svg");
-  background-size: 14px 14px; background-repeat: no-repeat; background-position: center;
-  border: none; box-shadow: none;
+row:selected, list row:selected, treeview.view:selected, *:selected, selection {{
+  background-color: {c('nav_accent')}; color: {c('white')};
 }}
+.navigation-sidebar row:selected, .sidebar row:selected {{ background-color: {c('nav_accent')}; color: {c('white')}; }}
 
-/* ── progress / level bars: skewed, slotted segments ── */
-progressbar trough, levelbar trough {{ border: 1px solid {col('line')}; background-color: {col('void')}; background-image: none; min-height: 6px; }}
-progressbar progress, levelbar block.filled, levelbar block.low, levelbar block.high, levelbar block.full {{
-  border: none; background-color: transparent;
-  background-image: {segmented(col('ice'), 115)};
-  min-height: 4px;
-}}
-levelbar block.empty {{ background-color: transparent; background-image: {segmented(A('line_hi', .6), 115)}; border: none; }}
-levelbar block.low {{ background-image: {segmented(col('amber'), 115)}; }}
-
-/* ── scrollbars: thin, stepped slider over a ticked rail ── */
-scrollbar {{ background-color: transparent; background-image: none; border: none; }}
-scrollbar trough {{ background-color: transparent; border: none;
-  background-image: repeating-linear-gradient(0deg, {A('line', .9)} 0px, {A('line', .9)} 1px, transparent 1px, transparent {tk * 2}px); }}
-scrollbar.horizontal trough {{ background-image: repeating-linear-gradient(90deg, {A('line', .9)} 0px, {A('line', .9)} 1px, transparent 1px, transparent {tk * 2}px); }}
-scrollbar slider {{
-  min-width: 4px; min-height: 4px; border: none; border-radius: 0;
-  background-color: {A('ice', .35)};
-  background-image: repeating-linear-gradient(0deg, transparent 0px, transparent {tk - 1}px, {A('void', .9)} {tk - 1}px, {A('void', .9)} {tk}px);
-}}
-scrollbar.horizontal slider {{ background-image: repeating-linear-gradient(90deg, transparent 0px, transparent {tk - 1}px, {A('void', .9)} {tk - 1}px, {A('void', .9)} {tk}px); }}
-scrollbar slider:hover {{ background-color: {A('ice', .6)}; }}
-scrollbar slider:active {{ background-color: {col('ice')}; }}
-
-/* ── tabs: parallelograms, the active one lit with an amber tick ── */
-notebook > header tab, tabbar tab {{
-  border-style: solid; border-width: 8px 8px 0 8px; border-color: transparent;
-  border-image: url("assets/tab.svg") 8 8 0 8 / 8px 8px 0 8px stretch;
-  background: none; box-shadow: none; color: {col('fg_dim')}; letter-spacing: {F['tracking']}px;
-}}
-notebook > header tab:checked, tabbar tab:selected {{ border-image: url("assets/tab-active.svg") 8 8 0 8 / 8px 8px 0 8px stretch; color: {col('ice_hi')}; }}
-notebook > header {{ background-color: {col('void')}; border: none; box-shadow: inset 0 -1px {col('line')}; }}
-
-/* ── popovers, menus, frames, cards: chamfered with a lit corner ── */
-{pop}, frame > border, .frame, .card, list.boxed-list {{
-  background-color: transparent;
-  background-image: {chamfer_fill(A('surface', O['panel_strong']), cl)};
-  border-style: solid; border-width: 10px; border-color: transparent;
-  border-image: url("assets/chamfer-lg.svg") 12 / 10px stretch;
-  box-shadow: none;
+/* ── popovers and menus: a small window frame ── */
+{pop} {{
+  background-color: {c('card')};
+  background-image: none;
+  border: 1px solid {c('edge')};
+  border-radius: {G['radius']}px;
+  box-shadow: {bevel};
 }}
 {'popover' if gtk3 else 'popover > arrow'} {{ {'' if gtk3 else 'background: none; border: none; box-shadow: none;'} }}
 menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu row:hover {{
-  background-color: {A('ice', .12)}; color: {col('ice_hi')}; box-shadow: inset 2px 0 {col('ice')};
+  background-color: {c('nav_accent')}; color: {c('white')}; border-radius: {G['well_radius']}px;
 }}
 
-/* ── lists and selection: bracketed left edge ── */
-row:selected, list row:selected, treeview:selected, *:selected {{
-  background-color: {A('ice', .12)}; color: {col('ice_hi')};
+/* ── tooltips: the graphite slab ── */
+tooltip, tooltip.background {{
+  background-color: {c('graphite')};
+  background-image: {graphite};
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: {G['well_radius']}px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
 }}
-row:selected {{ box-shadow: inset 2px 0 {col('ice')}; }}
-list, listview, treeview.view, textview text, iconview {{ background-color: transparent; }}
+tooltip * {{ color: {c('plate_ink')}; }}
 
-/* ── separators: dotted hairlines ── */
-separator {{ min-height: 1px; min-width: 1px; background-color: transparent;
-  background-image: repeating-linear-gradient(90deg, {col('line_hi')} 0px, {col('line_hi')} 2px, transparent 2px, transparent 4px); }}
+/* ── progress and level bars: LCD glass ── */
+progressbar trough, levelbar trough {{
+  min-height: 8px; background-color: {c('lcd_bg')}; background-image: none;
+  border: 1px solid {c('edge')}; border-radius: 3px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}}
+progressbar progress, levelbar block.filled, levelbar block.low, levelbar block.high, levelbar block.full {{
+  min-height: 6px; background-color: {c('lcd_ink')}; background-image: none; border: none; border-radius: 2px;
+}}
+levelbar block.empty {{ background-color: {c('lcd_ghost')}; border: none; }}
 
-/* ── tooltips ── */
-tooltip, tooltip.background {{ background-color: {A('void', .92)}; border: 1px solid {A('ice', .5)}; border-radius: 0; box-shadow: none; }}
-tooltip * {{ color: {col('fg')}; }}
+/* ── scales, switches ── */
+scale trough {{ min-height: 6px; min-width: 6px; background-color: {c('well')}; border: 1px solid {c('edge')};
+  border-radius: {G['pill_radius']}px; box-shadow: inset 0 1px 2px {c('lo')}; }}
+scale highlight {{ background-color: {c('nav_accent')}; background-image: {pill}; border: none; border-radius: {G['pill_radius']}px; }}
+scale slider {{ min-width: 16px; min-height: 16px; background-color: {c('white')}; background-image: {pill};
+  border: 1px solid {c('edge')}; border-radius: {G['pill_radius']}px; box-shadow: inset 0 1px {c('hi')}; }}
+switch {{ background-color: {c('well')}; background-image: none; border: 1px solid {c('edge')};
+  border-radius: {G['pill_radius']}px; box-shadow: inset 0 1px 3px {c('lo')}; }}
+switch:checked {{ background-color: {c('nav_accent')}; background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.22) 45%, transparent 55%); }}
+switch slider {{ background-color: {c('white')}; background-image: {pill}; border: 1px solid {c('edge')};
+  border-radius: {G['pill_radius']}px; box-shadow: inset 0 1px {c('hi')}; }}
 
-/* ── links ── */
-{'*:link, link' if gtk3 else 'link, label > link'} {{ color: {col('steel_hi')}; }}
+/* ── scrollbars: chunky bevelled pills ── */
+scrollbar {{ background-color: transparent; border: none; }}
+scrollbar trough {{ background-color: {c('well')}; border: none; box-shadow: inset 1px 0 {c('edge')}; }}
+scrollbar slider {{ min-width: 8px; min-height: 8px; margin: 3px; background-color: {c('card')}; background-image: {pill};
+  border: 1px solid {c('edge')}; border-radius: {G['pill_radius']}px; }}
+scrollbar slider:hover {{ background-color: {mix(p['card'], p['text'], 0.08)}; }}
+
+/* ── tabs: the "tab" skin: a tinted plate, the current one underlined in the skin colour ── */
+notebook > header {{ background-color: {c('card')}; border: none; box-shadow: inset 0 -1px {c('edge')}; }}
+notebook > header tab, tabbar tab {{
+  background-color: {mix(p['card'], p['skin_teal'], 0.10)};
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, {0.5 if m != 'dark' else 0.10}), rgba(255, 255, 255, {0.12 if m != 'dark' else 0.02}));
+  border: 1px solid {c('edge')}; border-bottom: none;
+  border-radius: 4px 12px 0 0;
+  color: {c('muted')}; padding: 2px 14px;
+}}
+notebook > header tab:checked, tabbar tab:selected {{ background-color: {mix(p['card'], p['skin_teal'], 0.22)};
+  color: {c('text')}; box-shadow: inset 0 -2px {c('skin_teal')}; }}
+
+/* ── separators and links ── */
+separator {{ min-height: 1px; min-width: 1px; background-color: {c('edge')}; }}
+{'*:link, link' if gtk3 else 'link, label > link'} {{ color: {c('link')}; }}
 """
 
 
-def gtk(sfx=""):
+def gtk():
+    for m in MODES:
+        for v in (3, 4):
+            write(f"gtk/.config/gtk-{v}.0/fui-{m}.css", gtk_css(v, m))
     for v in (3, 4):
-        css = gtk_css(v).replace('url("assets/', f'url("assets{sfx}/')
-        write(f"gtk/.config/gtk-{v}.0/fui{sfx}.css", css)
-        if sfx:
-            continue
-        # gtk.css only imports the active mode; fui mode points fui-mode.css at fui.css or fui-light.css
         write(f"gtk/.config/gtk-{v}.0/gtk.css",
-              f"{banner('/*')}/* FUI // GTK{v}: follows the desktop mode. fui-mode.css links to fui.css (dark)"
-              f" or fui-light.css. */\n@import url(\"fui-mode.css\");\n")
-        # The dark/light base theme comes from gsettings (set by fui mode); this is the fallback
-        # for apps that only read settings.ini. No prefer-dark here, or light mode would stay dark.
+              f"{banner('/*')}/* fui // GTK{v}: follows the desktop theme. fui-mode.css links to fui-dark.css, fui-mid.css or"
+              f" fui-light.css. */\n@import url(\"fui-mode.css\");\n")
+        d = D[MODES[0]]
         write(f"gtk/.config/gtk-{v}.0/settings.ini",
               f"{banner()}[Settings]\n"
-              + (f"gtk-theme-name={D['gtk_base']}\n" if v == 3 else "")
-              + f"gtk-icon-theme-name={D['icon_theme']}\n"
-                f"gtk-font-name={F['mono']} {F['size']}\n"
+              + (f"gtk-theme-name={d['gtk_base']}\n" if v == 3 else "")
+              + f"gtk-icon-theme-name={d['icon_theme']}\n"
+                f"gtk-font-name={F['sans']} {F['size']}\n"
                 f"gtk-cursor-theme-name={D['cursor_theme']}\n"
                 f"gtk-cursor-theme-size={D['cursor_size']}\n"
                 f"gtk-sound-theme-name={D['sound_theme']}\n"
@@ -455,431 +415,393 @@ def gtk(sfx=""):
                 f"gtk-enable-input-feedback-sounds=0\n")
 
 
-# ── 2c. Qt (qt6ct) ──────────────────────────────────────────────────────
-def qt(sfx=""):
-    def argb(k, a=1.0):
-        return f"#{round(a * 255):02x}{bare(C[k]).lower()}"
-    # QPalette roles, in qt6ct order
-    roles = ["fg", "surface_hi", "line_hi", "line", "void", "black_hi", "fg", "white", "fg", "surface",
-             "term_bg", "void", "ice_dim", "white", "steel_hi", "fault", "raised", "term_bg", "void", "fg", "fg_dim", "ice"]
-    active = ", ".join(argb(r) for r in roles)
-    disabled = ", ".join(argb(r, .45 if r in ("fg", "white") else 1) for r in roles)
-    write(f"qt/.config/qt6ct/colors/fui{sfx}.conf",
-          f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
-
-    font = f"{F['mono']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
-    # qt6ct.conf points at the dark files; fui mode rewrites both paths when switching
-    if not sfx:
-        write("theme/templates/qt6ct.conf.in",
-              f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui.conf\ncustom_palette=true\n"
-              f"icon_theme={D['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
-              f"[Fonts]\nfixed=\"{font}\"\ngeneral=\"{font}\"\n\n"
-              f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui.qss\n")
-
-    q = lambda k, a=1.0: f"rgba({', '.join(map(str, rgb(C[k])))}, {round(a * 100)}%)"
-    u = lambda n: f"url(@HOME@/.config/qt6ct/assets{sfx}/{n}.svg)"
-    s, gp = G["segment"], G["segment_gap"]
-    write(f"theme/templates/fui{sfx}.qss.in", f"""{banner('/*')}
-/* FUI // Qt: applied to every Qt6 app through qt6ct */
-* {{ font-family: "{F['mono']}"; }}
-QWidget {{ background-color: {C['term_bg']}; color: {C['fg']}; selection-background-color: {q('ice', .35)}; selection-color: {C['white']}; }}
-QMainWindow, QDialog {{ background-color: {C['term_bg']}; }}
-
-QPushButton, QToolButton {{ border-image: {u('bracket')} 6 6 6 6 stretch; border-width: 6px; padding: 0 6px; background: {q('surface_hi', O['panel'])}; color: {C['fg']}; min-height: 18px; }}
-QPushButton:hover, QToolButton:hover {{ border-image: {u('bracket-hover')} 6 6 6 6 stretch; background: {q('ice', .10)}; color: {C['ice_hi']}; }}
-QPushButton:pressed, QPushButton:checked, QToolButton:checked {{ background: {q('ice_dim', .7)}; color: {C['white']}; }}
-QPushButton:default {{ border-image: {u('bracket-accent')} 6 6 6 6 stretch; background: {q('ice_dim', .85)}; }}
-QPushButton:disabled {{ color: {q('fg_dim', .5)}; border-image: none; border: 6px solid transparent; }}
-QToolButton[autoRaise="true"] {{ border-image: none; border: 6px solid transparent; background: transparent; }}
-
+# ── 3. Qt (qt6ct) ───────────────────────────────────────────────────────
+def qt():
+    font = f"{F['sans']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+    fixed = f"{F['mono']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+    write("theme/templates/qt6ct.conf.in",
+          f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui-{MODES[0]}.conf\ncustom_palette=true\n"
+          f"icon_theme={D[MODES[0]]['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
+          f"[Fonts]\nfixed=\"{fixed}\"\ngeneral=\"{font}\"\n\n"
+          f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui-{MODES[0]}.qss\n")
+    for m in MODES:
+        p = P(m)
+        # QPalette roles in qt6ct order: WindowText Button Light Midlight Dark Mid Text BrightText ButtonText
+        # Base Window Shadow Highlight HighlightedText Link LinkVisited AlternateBase NoRole ToolTipBase
+        # ToolTipText PlaceholderText Accent
+        roles = [p["text"], p["card"], p["white"], mix(p["card"], p["white"], 0.5), mix(p["card"], "#000000", 0.4),
+                 mix(p["card"], "#000000", 0.2), p["text"], p["white"], p["text"], p["well"], p["bg"], "#000000",
+                 p["nav_accent"], p["white"], p["link"], p["kind_violet"], mix(p["well"], p["card"], 0.5), p["bg"],
+                 p["graphite"], p["plate_ink"], p["muted"], p["nav_accent"]]
+        active = ", ".join(qargb(r) for r in roles)
+        disabled = ", ".join(qargb(alpha(r, 0.45)) if i in (0, 6, 8) else qargb(r) for i, r in enumerate(roles))
+        write(f"qt/.config/qt6ct/colors/fui-{m}.conf",
+              f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
+        q = lambda k: css(p[k])
+        gel = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {q('gel_hi')}, stop:0.46 {q('gel_mid')}, "
+               f"stop:0.54 {q('gel')}, stop:1 {q('gel_lo')})")
+        pill = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {css(over(p['gloss'], p['card']))}, stop:0.45 {css(over(p['gloss'], p['card']))}, "
+                f"stop:0.55 {css(over(p['gloss_lo'], p['card']))}, stop:1 {css(over(p['gloss_lo'], p['card']))})")
+        graphite = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {q('graphite_hi')}, stop:0.46 {q('graphite')}, "
+                    f"stop:0.54 {q('graphite_mid')}, stop:1 {q('graphite_lo')})")
+        r, wr = G["radius"], G["well_radius"]
+        write(f"theme/templates/fui-{m}.qss.in", f"""{banner('/*')}
+/* fui // Qt · {m} theme: applied to every Qt6 app through qt6ct */
+QWidget {{ background-color: {q('bg')}; color: {q('text')}; selection-background-color: {q('nav_accent')}; selection-color: #ffffff; }}
+QMainWindow, QDialog {{ background-color: {q('bg')}; }}
+QMenuBar {{ background: {gel}; color: {q('gel_text')}; border-bottom: 1px solid {q('gel_edge')}; }}
+QMenuBar::item {{ background: transparent; padding: 4px 10px; }}
+QMenuBar::item:selected {{ background: rgba(255, 255, 255, 0.18); border-radius: 4px; }}
+QMenu {{ background-color: {q('card')}; border: 1px solid {q('edge')}; border-radius: {r}px; padding: 4px; }}
+QMenu::item {{ padding: 4px 18px 4px 12px; border-radius: {wr}px; }}
+QMenu::item:selected {{ background-color: {q('nav_accent')}; color: #ffffff; }}
+QMenu::separator {{ height: 1px; background: {q('edge')}; margin: 4px 6px; }}
+QPushButton, QToolButton {{ background: {pill}; border: 1px solid {q('edge')}; border-radius: 12px; padding: 3px 14px; color: {q('text')}; min-height: 18px; }}
+QPushButton:hover, QToolButton:hover {{ border-color: {q('nav_accent')}; }}
+QPushButton:pressed, QPushButton:checked, QToolButton:checked {{ background: {q('well')}; }}
+QPushButton:default {{ background: {q('nav_accent')}; color: #ffffff; border-color: {css(mix(p['nav_accent'], '#000000', 0.3))}; }}
+QPushButton:disabled {{ color: {css(alpha(p['text'], 0.45))}; }}
+QToolButton[autoRaise="true"] {{ background: transparent; border-color: transparent; }}
+QToolButton[autoRaise="true"]:hover {{ background: {q('well')}; border-color: {q('edge')}; }}
 QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{
-  border-image: {u('chamfer')} 8 8 8 8 stretch; border-width: 6px; background: {q('void', .75)}; color: {C['fg']}; padding: 0 2px; }}
-QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus {{ border-image: {u('chamfer-focus')} 8 8 8 8 stretch; }}
-QComboBox::drop-down {{ border: none; width: 14px; }}
-QComboBox QAbstractItemView {{ background: {C['surface']}; border: 1px solid {q('ice', .5)}; selection-background-color: {q('ice', .15)}; }}
-
-QCheckBox::indicator, QGroupBox::indicator {{ width: 14px; height: 14px; image: {u('check')}; }}
-QCheckBox::indicator:checked {{ image: {u('check-on')}; }}
-QCheckBox::indicator:indeterminate {{ image: {u('check-mixed')}; }}
-QRadioButton::indicator {{ width: 14px; height: 14px; image: {u('radio')}; }}
-QRadioButton::indicator:checked {{ image: {u('radio-on')}; }}
-
-QSlider::groove:horizontal {{ height: 2px; background: {C['line']}; }}
-QSlider::groove:vertical {{ width: 2px; background: {C['line']}; }}
-QSlider::sub-page:horizontal {{ background: {C['ice']}; }}
-QSlider::handle {{ image: {u('thumb')}; width: 14px; height: 14px; margin: -6px; }}
-
-QProgressBar {{ border: 1px solid {C['line']}; background: {C['void']}; text-align: center; color: {C['fg']}; min-height: 8px; }}
-QProgressBar::chunk {{ background-color: {C['ice']}; width: {s}px; margin: 1px {gp / 2:g}px; }}
-
-QScrollBar:vertical {{ width: 6px; background: transparent; margin: 0; }}
-QScrollBar:horizontal {{ height: 6px; background: transparent; margin: 0; }}
-QScrollBar::handle {{ background: {q('ice', .35)}; min-height: 24px; min-width: 24px; }}
-QScrollBar::handle:hover {{ background: {q('ice', .6)}; }}
+  background-color: {q('well')}; border: 1px solid {q('edge')}; border-radius: 11px; padding: 2px 8px; color: {q('text')}; }}
+QTextEdit, QPlainTextEdit {{ border-radius: {wr}px; }}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus {{ border-color: {q('nav_accent')}; }}
+QComboBox::drop-down {{ border: none; width: 18px; }}
+QComboBox QAbstractItemView {{ background: {q('card')}; border: 1px solid {q('edge')}; selection-background-color: {q('nav_accent')}; selection-color: #ffffff; }}
+QProgressBar {{ background: {q('lcd_bg')}; border: 1px solid {q('edge')}; border-radius: 3px; text-align: center; color: {q('lcd_ink')}; min-height: 10px; }}
+QProgressBar::chunk {{ background: {q('lcd_ink')}; border-radius: 2px; margin: 1px; }}
+QSlider::groove:horizontal {{ height: 6px; background: {q('well')}; border: 1px solid {q('edge')}; border-radius: 3px; }}
+QSlider::sub-page:horizontal {{ background: {q('nav_accent')}; border-radius: 3px; }}
+QSlider::handle:horizontal {{ background: {pill}; border: 1px solid {q('edge')}; width: 16px; margin: -6px 0; border-radius: 8px; }}
+QScrollBar:vertical {{ width: 14px; background: {q('well')}; margin: 0; }}
+QScrollBar:horizontal {{ height: 14px; background: {q('well')}; margin: 0; }}
+QScrollBar::handle {{ background: {pill}; border: 1px solid {q('edge')}; border-radius: 5px; margin: 2px; min-height: 24px; min-width: 24px; }}
 QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page {{ height: 0; width: 0; background: none; border: none; }}
-
-QTabWidget::pane {{ border: 1px solid {C['line']}; top: -1px; }}
-QTabBar::tab {{ border-image: {u('tab')} 8 8 0 8 stretch; border-width: 8px 8px 0 8px; padding: 2px 10px; color: {C['fg_dim']}; background: transparent; }}
-QTabBar::tab:selected {{ border-image: {u('tab-active')} 8 8 0 8 stretch; color: {C['ice_hi']}; }}
-
-QMenuBar {{ background: {C['void']}; border-bottom: 1px solid {C['line']}; }}
-QMenuBar::item:selected {{ background: {q('ice', .12)}; color: {C['ice_hi']}; }}
-QMenu {{ border-image: {u('chamfer-lg')} 12 12 12 12 stretch; border-width: 10px; background: {q('surface', O['panel_strong'])}; }}
-QMenu::item {{ padding: 4px 18px 4px 10px; }}
-QMenu::item:selected {{ background: {q('ice', .12)}; color: {C['ice_hi']}; border-left: 2px solid {C['ice']}; }}
-QMenu::separator {{ height: 1px; background: {C['line_hi']}; margin: 4px 6px; }}
-
-QGroupBox {{ border-image: {u('chamfer')} 8 8 8 8 stretch; border-width: 6px; margin-top: 14px; padding-top: 6px; }}
-QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; padding: 0 4px; color: {C['ice']}; }}
-QHeaderView::section {{ background: {C['void']}; color: {C['fg_dim']}; border: none; border-bottom: 1px solid {C['line']}; border-right: 1px solid {C['line']}; padding: 4px 6px; }}
-QTableView, QTreeView, QListView {{ background: transparent; alternate-background-color: {q('raised', .5)}; gridline-color: {C['line']}; }}
-QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {q('ice', .12)}; color: {C['ice_hi']}; }}
-QToolTip {{ background: {C['void']}; color: {C['fg']}; border: 1px solid {q('ice', .5)}; padding: 3px 6px; }}
-QStatusBar {{ background: {C['void']}; color: {C['fg_dim']}; border-top: 1px solid {C['line']}; }}
-QSplitter::handle {{ background: {C['line']}; }}
+QTabWidget::pane {{ border: 1px solid {q('edge')}; border-radius: {wr}px; top: -1px; }}
+QTabBar::tab {{ background: {css(mix(p['card'], p['skin_teal'], 0.10))}; border: 1px solid {q('edge')}; border-bottom: none;
+  border-top-left-radius: 4px; border-top-right-radius: 12px; padding: 4px 14px; color: {q('muted')}; }}
+QTabBar::tab:selected {{ background: {css(mix(p['card'], p['skin_teal'], 0.22))}; color: {q('text')}; border-bottom: 2px solid {q('skin_teal')}; }}
+QGroupBox {{ border: 1px solid {q('edge')}; border-radius: {wr}px; margin-top: 14px; padding-top: 6px; }}
+QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 4px; color: {q('nav_accent')}; }}
+QHeaderView::section {{ background: {pill}; color: {q('text')}; border: none; border-right: 1px solid {q('edge')}; border-bottom: 1px solid {q('edge')}; padding: 4px 6px; }}
+QTableView, QTreeView, QListView {{ background: {q('well')}; alternate-background-color: {css(mix(p['well'], p['card'], 0.5))}; gridline-color: {q('edge')}; border: 1px solid {q('edge')}; border-radius: {wr}px; }}
+QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {q('nav_accent')}; color: #ffffff; }}
+QToolTip {{ background: {graphite}; color: {q('plate_ink')}; border: 1px solid #000000; border-radius: {wr}px; padding: 3px 6px; }}
+QStatusBar {{ background: {q('card')}; color: {q('muted')}; border-top: 1px solid {q('edge')}; }}
+QSplitter::handle {{ background: {q('edge')}; }}
+QCheckBox::indicator, QRadioButton::indicator {{ width: 14px; height: 14px; border: 1px solid {q('edge')}; background: {q('well')}; }}
+QCheckBox::indicator {{ border-radius: 3px; }}
+QRadioButton::indicator {{ border-radius: 7px; }}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('nav_accent')}; border-color: {css(mix(p['nav_accent'], '#000000', 0.3))}; }}
 """)
 
 
-# ── 2d. terminal / TUI environment ──────────────────────────────────────
-def env(sfx=""):
-    ls = {
-        "di": tc(C["ice"], True), "ln": tc(C["steel_hi"]), "so": tc(C["fault"]), "pi": tc(C["amber"]),
-        "ex": tc(C["ok"], True), "bd": tc(C["amber"], True), "cd": tc(C["amber"], True),
-        "su": f"{tc(C['white'])};48;2;{';'.join(map(str, rgb(C['crimson'])))}",
-        "sg": f"{tc(C['white'])};48;2;{';'.join(map(str, rgb(C['amber_dim'])))}",
-        "or": tc(C["crimson"]), "mi": tc(C["crimson"]), "tw": tc(C["ice"]), "ow": tc(C["ice"]), "st": tc(C["ice"]),
-    }
-    groups = {
-        C["amber"]: "tar tgz zip zst xz gz bz2 7z rar deb rpm pkg.tar.zst iso",
-        C["fault"]: "png jpg jpeg gif webp svg mp4 mkv webm mov mp3 flac ogg wav",
-        C["steel_hi"]: "md txt pdf rst org tex",
-        C["fg_dim"]: "log bak tmp swp lock",
-        C["ice_hi"]: "toml yaml yml json jsonc conf ini lua",
-    }
-    for col, exts in groups.items():
+# ── 4. fixed: the CRT and everything that lives on it ───────────────────
+def crt():
+    ansi = TERM["normal"] + TERM["bright"]
+    write("kitty/.config/kitty/crt.conf",
+          f"{banner()}# The terminal is a dark CRT screen in every theme (the portfolio's home terminal).\n"
+          f"foreground           {FX['crt_fg']}\nbackground           {FX['crt_bg']}\n"
+          f"selection_foreground {FX['crt_bg']}\nselection_background {TERM['normal'][4]}\n"
+          f"cursor               {FX['crt_bright']}\ncursor_text_color    {FX['crt_bg']}\n"
+          f"url_color            {TERM['normal'][6]}\nmark1_background     {TERM['normal'][3]}\nmark1_foreground     {FX['crt_bg']}\n"
+          + "".join(f"color{i:<3}{c}\n" for i, c in enumerate(ansi)))
+
+    def tc(h, bold=False):
+        r, g, b, _ = parse(h)
+        return f"{'1;' if bold else ''}38;2;{r};{g};{b}"
+    red, green, yellow, blue, magenta, cyan, white = TERM["normal"][1:8]
+    dim, bright = FX["crt_dim"], FX["crt_bright"]
+    ls = {"di": tc(blue, True), "ln": tc(cyan), "so": tc(magenta), "pi": tc(yellow), "ex": tc(green, True),
+          "bd": tc(yellow, True), "cd": tc(yellow, True), "or": tc(red), "mi": tc(red), "tw": tc(blue), "ow": tc(blue),
+          "st": tc(blue)}
+    for col, exts in {yellow: "tar tgz zip zst xz gz bz2 7z rar deb rpm iso", magenta: "png jpg jpeg gif webp svg mp4 mkv webm mov mp3 flac ogg wav",
+                      white: "md txt pdf rst org tex", dim: "log bak tmp swp lock", cyan: "toml yaml yml json jsonc conf ini lua"}.items():
         for e in exts.split():
             ls[f"*.{e}"] = tc(col)
-    lscolors = ":".join(f"{k}={v}" for k, v in ls.items())
-    eza = ":".join([
-        f"da={tc(C['fg_dim'])}", f"uu={tc(C['ice'])}", f"gu={tc(C['steel'])}", f"un={tc(C['amber'])}",
-        f"sn={tc(C['ice_hi'])}", f"sb={tc(C['fg_dim'])}", f"ur={tc(C['ice'])}", f"uw={tc(C['amber'])}",
-        f"ux={tc(C['ok'])}", f"ue={tc(C['ok'])}", f"gr={tc(C['steel'])}", f"gw={tc(C['steel'])}",
-        f"gx={tc(C['steel'])}", f"tr={tc(C['fg_dim'])}", f"tw={tc(C['fg_dim'])}", f"tx={tc(C['fg_dim'])}",
-        f"ga={tc(C['ok'])}", f"gm={tc(C['amber'])}", f"gd={tc(C['crimson'])}", f"xx={tc(C['line_hi'])}",
-        f"hd={tc(C['fg_dim'])};4",
-    ])
-    esc = lambda code: f"$'\\e[{code}m'"
-    fzf = (f"--color=bg+:{C['raised']},fg:{C['fg']},fg+:{C['ice_hi']},hl:{C['amber']},hl+:{C['amber']},"
-           f"border:{C['line_hi']},prompt:{C['ice']},pointer:{C['ice']},marker:{C['amber']},info:{C['fg_dim']},"
-           f"header:{C['steel']},spinner:{C['ice']},gutter:-1 --border=sharp --prompt='› ' --pointer='▸' --marker='◆'")
-    jq = ":".join(["0;90", f"0;{tc(C['amber'])}", f"0;{tc(C['amber'])}", f"0;{tc(C['steel_hi'])}",
-                   f"0;{tc(C['ok'])}", f"1;{tc(C['silver'])}", f"1;{tc(C['silver'])}", f"1;{tc(C['ice'])}"])
-    shell_vars = {
-        "LS_COLORS": lscolors,
-        "EZA_COLORS": eza,
-        "GREP_COLORS": f"ms={tc(C['amber'], True)}:mc={tc(C['amber'])}:sl=:cx=:fn={tc(C['ice'])}:ln={tc(C['fg_dim'])}:bn={tc(C['fg_dim'])}:se={tc(C['line_hi'])}",
-        "GCC_COLORS": f"error={tc(C['crimson'], True)}:warning={tc(C['amber'], True)}:note={tc(C['steel'], True)}:caret={tc(C['ice'], True)}:locus={tc(C['fg_dim'])}:quote={tc(C['ice_hi'])}",
-        "JQ_COLORS": jq,
-        "FZF_DEFAULT_OPTS": fzf,
+    env_vars = {
+        "LS_COLORS": ":".join(f"{k}={v}" for k, v in ls.items()),
+        "EZA_COLORS": ":".join([f"da={tc(dim)}", f"uu={tc(green)}", f"gu={tc(blue)}", f"un={tc(yellow)}", f"sn={tc(cyan)}",
+                                f"sb={tc(dim)}", f"ur={tc(green)}", f"uw={tc(yellow)}", f"ux={tc(red)}", f"ue={tc(red)}",
+                                f"ga={tc(green)}", f"gm={tc(yellow)}", f"gd={tc(red)}", f"xx={tc(dim)}", f"hd={tc(dim)};4"]),
+        "GREP_COLORS": f"ms={tc(yellow, True)}:mc={tc(yellow)}:sl=:cx=:fn={tc(magenta)}:ln={tc(green)}:bn={tc(green)}:se={tc(dim)}",
+        "GCC_COLORS": f"error={tc(red, True)}:warning={tc(yellow, True)}:note={tc(blue, True)}:caret={tc(green, True)}:locus={tc(dim)}:quote={tc(cyan)}",
+        "JQ_COLORS": ":".join(["0;90", f"0;{tc(yellow)}", f"0;{tc(yellow)}", f"0;{tc(cyan)}", f"0;{tc(green)}",
+                               f"1;{tc(white)}", f"1;{tc(white)}", f"1;{tc(blue)}"]),
+        "FZF_DEFAULT_OPTS": (f"--color=bg+:{TERM['normal'][0]},fg:{FX['crt_fg']},fg+:{bright},hl:{yellow},hl+:{yellow},"
+                             f"border:{TERM['bright'][0]},prompt:{green},pointer:{green},marker:{yellow},info:{dim},"
+                             f"header:{blue},spinner:{green},gutter:-1 --border=rounded --prompt='$ ' --pointer='>' --marker='*'"),
         "BAT_THEME": "ansi",
         "GROFF_NO_SGR": "1",
-        "LESS": "-R --use-color -Dd+c -Du+b",
+        "LESS": "-R --use-color -Dd+g -Du+b",
+        "FUI_AUTOSUGGEST": f"fg={TERM['bright'][0]}",
     }
-    termcap = {
-        "LESS_TERMCAP_mb": esc(tc(C["amber"], True)), "LESS_TERMCAP_md": esc(tc(C["ice"], True)),
-        "LESS_TERMCAP_me": esc("0"), "LESS_TERMCAP_so": esc(f"{tc(C['void'])};48;2;{';'.join(map(str, rgb(C['ice'])))}"),
-        "LESS_TERMCAP_se": esc("0"), "LESS_TERMCAP_us": esc(f"{tc(C['steel_hi'])};4"), "LESS_TERMCAP_ue": esc("0"),
-    }
-    session = {
-        "QT_QPA_PLATFORMTHEME": "qt6ct",
-        "XCURSOR_THEME": D["cursor_theme"],
-        "XCURSOR_SIZE": str(D["cursor_size"]),
-        "ELECTRON_OZONE_PLATFORM_HINT": "auto",
-        "FUI_THEME_DIR": "$HOME/.config/fui",
-    }
-    # per-mode terminal colours; env.sh sources whichever one fui-mode.sh links to
-    mode = "light" if sfx else "dark"
-    lines = [banner(), f"# Terminal colours, {mode} mode. Sourced from env.sh through fui-mode.sh.\n"]
-    lines += [f"export {k}=\"{v}\"\n" for k, v in shell_vars.items()]
-    lines += [f"export {k}={v}\n" for k, v in termcap.items()]
-    lines += [f"export FUI_AUTOSUGGEST=\"fg={C['line_hi']}\"\n"]
-    write(f"fui/.config/fui/term{sfx}.sh", "".join(lines))
-    if sfx:
-        return
-    lines = [banner(), "# Sourced by ~/.zshrc and ~/.zprofile: every terminal tool inherits the palette.\n"]
+    esc = lambda code: f"$'\\e[{code}m'"
+    termcap = {"LESS_TERMCAP_mb": esc(tc(yellow, True)), "LESS_TERMCAP_md": esc(tc(green, True)),
+               "LESS_TERMCAP_me": esc("0"), "LESS_TERMCAP_so": esc(f"{tc(FX['crt_bg'])};48;2;{';'.join(map(str, parse(blue)[:3]))}"),
+               "LESS_TERMCAP_se": esc("0"), "LESS_TERMCAP_us": esc(f"{tc(cyan)};4"), "LESS_TERMCAP_ue": esc("0")}
+    session = {"QT_QPA_PLATFORMTHEME": "qt6ct", "XCURSOR_THEME": D["cursor_theme"], "XCURSOR_SIZE": str(D["cursor_size"]),
+               "ELECTRON_OZONE_PLATFORM_HINT": "auto", "FUI_THEME_DIR": "$HOME/.config/fui"}
+    lines = [banner(), "# Sourced by ~/.zshrc and ~/.zprofile. Terminal colours are the fixed CRT palette.\n"]
     lines += [f"export {k}=\"{v}\"\n" for k, v in session.items()]
-    lines += [
-        'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac\n',
-        "# light / dark: fui mode (SUPER+SHIFT+T) points these links at one mode or the other\n",
-        '[ -e "$HOME/.config/fui/starship.toml" ] && export STARSHIP_CONFIG="$HOME/.config/fui/starship.toml"\n',
-        'if [ -r "$HOME/.config/fui/fui-mode.sh" ]; then . "$HOME/.config/fui/fui-mode.sh"; '
-        'else . "$HOME/.config/fui/term.sh"; fi\n',
-    ]
+    lines += ['case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac\n']
+    lines += [f"export {k}=\"{v}\"\n" for k, v in env_vars.items()]
+    lines += [f"export {k}={v}\n" for k, v in termcap.items()]
     write("fui/.config/fui/env.sh", "".join(lines))
-    # systemd user environment: apps launched by portals, dbus or systemd see the same session vars
     write("fui/.config/environment.d/60-fui.conf",
           banner() + "".join(f"{k}={v}\n" for k, v in session.items() if k != "FUI_THEME_DIR"))
     write("fui/.config/fui/tokens.json", json.dumps(TOK, indent=2) + "\n")
 
+    g = lambda c, *a: " ".join([c, *a])
+    write("fui/.config/git/fui.gitconfig", f"""{banner()}# Included from ~/.gitconfig by install.sh: the CRT palette.
+[color]
+\tui = auto
+[color "diff"]
+\tmeta = {g(dim)}
+\tfrag = {g(cyan)}
+\tfunc = {g(dim)}
+\tcommit = {g(yellow)}
+\told = {g(red)}
+\tnew = {g(green)}
+\twhitespace = {g(red)} reverse
+[color "status"]
+\theader = {g(dim)}
+\tbranch = {g(green, 'bold')}
+\tadded = {g(green)}
+\tchanged = {g(yellow)}
+\tuntracked = {g(magenta)}
+[color "branch"]
+\tcurrent = {g(green, 'bold')}
+\tlocal = {g(white)}
+\tremote = {g(blue)}
+[color "decorate"]
+\tHEAD = {g(green, 'bold')}
+\tbranch = {g(green)}
+\tremoteBranch = {g(blue)}
+\ttag = {g(yellow)}
+""")
+    t = {"main_bg": FX["crt_bg"], "main_fg": FX["crt_fg"], "title": bright, "hi_fg": yellow, "selected_bg": TERM["normal"][0],
+         "selected_fg": green, "inactive_fg": TERM["bright"][0], "graph_text": dim, "meter_bg": TERM["normal"][0],
+         "proc_misc": cyan, "cpu_box": TERM["bright"][0], "mem_box": TERM["bright"][0], "net_box": TERM["bright"][0],
+         "proc_box": TERM["bright"][0], "div_line": TERM["bright"][0], "temp_start": green, "temp_mid": yellow,
+         "temp_end": red, "cpu_start": green, "cpu_mid": yellow, "cpu_end": red, "free_start": cyan, "free_mid": cyan,
+         "free_end": bright, "cached_start": blue, "cached_mid": blue, "cached_end": cyan, "available_start": green,
+         "available_mid": green, "available_end": bright, "used_start": yellow, "used_mid": yellow, "used_end": red,
+         "download_start": blue, "download_mid": cyan, "download_end": bright, "upload_start": magenta,
+         "upload_mid": magenta, "upload_end": bright, "process_start": green, "process_mid": yellow, "process_end": red}
+    write("btop/.config/btop/themes/fui.theme", banner() + "".join(f'theme[{k}]="{v}"\n' for k, v in t.items()))
 
-def fontconfig():
-    fam = lambda fs: "".join(f"      <family>{f}</family>\n" for f in fs)
-    mono_first = [F["mono"], *F["fallback"]]
-    sans = f"""  <alias binding="strong">
+    hl = {"Normal": (FX["crt_fg"], None), "NormalFloat": (FX["crt_fg"], TERM["normal"][0]), "FloatBorder": (dim, TERM["normal"][0]),
+          "Comment": (dim, None, "italic"), "Constant": (yellow, None), "String": (green, None), "Number": (yellow, None),
+          "Boolean": (yellow, None), "Identifier": (FX["crt_fg"], None), "Function": (blue, None), "Statement": (magenta, None),
+          "Keyword": (magenta, None), "Operator": (white, None), "PreProc": (magenta, None), "Type": (cyan, None),
+          "Special": (cyan, None), "Delimiter": (dim, None), "Todo": (FX["crt_bg"], yellow, "bold"), "Error": (red, None),
+          "ErrorMsg": (red, None), "WarningMsg": (yellow, None), "LineNr": (TERM["bright"][0], None),
+          "CursorLineNr": (green, None, "bold"), "CursorLine": (None, "#141414"), "SignColumn": (None, None),
+          "Visual": (None, "#263446"), "Search": (FX["crt_bg"], yellow), "IncSearch": (FX["crt_bg"], green),
+          "MatchParen": (yellow, None, "bold"), "Pmenu": (FX["crt_fg"], TERM["normal"][0]), "PmenuSel": (FX["crt_bg"], blue),
+          "PmenuSbar": (None, TERM["normal"][0]), "PmenuThumb": (None, TERM["bright"][0]), "StatusLine": (bright, "#262626"),
+          "StatusLineNC": (dim, TERM["normal"][0]), "WinSeparator": (TERM["bright"][0], None), "VertSplit": (TERM["bright"][0], None),
+          "TabLine": (dim, TERM["normal"][0]), "TabLineSel": (FX["crt_bg"], green), "TabLineFill": (None, FX["crt_bg"]),
+          "Title": (green, None, "bold"), "Directory": (blue, None), "NonText": (TERM["bright"][0], None),
+          "Whitespace": (TERM["normal"][0], None), "Folded": (dim, TERM["normal"][0]), "DiffAdd": (green, None),
+          "DiffChange": (yellow, None), "DiffDelete": (red, None), "DiagnosticError": (red, None), "DiagnosticWarn": (yellow, None),
+          "DiagnosticInfo": (blue, None), "DiagnosticHint": (cyan, None), "Cursor": (FX["crt_bg"], bright)}
+    out = [banner("--"), "-- The CRT palette (fixed in every desktop theme).\n",
+           "vim.cmd('highlight clear')\nvim.o.background = 'dark'\nvim.g.colors_name = 'fui'\nlocal h = vim.api.nvim_set_hl\n"]
+    for grp, spec in hl.items():
+        fg, bg, *attr = spec
+        parts = [f"fg = '{fg}'"] if fg else []
+        parts.append(f"bg = '{bg}'" if bg else ("bg = 'NONE'" if grp in ("Normal", "SignColumn") else ""))
+        parts += [f"{a} = true" for a in attr]
+        out.append(f"h(0, '{grp}', {{ {', '.join(x for x in parts if x)} }})\n")
+    out += [f"vim.g.terminal_color_{i} = '{c}'\n" for i, c in enumerate(ansi)]
+    write("nvim/.config/nvim/colors/fui.lua", "".join(out))
+
+
+def fonts():
+    fam = lambda fs: "".join(f"      <family>{x}</family>\n" for x in fs)
+    write("fui/.config/fontconfig/conf.d/60-fui.conf", f"""<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+{banner('<!--')}<fontconfig>
+  <!-- the vendored faces: Michroma (wordmark) and DSEG7 (LCD), installed with the dotfiles -->
+  <dir prefix="xdg">fonts</dir>
+  <alias binding="strong">
+    <family>monospace</family>
+    <prefer>
+{fam([F['mono'], *F['fallback']])}    </prefer>
+  </alias>
+  <alias binding="strong">
     <family>sans-serif</family>
     <prefer>
-{fam(mono_first)}    </prefer>
+{fam([F['sans'], *F['fallback']])}    </prefer>
   </alias>
   <alias binding="strong">
     <family>system-ui</family>
     <prefer>
-{fam(mono_first)}    </prefer>
+{fam([F['sans'], *F['fallback']])}    </prefer>
   </alias>
-""" if F["system_wide_mono"] else ""
-    write("fui/.config/fontconfig/conf.d/60-fui.conf", f"""<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
-{banner('<!--')}<fontconfig>
-  <!-- every app asking for monospace gets the technical face -->
-  <alias binding="strong">
-    <family>monospace</family>
-    <prefer>
-{fam(mono_first)}    </prefer>
-  </alias>
-{sans}  <match target="font">
-    <edit name="antialias" mode="assign"><bool>true</bool></edit>
-    <edit name="hinting" mode="assign"><bool>true</bool></edit>
+  <!-- the pixel face is drawn on a 9px grid: keep it crisp, no hinting or antialiasing -->
+  <match target="font">
+    <test name="family" compare="contains"><string>ProFont</string></test>
+    <edit name="antialias" mode="assign"><bool>false</bool></edit>
+    <edit name="hinting" mode="assign"><bool>false</bool></edit>
+  </match>
+  <match target="font">
     <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
     <edit name="rgba" mode="assign"><const>rgb</const></edit>
   </match>
 </fontconfig>
 """)
+    write("fui/.config/chromium-flags.conf", "--ozone-platform-hint=auto\n")
+    write("fui/.config/electron-flags.conf", "--ozone-platform-hint=auto\n")
 
 
-def git(sfx=""):
-    g = lambda k, *attr: " ".join([C[k], *attr])
-    if not sfx:
-        write("fui/.config/git/fui.gitconfig",
-              f"{banner()}# Included from ~/.gitconfig by install.sh. The colours follow the desktop mode:\n"
-              "# fui-mode.gitconfig links to fui-colors.gitconfig (dark) or fui-colors-light.gitconfig.\n"
-              "[include]\n\tpath = ~/.config/git/fui-mode.gitconfig\n")
-    write(f"fui/.config/git/fui-colors{sfx}.gitconfig", f"""{banner()}[color]
-\tui = auto
-[color "diff"]
-\tmeta = {g('fg_dim')}
-\tfrag = {g('steel')}
-\tfunc = {g('fg_dim')}
-\tcommit = {g('amber')}
-\told = {g('crimson')}
-\tnew = {g('ok')}
-\twhitespace = {g('crimson')} reverse
-[color "status"]
-\theader = {g('fg_dim')}
-\tbranch = {g('ice', 'bold')}
-\tadded = {g('ok')}
-\tchanged = {g('amber')}
-\tuntracked = {g('fault')}
-[color "branch"]
-\tcurrent = {g('ice', 'bold')}
-\tlocal = {g('fg')}
-\tremote = {g('steel')}
-[color "decorate"]
-\tHEAD = {g('ice', 'bold')}
-\tbranch = {g('ice')}
-\tremoteBranch = {g('steel')}
-\ttag = {g('amber')}
-""")
-
-
-def browsers():
-    write("fui/.config/chromium-flags.conf",
-          "--ozone-platform-hint=auto\n--force-dark-mode\n--enable-features=WebUIDarkMode\n")
-    write("fui/.config/electron-flags.conf", "--ozone-platform-hint=auto\n--enable-features=WebUIDarkMode\n")
-
-
-# ── 2d'. kitty colours ──────────────────────────────────────────────────
-def kitty(sfx=""):
-    k = {
-        "foreground": "fg", "background": "term_bg", "selection_foreground": "term_bg",
-        "selection_background": "ice", "cursor": "amber", "cursor_text_color": "term_bg", "url_color": "ice",
-        "active_border_color": "ice", "inactive_border_color": "line",
-        "active_tab_foreground": "term_bg", "active_tab_background": "ice",
-        "inactive_tab_foreground": "fg_dim", "inactive_tab_background": "term_black", "tab_bar_background": "term_bg",
-        "mark1_background": "amber", "mark1_foreground": "term_bg",
-    }
-    out = [banner(), f"# kitty colours, {'light' if sfx else 'dark'} mode. kitty.conf includes fui-mode.conf,"
-                     " which fui mode links here.\n"]
-    out += [f"{name:<24}{C[tok]}\n" for name, tok in k.items()]
-    for i, tok in enumerate(ANSI["normal"] + ANSI["bright"]):
-        out.append(f"color{i:<3}{C[tok]}\n")
-    write(f"kitty/.config/kitty/colors{sfx}.conf", "".join(out))
-
-# ── 2e. btop ────────────────────────────────────────────────────────────
-def btop(sfx=""):
-    t = {
-        "main_bg": "term_bg", "main_fg": "fg", "title": "ice", "hi_fg": "amber", "selected_bg": "raised",
-        "selected_fg": "ice", "inactive_fg": "line_hi", "graph_text": "fg_dim", "meter_bg": "raised",
-        "proc_misc": "ice", "cpu_box": "line", "mem_box": "line", "net_box": "line", "proc_box": "line",
-        "div_line": "line", "temp_start": "ice", "temp_mid": "amber", "temp_end": "crimson",
-        "cpu_start": "ice_dim", "cpu_mid": "ice", "cpu_end": "amber",
-        "free_start": "ice_dim", "free_mid": "ice", "free_end": "ice_hi",
-        "cached_start": "line_hi", "cached_mid": "fg_dim", "cached_end": "silver",
-        "available_start": "ice_dim", "available_mid": "ice", "available_end": "ice_hi",
-        "used_start": "ice", "used_mid": "amber", "used_end": "crimson",
-        "download_start": "ice_dim", "download_mid": "ice", "download_end": "ice_hi",
-        "upload_start": "amber_dim", "upload_mid": "amber", "upload_end": "amber_hi",
-        "process_start": "ice", "process_mid": "amber", "process_end": "crimson",
-    }
-    write(f"btop/.config/btop/themes/hud{sfx}.theme",
-          banner() + "".join(f'theme[{k}]="{C[v]}"\n' for k, v in t.items()))
-
-
-# ── 2f. Neovim ──────────────────────────────────────────────────────────
-def nvim():
-    hl = {
-        "Normal": ("fg", None), "NormalFloat": ("fg", "surface"), "FloatBorder": ("ice_dim", "surface"),
-        "Comment": ("fg_dim", None, "italic"), "Constant": ("amber", None), "String": ("ok", None),
-        "Number": ("amber", None), "Boolean": ("amber", None), "Identifier": ("fg", None),
-        "Function": ("ice", None), "Statement": ("steel_hi", None), "Keyword": ("steel_hi", None),
-        "Operator": ("silver", None), "PreProc": ("fault", None), "Type": ("ice_hi", None),
-        "Special": ("fault_hi", None), "Delimiter": ("fg_dim", None), "Todo": ("void", "amber", "bold"),
-        "Error": ("crimson", None), "ErrorMsg": ("crimson", None), "WarningMsg": ("amber", None),
-        "LineNr": ("line_hi", None), "CursorLineNr": ("amber", None, "bold"), "CursorLine": (None, "term_black"),
-        "SignColumn": (None, None), "Visual": (None, "ice_dim"), "Search": ("void", "amber"),
-        "IncSearch": ("void", "ice"), "MatchParen": ("amber", None, "bold"), "Pmenu": ("fg", "surface"),
-        "PmenuSel": ("void", "ice"), "PmenuSbar": (None, "line"), "PmenuThumb": (None, "ice_dim"),
-        "StatusLine": ("fg", "surface_hi"), "StatusLineNC": ("fg_dim", "term_black"), "WinSeparator": ("line", None),
-        "VertSplit": ("line", None), "TabLine": ("fg_dim", "term_black"), "TabLineSel": ("void", "ice"),
-        "TabLineFill": (None, "void"), "Title": ("ice", None, "bold"), "Directory": ("ice", None),
-        "NonText": ("line_hi", None), "Whitespace": ("line", None), "Folded": ("fg_dim", "term_black"),
-        "DiffAdd": ("ok", None), "DiffChange": ("amber", None), "DiffDelete": ("crimson", None),
-        "DiagnosticError": ("crimson", None), "DiagnosticWarn": ("amber", None),
-        "DiagnosticInfo": ("steel_hi", None), "DiagnosticHint": ("ice", None), "Cursor": ("void", "amber"),
-    }
-    def palette(m):
-        cols = ", ".join(f"{k} = '{v}'" for k, v in m["color"].items())
-        ansi = ", ".join(f"'{m['color'][k]}'" for k in m["ansi"]["normal"] + m["ansi"]["bright"])
-        return f"{{ {cols},\n    ansi = {{ {ansi} }} }}"
-    out = [banner("--"),
-           "-- Follows the desktop mode in ~/.local/state/fui/mode (fui mode, SUPER+SHIFT+T).\n"
-           "local function fui_mode()\n"
-           "  local dir = os.getenv('XDG_STATE_HOME') or ((os.getenv('HOME') or '') .. '/.local/state')\n"
-           "  local f = io.open(dir .. '/fui/mode', 'r')\n"
-           "  if not f then return 'dark' end\n"
-           "  local m = f:read('*l')\n  f:close()\n"
-           "  return m == 'light' and 'light' or 'dark'\nend\n"
-           f"local palettes = {{\n  dark = {palette(DARK)},\n  light = {palette(LIGHT)},\n}}\n"
-           "local mode = fui_mode()\nlocal P = palettes[mode]\n"
-           "vim.cmd('highlight clear')\nvim.o.background = mode\nvim.g.colors_name = 'fui'\nlocal h = vim.api.nvim_set_hl\n"]
-    for g, spec in hl.items():
-        fg, bg, *attr = spec
-        parts = []
-        if fg: parts.append(f"fg = P.{fg}")
-        parts.append(f"bg = P.{bg}" if bg else ("bg = 'NONE'" if g in ("Normal", "SignColumn") else ""))
-        for a in attr: parts.append(f"{a} = true")
-        out.append(f"h(0, '{g}', {{ {', '.join(p for p in parts if p)} }})\n")
-    out.append("for i, c in ipairs(P.ansi) do vim.g['terminal_color_' .. (i - 1)] = c end\n")
-    write("nvim/.config/nvim/colors/fui.lua", "".join(out))
-    write("nvim/.config/nvim/plugin/fui.lua",
-          banner("--") + "-- Applies the FUI scheme unless your own config already picked one.\n"
-          "vim.opt.termguicolors = true\nif vim.g.colors_name == nil or vim.g.colors_name == 'default' then\n"
-          "  pcall(vim.cmd.colorscheme, 'fui')\nend\n")
-
-
-# ── 2g. Hyprland token table ────────────────────────────────────────────
+# ── 5. Hyprland: token table and the old-screen glass shader ────────────
 def hypr():
-    lua = lambda d: "{ " + ", ".join(f"{k} = {json.dumps(bare(v) if isinstance(v, str) and v.startswith('#') else v)}" for k, v in d.items()) + " }"
+    lua_val = lambda v: json.dumps(hx8(v)[1:] if isinstance(v, str) and v.startswith("#") else v)
+    lua = lambda d: "{ " + ", ".join(f"{k} = {lua_val(v)}" for k, v in d.items()) + " }"
+    modes = "".join(f"    {m} = {lua(P(m))},\n" for m in MODES)
+    desk = "".join(f"    {m} = {lua(D[m])},\n" for m in MODES)
     write("hypr/.config/hypr/fui.lua", banner("--") + "return {\n"
-          f"  color = {lua(C)},\n  opacity = {lua(O)},\n  blur = {lua(B)},\n  glow = {lua(GL)},\n"
-          f"  geometry = {lua(G)},\n  font = {{ mono = {json.dumps(F['mono'])}, size = {F['size']} }},\n"
-          f"  desktop = {lua(D)},\n"
-          "  -- light mode: hyprland.lua swaps these in when ~/.local/state/fui/mode says light\n"
-          f"  light = {{\n    color = {lua(LIGHT['color'])},\n    blur = {lua(LIGHT['blur'])},\n"
-          f"    glow = {lua(LIGHT['glow'])},\n    desktop = {lua(LIGHT['desktop'])},\n  }},\n}}\n")
+          f"  modes = {{\n{modes}  }},\n  desktop = {{\n{desk}  }},\n"
+          f"  order = {json.dumps(MODES).replace('[', '{ ').replace(']', ' }')},\n"
+          f"  cursor = {{ theme = {json.dumps(D['cursor_theme'])}, size = {D['cursor_size']} }},\n"
+          f"  geometry = {lua(G)},\n  opacity = {lua(O)},\n  blur = {lua(BL)},\n  screen = {lua(SCR)},\n"
+          f"  font = {{ mono = {json.dumps(F['mono'])}, pixel = {json.dumps(F['pixel'])}, sans = {json.dumps(F['sans'])}, size = {F['size']} }},\n"
+          f"  ease = {{ {', '.join(str(x) for x in MO['ease'])} }},\n}}\n")
+    write("hypr/.config/hypr/screen.frag", f"""{banner('//')}
+// Old-screen glass over the whole screen (the portfolio's html::after overlay):
+// a dark scanline every 3 device pixels, faint RGB phosphor stripes on the pixel
+// columns, and darker corners. No time uniform, so it never forces a redraw.
+// fui screen off removes it.
+#version 300 es
+precision mediump float;
+in vec2 v_texcoord;
+layout(location = 0) out vec4 fragColor;
+uniform sampler2D tex;
 
-
-# ── 2h. docs + web tokens ───────────────────────────────────────────────
-def docs():
-    raw = (ROOT / "theme/tokens.toml").read_text().split("\n[ansi]")[0]   # notes from the dark [color] table
-    notes = dict(re.findall(r'^(\w+)\s*=\s*"#[0-9A-Fa-f]{6}"\s*#\s*(.+)$', raw, flags=re.M))
-    LC = LIGHT["color"]
-    rows = "".join(f"| `{k}` | `{v}` | `{LC[k]}` | {notes.get(k, '')} |\n" for k, v in C.items())
-    def ansi_rows(m):
-        a, c = m["ansi"], m["color"]
-        return "".join(f"| {i} | `{a['normal'][i]}` {c[a['normal'][i]]} | `{a['bright'][i]}` {c[a['bright'][i]]} |\n" for i in range(8))
-    ansi = ansi_rows(DARK)
-    ansi_light = ansi_rows(LIGHT)
-    write("theme/PALETTE.md", f"""<!-- GENERATED by theme/build.py from theme/tokens.toml. Edit the tokens, not this file. -->
-# FUI palette
-
-Sci-Fi FUI: void black, hazy translucent panels, 1px hairlines, chamfered / notched /
-bracketed geometry, micro-geometry, "muted neon" colour, technical mono type.
-The source of truth is [`tokens.toml`](tokens.toml); this page is generated from it.
-
-## Colour
-Two modes share every role. `fui mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
-
-| Token | Dark | Light | Role |
-|---|---|---|---|
-{rows}
-## Terminal 16
-Dark:
-
-| # | normal | bright |
-|---|---|---|
-{ansi}
-Light (dark "black", light "white", so programs that print them stay readable):
-
-| # | normal | bright |
-|---|---|---|
-{ansi_light}
-## Surfaces and geometry
-- Opacity: panel {O['panel']}, strong {O['panel_strong']}, terminal {O['terminal']}, windows {O['window_active']} / {O['window_inactive']}
-- Blur: size {B['size']}, passes {B['passes']}, vibrancy {B['vibrancy']}, noise {B['noise']}; glow {GL['range']}px at {GL['alpha']}
-- Hairline {G['border']}px, radius {G['radius']}, chamfer {G['chamfer']} / {G['chamfer_lg']}px, bracket {G['bracket']}px, notch {G['notch']}px, tab slant {G['tab_slant']}px
-- Segments {G['segment']}px + {G['segment_gap']}px gap, ticks every {G['tick_step']}px
-- Type: {F['mono']} {F['size']}pt, tracking {F['tracking']}px, micro-labels {F['label_tracking']}px
-
-## Rules
-- Dim amber marks one thing per screen.
-- State is never colour alone: `CPU 92%`, not just a red dot.
-- No rounded corners, no pills, no saturated neon.
+void main() {{
+    vec4 c = texture(tex, v_texcoord);
+    float row = mod(floor(gl_FragCoord.y), 3.0);
+    float col = mod(floor(gl_FragCoord.x), 3.0);
+    c.rgb *= (row < 0.5) ? {1 - SCR['scanline']:.4f} : 1.0;
+    vec3 stripe = (col < 0.5) ? vec3(1.0, 0.0, 0.0) : ((col < 1.5) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0));
+    c.rgb = mix(c.rgb, c.rgb * (0.85 + 0.45 * stripe), {SCR['phosphor']:.4f});
+    vec2 d = (v_texcoord - 0.5) * 2.0;
+    float v = smoothstep(0.62 * 1.4142, 1.4142, length(d));
+    c.rgb *= 1.0 - {SCR['vignette']:.4f} * v;
+    fragColor = c;
+}}
 """)
-    css = "".join(f"  --fui-{k.replace('_', '-')}: {v};\n" for k, v in C.items())
-    css += "".join(f"  --fui-{k.replace('_', '-')}: {v}px;\n" for k, v in G.items())
-    css += "".join(f"  --fui-opacity-{k.replace('_', '-')}: {v};\n" for k, v in O.items())
-    css += f"  --fui-font-mono: \"{F['mono']}\", ui-monospace, monospace;\n  --fui-tracking: {F['tracking']}px;\n  --fui-label-tracking: {F['label_tracking']}px;\n"
-    light = "".join(f"  --fui-{k.replace('_', '-')}: {v};\n" for k, v in LC.items())
-    write("theme/web/fui-tokens.css",
-          f"{banner('/*')}:root {{\n{css}}}\n\n"
-          f"/* light mode: set data-theme=\"light\", or follow the OS when no data-theme is set */\n"
-          f":root[data-theme=\"light\"] {{\n{light}}}\n"
-          f"@media (prefers-color-scheme: light) {{\n  :root:not([data-theme=\"dark\"]) {{\n"
-          + "".join("  " + l + "\n" for l in light.splitlines()) + "  }\n}\n")
+
+
+# ── 6. Firefox start page ───────────────────────────────────────────────
+def startpage():
+    tpl = (ROOT / "theme/templates/start.html.in").read_text()
+    art = lattice()
+    for m in MODES:
+        p = P(m)
+        lines = svg_lines(art, css(p["arc"]).replace(" ", ""))
+        beads = svg_beads(art, css(p["bead"]).replace(" ", ""))
+        values = {**{f"{k}": css(v) for k, v in p.items()}, "mode": m, "scheme": "dark" if m == "dark" else "light",
+                  "lines": lines, "beads": beads, "font_pixel": F["pixel"], "font_mono": F["mono"],
+                  "font_wordmark": F["wordmark"], "font_lcd": F["lcd"], "font_sans": F["sans"]}
+        html = re.sub(r"\{\{(\w+)\}\}", lambda mt: values[mt.group(1)], tpl)
+        write(f"fui/.config/fui/start/start-{m}.html", html.replace("<!--BANNER-->", banner("<!--").strip()))
+
+
+# ── 7. docs and web tokens ──────────────────────────────────────────────
+def docs():
+    keys = list(TOK["mode"][MODES[0]].keys())
+    rows = "".join(f"| `{k}` | " + " | ".join(f"`{TOK['mode'][m][k]}`" for m in MODES) + " |\n" for k in keys)
+    fixed = "".join(f"| `{k}` | `{v}` |\n" for k, v in FX.items())
+    term = "".join(f"| {i} | `{TERM['normal'][i]}` | `{TERM['bright'][i]}` |\n" for i in range(8))
+    crows, _ = contrast_rows()
+    write("theme/PALETTE.md", f"""<!-- GENERATED by theme/build.py from theme/tokens.toml. Edit the tokens, not this file. -->
+# fui palette
+
+Y2K cybercore after aljulandani.dev: frosted, glossy plastic windows with a 1px bevel, a gel
+title bar and an inset well, over a quiet network lattice and old-screen glass. Three themes;
+only the colour changes. `fui mode toggle` (SUPER+SHIFT+T) cycles {' → '.join(MODES)}.
+Source of truth: [`tokens.toml`](tokens.toml). Design rules: [`DESIGN.md`](DESIGN.md).
+
+## Themes
+| Token | {' | '.join(MODES)} |
+|---|{'---|' * len(MODES)}
+{rows}
+## Fixed materials (every theme)
+| Token | Value |
+|---|---|
+{fixed}
+## The CRT terminal (every theme)
+| # | normal | bright |
+|---|---|---|
+{term}
+## Contrast (WCAG 2)
+`theme/build.py --check` fails when a pair drops below its minimum.
+
+| Pair | Min | {' | '.join(MODES)} |
+|---|---|{'---|' * len(MODES)}
+{chr(10).join(crows)}
+
+## Type
+| Role | Face |
+|---|---|
+| wordmark `@user` | {F['wordmark']} |
+| structure: labels, readouts, paths, terminals | {F['mono']} |
+| window titles (18px / 27px only) | {F['pixel']} |
+| LCD digits (only on LCD glass) | {F['lcd']} |
+| reading: app text | {F['sans']} |
+""")
+    css_root = "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in {**FX, **TOK['mode'][MODES[0]]}.items())
+    css_root += "".join(f"  --fui-{ident(k)}: {v}px;\n" for k, v in G.items())
+    themed = "".join(f":root[data-theme=\"{m}\"] {{\n" + "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in TOK["mode"][m].items()) + "}\n"
+                     for m in MODES)
+    write("theme/web/fui-tokens.css", f"{banner('/*')}:root {{\n{css_root}}}\n{themed}")
+
+
+# ── 8. the key reference, read from hyprland.lua's comments ─────────────
+def keys():
+    rows = []
+    for line in (ROOT / "hypr/.config/hypr/hyprland.lua").read_text().splitlines():
+        s = line.strip()
+        m = re.match(r'--@\s*(.+?)\s*\|\s*(.+)$', s)
+        if m:
+            rows.append((m.group(1), m.group(2)))
+            continue
+        m = re.match(r'hl\.bind\((?:k\("([^"]+)"\)|"([^"]+)")\s*,.*--\s*(.+)$', s)
+        if m:
+            k = f"SUPER+{m.group(1)}" if m.group(1) else m.group(2)
+            k = (k.replace(" + ", "+").replace("grave", "`").replace("slash", "/").replace("period", ".")
+                  .replace("space", "Space"))
+            rows.append((k, m.group(3)))
+    table = "".join(f"| `` {k} `` | {d} |\n" for k, d in rows)
+    write("docs/KEYS.md", "<!-- GENERATED by theme/build.py from hypr/.config/hypr/hyprland.lua. -->\n"
+          "# Keys\n\nSUPER is the Windows key. `SUPER+/` shows this list on screen; `fui keys --text` prints it.\n\n"
+          f"| Keys | Does |\n|---|---|\n{table}")
 
 
 # ── run ─────────────────────────────────────────────────────────────────
-sweep()
-twins()
-for sfx in MODES:            # per-mode layers: "" = dark, "-light" = light
-    use(sfx)
-    assets(sfx)
-    gtk(sfx)
-    qt(sfx)
-    env(sfx)
-    git(sfx)
-    btop(sfx)
-    kitty(sfx)
-use("")
-fontconfig()
-browsers()
-nvim()
+colour_includes()
+gtk()
+qt()
+crt()
+fonts()
 hypr()
+startpage()
 docs()
+keys()
 
+_, failures = contrast_rows()
 if CHECK:
-    if changed:
-        print("out of date:\n  " + "\n  ".join(changed))
+    problems = [f"out of date: {c}" for c in changed] + [f"contrast: {f}" for f in failures]
+    if problems:
+        print("\n".join(problems))
         sys.exit(1)
-    print("theme is up to date")
+    print("theme is up to date; every contrast pair passes")
 else:
-    print(f"{len(changed)} file(s) written" + (":\n  " + "\n  ".join(changed) if changed else ""))
+    print(f"{len(changed)} file(s) written")
+    for f in failures:
+        print(f"  contrast below minimum: {f}")

@@ -1,0 +1,17 @@
+# fui // SATTY: annotating screenshots (SUPER+Print)
+[general]
+fullscreen = false
+early-exit = true
+initial-tool = "arrow"
+copy-command = "wl-copy"
+annotation-size-factor = 1.5
+output-filename = "~/Pictures/Screenshots/%Y%m%d-%H%M%S.png"
+save-after-copy = false
+default-hide-toolbars = false
+
+[font]
+family = "JetBrainsMono Nerd Font"
+style = "Bold"
+
+[color-palette]
+palette = ["#5FD75F", "#6AB0FF", "#E5C07B", "#FF6B6B", "#C678DD", "#F2F2F2"]

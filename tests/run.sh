@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HUD // tests
+# fui // tests
 #
 # Runs on Arch Linux as a normal user with sudo (GitHub Actions does this in an
 # archlinux container on every push; see .github/workflows/check.yml).
@@ -33,7 +33,7 @@ fi
 if command -v luacheck >/dev/null; then
   t "luacheck" luacheck --config "$DOTS/.luacheckrc" "$DOTS/hypr/.config/hypr" "$DOTS/nvim/.config/nvim"
 fi
-t "theme build is current" python3 "$DOTS/theme/build.py" --check
+t "theme build is current, contrast passes" python3 "$DOTS/theme/build.py" --check
 t "waybar configs parse" python3 -c '
 import json, re, sys
 for f in sys.argv[1:]:
@@ -90,9 +90,22 @@ t "fui is on the default PATH" env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/b
 # Hyprland wants a runtime folder even just to check the config; containers have none
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"; chmod 700 "$XDG_RUNTIME_DIR"; export XDG_RUNTIME_DIR
 t "Hyprland --verify-config" Hyprland --verify-config
-t "light / dark links in place" bash -c 'for l in kitty/fui-mode.conf waybar/fui-mode.css rofi/fui-mode.rasi mako/fui-mode hypr/fui-mode-hyprlock.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css fui/fui-mode.sh fui/starship.toml git/fui-mode.gitconfig; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done'
-t "switch to light" bash -c '"$HOME/.local/bin/fui" mode light --quiet && [ "$(readlink "$HOME/.config/kitty/fui-mode.conf")" = colors-light.conf ] && grep -q fui-light.conf "$HOME/.config/qt6ct/qt6ct.conf"'
-t "switch back to dark" bash -c '"$HOME/.local/bin/fui" mode dark --quiet && [ "$(readlink "$HOME/.config/kitty/fui-mode.conf")" = colors.conf ] && [ "$(readlink "$HOME/.config/waybar/fui-mode.css")" = style.css ]'
+t "theme links in place" bash -c 'for l in waybar/fui-colors.css rofi/fui-colors.rasi swaync/fui-colors.css swayosd/fui-colors.css hypr/fui-colors.conf kitty/fui-colors.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done'
+for m in mid light dark; do
+  t "switch to $m" bash -c '"$HOME/.local/bin/fui" mode "$1" --quiet &&
+    [ "$(readlink "$HOME/.config/kitty/fui-colors.conf")" = "colors-$1.conf" ] &&
+    [ "$(readlink "$HOME/.config/gtk-4.0/fui-mode.css")" = "fui-$1.css" ] &&
+    grep -q "fui-$1.conf" "$HOME/.config/qt6ct/qt6ct.conf" &&
+    grep -q "data-theme=\"$1\"" "$HOME/.local/share/fui/start.html"' _ "$m"
+done
+t "theme cycles dark → mid → light" bash -c 'f="$HOME/.local/bin/fui"; "$f" mode dark --quiet; "$f" mode toggle --quiet; [ "$("$f" mode status)" = mid ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = light ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = dark ]'
+t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
+t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/stereo/desktop-login.oga"
+t "fonts: Michroma, DSEG7, ProFont IIx, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "DSEG7 Classic" && fc-list | grep -qi "ProFontIIx" && fc-list | grep -q "JetBrainsMono Nerd"'
+t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
+if command -v nvim >/dev/null; then
+  t "Neovim config loads (plugins install)" bash -c 'nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
+fi
 t "fui doctor runs to the end" bash -c '"$HOME/.local/bin/fui" doctor > /tmp/doctor.txt 2>&1; grep -q "ok, .* warnings, .* problems" /tmp/doctor.txt || { cat /tmp/doctor.txt; exit 1; }'
 wallpaper_checks
 t "zsh loads the shell config" zsh -ic 'echo "$LS_COLORS" | grep -q "di=" && command -v starship >/dev/null'

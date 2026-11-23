@@ -1,0 +1,92 @@
+/* fui // FIREFOX: the browser as a fui window
+ * The tab strip is the gel title bar; tabs are "tab"-skin plates (the current one underlined
+ * in teal); the toolbar is plastic with a pill address field set into it; menus and panels
+ * are small window frames. Colours: fui-colors.css, linked by fui mode to the current theme.
+ * Installed by `fui setup firefox`; restart Firefox after a theme change. */
+@import url("fui-colors.css");
+
+:root {
+  --toolbar-bgcolor: var(--fui-card) !important;
+  --toolbar-color: var(--fui-text) !important;
+  --lwt-accent-color: var(--fui-gel-mid) !important;
+  --lwt-text-color: var(--fui-gel-text) !important;
+  --toolbar-field-background-color: var(--fui-well) !important;
+  --toolbar-field-focus-background-color: var(--fui-well) !important;
+  --toolbar-field-color: var(--fui-text) !important;
+  --toolbar-field-focus-color: var(--fui-text) !important;
+  --toolbar-field-border-color: var(--fui-edge) !important;
+  --toolbar-field-focus-border-color: var(--fui-nav-accent) !important;
+  --arrowpanel-background: var(--fui-card) !important;
+  --arrowpanel-color: var(--fui-text) !important;
+  --arrowpanel-border-color: var(--fui-edge) !important;
+  --arrowpanel-border-radius: 10px !important;
+  --focus-outline-color: var(--fui-nav-accent) !important;
+  --sidebar-background-color: var(--fui-card) !important;
+  --sidebar-text-color: var(--fui-text) !important;
+  --tab-selected-textcolor: var(--fui-text) !important;
+  --toolbarbutton-border-radius: 999px !important;
+}
+
+/* the tab strip: a glossy gel bar */
+#titlebar, #TabsToolbar {
+  background: var(--fui-gel-face) !important;
+  border-bottom: 1px solid var(--fui-gel-edge) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+#TabsToolbar .toolbarbutton-1, #TabsToolbar .tab-label { color: var(--fui-gel-text) !important; }
+
+/* tabs: tinted plates with a cut corner; the current one underlined in the skin's teal */
+.tab-background {
+  margin-block: 4px 0 !important;
+  border-radius: 4px 12px 0 0 !important;
+  background: color-mix(in srgb, var(--fui-card) 30%, transparent) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+.tabbrowser-tab:hover > .tab-stack > .tab-background:not([selected]) { background: color-mix(in srgb, var(--fui-card) 45%, transparent) !important; }
+.tab-background[selected] {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12)),
+              color-mix(in srgb, var(--fui-card) 78%, var(--fui-skin-teal)) !important;
+  border-color: var(--fui-edge) !important;
+  box-shadow: inset 0 -2px 0 var(--fui-skin-teal) !important;
+}
+.tabbrowser-tab[selected] .tab-label { color: var(--fui-text) !important; }
+.tab-label { font-family: "JetBrainsMono Nerd Font", monospace !important; font-size: 12px !important; }
+
+/* the toolbar: plastic with a bevel */
+#nav-bar {
+  background: var(--fui-card) !important;
+  border-top: none !important;
+  box-shadow: inset 0 1px 0 var(--fui-hi), inset 0 -1px 0 var(--fui-edge) !important;
+}
+
+/* the address field: an inset pill */
+#urlbar-background {
+  border-radius: 999px !important;
+  border: 1px solid var(--fui-edge) !important;
+  box-shadow: inset 0 1px 3px var(--fui-lo) !important;
+}
+#urlbar[focused] > #urlbar-background { border-color: var(--fui-nav-accent) !important; }
+#urlbar-input, .urlbarView { font-family: "JetBrainsMono Nerd Font", monospace !important; }
+.urlbarView-row[selected] { background-color: var(--fui-nav-accent) !important; color: var(--fui-white) !important; }
+
+/* menus and panels: small window frames */
+menupopup, panel {
+  --panel-border-radius: 10px !important;
+  --panel-background: var(--fui-card) !important;
+  --panel-color: var(--fui-text) !important;
+  --panel-border-color: var(--fui-edge) !important;
+}
+menupopup menuitem[_moz-menuactive], menupopup menu[_moz-menuactive] {
+  background-color: var(--fui-nav-accent) !important; color: var(--fui-white) !important; border-radius: 6px !important;
+}
+
+/* tooltips: the graphite slab */
+tooltip {
+  appearance: none !important;
+  background: linear-gradient(to bottom, var(--fui-graphite-hi) 0, var(--fui-graphite) 46%, var(--fui-graphite-mid) 54%, var(--fui-graphite-lo) 100%) !important;
+  color: var(--fui-plate-ink) !important;
+  border: 1px solid #000 !important;
+  border-radius: 6px !important;
+}

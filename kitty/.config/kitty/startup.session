@@ -1,4 +1,4 @@
-# HUD // STARTUP TABS
+# fui // STARTUP TABS
 # Opened at login by fui tabs, and again with SUPER+SHIFT+Return.
 # One block per tab: new_tab <title>, the folder (cd), and what to run (launch).
 # Tools run inside zsh, so quitting one leaves a shell in that tab.
