@@ -36,7 +36,25 @@ fi
 
 # ── 2. packages ─────────────────────────────────────────────────────────
 if [ "$do_packages" = 1 ]; then
-  mapfile -t pkgs < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DOTS/packages.txt" | grep -v '^$')
+  mapfile -t listed < <(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DOTS/packages.txt" | grep -v '^$')
+  # Skip a package when something it conflicts with is already installed (7zip vs p7zip,
+  # tealdeer vs tldr, ...): the installed one does the same job, and --noconfirm would
+  # otherwise stop pacman with "unresolvable package conflicts".
+  pkgs=()
+  for p in "${listed[@]}"; do
+    if pacman -Qq "$p" >/dev/null 2>&1; then pkgs+=("$p"); continue; fi
+    clash=""
+    for c in $(pacman -Si "$p" 2>/dev/null | sed -n 's/^Conflicts With *: *//p' | head -1); do
+      c="${c%%[<>=]*}"
+      [ "$c" = None ] && continue
+      if pacman -Qq "$c" >/dev/null 2>&1; then clash="$c"; break; fi
+    done
+    if [ -n "$clash" ]; then
+      say "skipping $p: $clash is already installed and does the same job"
+    else
+      pkgs+=("$p")
+    fi
+  done
   say "installing ${#pkgs[@]} packages"
   sudo pacman -S --needed --noconfirm "${pkgs[@]}"
   # AUR: mpvpaper plays the live wallpaper (without it the still image is used)
