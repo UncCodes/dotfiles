@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# HUD // fui-tui: open a terminal tool in a floating, centred kitty window.
+#   fui-tui nmtui      (the bar's NET readout)
+#   fui-tui wiremix    (the bar's VOL readout)
+#   fui-tui btop       (the bar's CPU / MEM readouts)
+# Hyprland floats every window with class fui-tui (window rule in hyprland.lua).
+[ $# -gt 0 ] || { echo "usage: fui-tui <command> [args]" >&2; exit 2; }
+exec kitty --class fui-tui --title "$(echo "$1" | tr a-z A-Z)" "$@"

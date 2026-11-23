@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# HUD // fui-bar: start waybar with the layout that fits the screen and the current mode's style.
+#
+# Screens narrower than 1400 logical px (1024x768, small laptops) get config-compact.jsonc,
+# which drops the window title, temperature and keyboard readouts so nothing runs off the
+# right edge. Run it again after changing resolution.
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/waybar"
+"$HOME/.local/bin/fui-mode" apply --quiet
+
+width=$(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = json.load(sys.stdin)
+    print(min(int(x["width"] / x["scale"]) for x in m) if m else 1920)
+except Exception:
+    print(1920)
+' 2>/dev/null)
+
+config="$dir/config.jsonc"
+[ "${width:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
+style="$dir/fui-mode.css"
+[ -e "$style" ] || style="$dir/style.css"
+
+pkill -x waybar 2>/dev/null
+exec waybar -c "$config" -s "$style"

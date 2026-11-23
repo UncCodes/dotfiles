@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# HUD // fui-wallpaper: the live wallpaper.
+#
+#   fui-wallpaper start     show the wallpaper for the current mode (run at login and by fui-mode)
+#   fui-wallpaper toggle    switch between live and still (SUPER+SHIFT+W); remembered
+#   fui-wallpaper live | still
+#
+# Live is the portfolio's drifting grid over the HUD wallpaper, plus a slow radar sweep.
+# theme/make-wallpaper.py renders it once per mode and screen size into ~/.cache/fui/
+# (a seamless 20 s loop, about 20-60 s to render the first time), and mpvpaper plays it.
+# Until the loop is ready, or without mpvpaper, the still PNG is shown with swaybg.
+set -u
+
+dots="${DOTFILES_DIR:-$HOME/.dotfiles}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/fui"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
+mkdir -p "$state_dir" "$cache"
+
+pref=$(cat "$state_dir/wallpaper" 2>/dev/null)
+[ "$pref" = still ] || pref=live
+case "${1:-start}" in
+  start) ;;
+  toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$state_dir/wallpaper" ;;
+  live|still) pref="$1"; echo "$pref" > "$state_dir/wallpaper" ;;
+  *) echo "usage: fui-wallpaper [start|toggle|live|still]" >&2; exit 2 ;;
+esac
+
+mode=$("$HOME/.local/bin/fui-mode" status 2>/dev/null)
+[ "$mode" = light ] || mode=dark
+png="$HOME/.config/hypr/wallpaper.png"
+[ "$mode" = light ] && [ -e "$HOME/.config/hypr/wallpaper-light.png" ] && png="$HOME/.config/hypr/wallpaper-light.png"
+
+# One instance at a time: a newer call (mode switch) takes over from an older one.
+exec 9>"$cache/.wallpaper.lock"
+pkill -f "make-wallpaper.py --live" 2>/dev/null
+flock 9
+
+# still image first: instant, and the fallback for everything below
+pkill -x mpvpaper 2>/dev/null
+pkill -x swaybg 2>/dev/null
+setsid -f swaybg -i "$png" -m fill >/dev/null 2>&1
+
+[ "$pref" = live ] || exit 0
+command -v mpvpaper >/dev/null || exit 0
+command -v ffmpeg >/dev/null || exit 0
+[ -f "$dots/theme/make-wallpaper.py" ] || exit 0
+
+# render size: the largest screen (mpv scales it to the others)
+read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
+    print(m["width"] // 2 * 2, m["height"] // 2 * 2)
+except Exception:
+    print(1920, 1080)
+' 2>/dev/null)
+w=${w:-1920}; h=${h:-1080}
+
+# the loop is re-rendered whenever the tokens or the drawing code change
+key=$(cat "$dots/theme/make-wallpaper.py" "$dots/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
+video="$cache/live-$mode-${w}x$h-$key.mp4"
+
+if [ ! -s "$video" ]; then
+  rm -f "$cache"/live-"$mode"-"${w}x$h"-*.mp4
+  tmp="$video.part.mp4"
+  if ! python3 "$dots/theme/make-wallpaper.py" --live --mode "$mode" "$tmp" "$w" "$h" >/dev/null 2>"$cache/render.log"; then
+    rm -f "$tmp"
+    exit 0          # keep the still image; see ~/.cache/fui/render.log
+  fi
+  mv "$tmp" "$video"
+fi
+
+# -p pauses the loop while a fullscreen window hides the wallpaper
+mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0 really-quiet" ALL "$video" >/dev/null 2>&1
+sleep 1.5
+pgrep -x mpvpaper >/dev/null && pkill -x swaybg
+exit 0
