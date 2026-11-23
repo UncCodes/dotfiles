@@ -6,6 +6,6 @@ export XCURSOR_SIZE="24"
 export ELECTRON_OZONE_PLATFORM_HINT="auto"
 export FUI_THEME_DIR="$HOME/.config/fui"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
-# light / dark: fui-mode (SUPER+SHIFT+T) points these links at one mode or the other
+# light / dark: fui mode (SUPER+SHIFT+T) points these links at one mode or the other
 [ -e "$HOME/.config/fui/starship.toml" ] && export STARSHIP_CONFIG="$HOME/.config/fui/starship.toml"
 if [ -r "$HOME/.config/fui/fui-mode.sh" ]; then . "$HOME/.config/fui/fui-mode.sh"; else . "$HOME/.config/fui/term.sh"; fi

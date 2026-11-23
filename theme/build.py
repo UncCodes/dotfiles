@@ -19,7 +19,7 @@ What it does:
        hypr/  fui.lua, the token table hyprland.lua reads
   3. Light mode: every per-mode layer is written twice (dark under the original name,
      light with a "-light" suffix), and the hand-written configs get light twins.
-     ~/.local/bin/fui-mode links each app to one set or the other.
+     ~/.local/bin/fui mode links each app to one set or the other.
 Every generated file starts with a GENERATED banner: edit tokens.toml, not the file.
 """
 import json
@@ -38,7 +38,7 @@ changed: list[str] = []
 # ── light / dark ────────────────────────────────────────────────────────
 # Each mode is a full palette; [light.*] in tokens.toml overrides the dark values.
 # Generated files take a suffix: "" for dark (the original names), "-light" for light.
-# ~/.local/bin/fui-mode points each app's fui-mode.* link at one or the other.
+# ~/.local/bin/fui mode points each app's fui-mode.* link at one or the other.
 DARK = {"color": dict(C), "ansi": dict(ANSI), "blur": dict(B), "glow": dict(GL), "desktop": dict(D)}
 LIGHT = {k: {**v, **TOK.get("light", {}).get(k, {})} for k, v in DARK.items()}
 MODES = {"": DARK, "-light": LIGHT}
@@ -437,11 +437,11 @@ def gtk(sfx=""):
         write(f"gtk/.config/gtk-{v}.0/fui{sfx}.css", css)
         if sfx:
             continue
-        # gtk.css only imports the active mode; fui-mode points fui-mode.css at fui.css or fui-light.css
+        # gtk.css only imports the active mode; fui mode points fui-mode.css at fui.css or fui-light.css
         write(f"gtk/.config/gtk-{v}.0/gtk.css",
               f"{banner('/*')}/* FUI // GTK{v}: follows the desktop mode. fui-mode.css links to fui.css (dark)"
               f" or fui-light.css. */\n@import url(\"fui-mode.css\");\n")
-        # The dark/light base theme comes from gsettings (set by fui-mode); this is the fallback
+        # The dark/light base theme comes from gsettings (set by fui mode); this is the fallback
         # for apps that only read settings.ini. No prefer-dark here, or light mode would stay dark.
         write(f"gtk/.config/gtk-{v}.0/settings.ini",
               f"{banner()}[Settings]\n"
@@ -468,7 +468,7 @@ def qt(sfx=""):
           f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
 
     font = f"{F['mono']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
-    # qt6ct.conf points at the dark files; fui-mode rewrites both paths when switching
+    # qt6ct.conf points at the dark files; fui mode rewrites both paths when switching
     if not sfx:
         write("theme/templates/qt6ct.conf.in",
               f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui.conf\ncustom_palette=true\n"
@@ -610,7 +610,7 @@ def env(sfx=""):
     lines += [f"export {k}=\"{v}\"\n" for k, v in session.items()]
     lines += [
         'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac\n',
-        "# light / dark: fui-mode (SUPER+SHIFT+T) points these links at one mode or the other\n",
+        "# light / dark: fui mode (SUPER+SHIFT+T) points these links at one mode or the other\n",
         '[ -e "$HOME/.config/fui/starship.toml" ] && export STARSHIP_CONFIG="$HOME/.config/fui/starship.toml"\n',
         'if [ -r "$HOME/.config/fui/fui-mode.sh" ]; then . "$HOME/.config/fui/fui-mode.sh"; '
         'else . "$HOME/.config/fui/term.sh"; fi\n',
@@ -707,7 +707,7 @@ def kitty(sfx=""):
         "mark1_background": "amber", "mark1_foreground": "term_bg",
     }
     out = [banner(), f"# kitty colours, {'light' if sfx else 'dark'} mode. kitty.conf includes fui-mode.conf,"
-                     " which fui-mode links here.\n"]
+                     " which fui mode links here.\n"]
     out += [f"{name:<24}{C[tok]}\n" for name, tok in k.items()]
     for i, tok in enumerate(ANSI["normal"] + ANSI["bright"]):
         out.append(f"color{i:<3}{C[tok]}\n")
@@ -760,7 +760,7 @@ def nvim():
         ansi = ", ".join(f"'{m['color'][k]}'" for k in m["ansi"]["normal"] + m["ansi"]["bright"])
         return f"{{ {cols},\n    ansi = {{ {ansi} }} }}"
     out = [banner("--"),
-           "-- Follows the desktop mode in ~/.local/state/fui/mode (fui-mode, SUPER+SHIFT+T).\n"
+           "-- Follows the desktop mode in ~/.local/state/fui/mode (fui mode, SUPER+SHIFT+T).\n"
            "local function fui_mode()\n"
            "  local dir = os.getenv('XDG_STATE_HOME') or ((os.getenv('HOME') or '') .. '/.local/state')\n"
            "  local f = io.open(dir .. '/fui/mode', 'r')\n"
@@ -816,7 +816,7 @@ bracketed geometry, micro-geometry, "muted neon" colour, technical mono type.
 The source of truth is [`tokens.toml`](tokens.toml); this page is generated from it.
 
 ## Colour
-Two modes share every role. `fui-mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
+Two modes share every role. `fui mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
 
 | Token | Dark | Light | Role |
 |---|---|---|---|

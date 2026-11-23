@@ -19,7 +19,7 @@ if not ok or type(T) ~= "table" then
         desktop  = { icon_theme = "Papirus-Dark", cursor_theme = "Adwaita", cursor_size = 24, gtk_base = "adw-gtk3-dark" },
     }
 end
--- light / dark: fui-mode (SUPER+SHIFT+T) writes the mode file and reloads Hyprland,
+-- light / dark: fui mode (SUPER+SHIFT+T) writes the mode file and reloads Hyprland,
 -- which swaps the light colours, blur and desktop themes in here.
 local mode = "dark"
 do
@@ -46,9 +46,9 @@ local c = {
 -- ── programs ────────────────────────────────────────────────────────────
 local terminal    = "kitty"
 local fileManager = "thunar"
-local rofi        = "rofi -config ~/.config/rofi/fui-mode.rasi"   -- fui-mode links this to the mode's config
+local rofi        = "rofi -config ~/.config/rofi/fui-mode.rasi"   -- fui mode links this to the mode's config
 local menu        = rofi .. " -show drun"
-local bin         = "$HOME/.local/bin/"                             -- fui-mode, fui-bar, fui-wallpaper
+local fui         = "$HOME/.local/bin/fui "                         -- the fui command (fui help)
 local mod         = "SUPER"
 
 -- ── monitors ────────────────────────────────────────────────────────────
@@ -62,20 +62,20 @@ hl.env("XCURSOR_THEME", T.desktop.cursor_theme)
 hl.env("HYPRCURSOR_SIZE", tostring(T.desktop.cursor_size))
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
--- No GTK_THEME here: it would pin one mode. GTK picks dark or light from gsettings (set below and by fui-mode).
+-- No GTK_THEME here: it would pin one mode. GTK picks dark or light from gsettings (set below and by fui mode).
 
 -- ── autostart ───────────────────────────────────────────────────────────
 hl.on("hyprland.start", function()
     -- each falls back to the plain program if the fui scripts are missing
-    hl.exec_cmd(bin .. "fui-wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")  -- live grid, or static
-    hl.exec_cmd(bin .. "fui-bar || waybar")                                                 -- compact on small screens
-    hl.exec_cmd(bin .. "fui-mode apply --quiet; mako -c ~/.config/mako/fui-mode || mako")
+    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")  -- live grid, or static
+    hl.exec_cmd(fui .. "bar || waybar")                                                 -- compact on small screens
+    hl.exec_cmd(fui .. "mode apply --quiet; mako -c ~/.config/mako/fui-mode || mako")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("wl-paste --watch cliphist store")
-    hl.exec_cmd(bin .. "fui-sound login")                -- event sounds (fui-sound off to silence)
-    hl.exec_cmd(bin .. "fui-startup")                    -- prepared terminal tabs (kitty/startup.session)
+    hl.exec_cmd(fui .. "sound login")                    -- event sounds (fui sound off to silence)
+    hl.exec_cmd(fui .. "tabs")                          -- prepared terminal tabs (kitty/startup.session)
     -- dark or light + theme for GTK and libadwaita apps (they ignore settings.ini)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-" .. mode)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme " .. T.desktop.gtk_base)
@@ -178,7 +178,7 @@ hl.window_rule({
     border_size = T.geometry.border,
 })
 
--- terminal tools opened from the bar (fui-tui): floating, centred
+-- terminal tools opened from the bar (fui tui): floating, centred
 hl.window_rule({
     name   = "fui-tui",
     match  = { class = "^fui-tui$" },
@@ -205,10 +205,10 @@ local function k(keys) return mod .. " + " .. keys end
 hl.bind(k("Return"), hl.dsp.exec_cmd(terminal))
 hl.bind(k("D"),      hl.dsp.exec_cmd(menu))
 hl.bind(k("E"),      hl.dsp.exec_cmd(fileManager))
-hl.bind(k("Y"),      hl.dsp.exec_cmd(bin .. "fui-tui yazi"))         -- files (TUI)
-hl.bind(k("A"),      hl.dsp.exec_cmd(bin .. "fui-tui wiremix"))      -- audio mixer
-hl.bind(k("N"),      hl.dsp.exec_cmd(bin .. "fui-tui nmtui"))        -- network
-hl.bind(k("SHIFT + Return"), hl.dsp.exec_cmd(bin .. "fui-startup"))  -- the startup tabs again
+hl.bind(k("Y"),      hl.dsp.exec_cmd(fui .. "tui yazi"))             -- files (TUI)
+hl.bind(k("A"),      hl.dsp.exec_cmd(fui .. "tui wiremix"))          -- audio mixer
+hl.bind(k("N"),      hl.dsp.exec_cmd(fui .. "tui nmtui"))            -- network
+hl.bind(k("SHIFT + Return"), hl.dsp.exec_cmd(fui .. "tabs"))     -- the startup tabs again
 hl.bind(k("Q"),      hl.dsp.window.close())
 hl.bind(k("F"),      hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(k("V"),      hl.dsp.window.float({ action = "toggle" }))
@@ -217,12 +217,12 @@ hl.bind(k("J"),      hl.dsp.layout("togglesplit"))
 hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock -c ~/.config/hypr/fui-mode-hyprlock.conf || hyprlock"))
 hl.bind(k("SHIFT + E"), hl.dsp.exit())
 hl.bind(k("SHIFT + V"), hl.dsp.exec_cmd("cliphist list | " .. rofi .. " -dmenu -p CLIP | cliphist decode | wl-copy"))
-hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(bin .. "fui-mode toggle"))        -- light / dark
-hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(bin .. "fui-wallpaper toggle"))   -- live / still wallpaper
+hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))        -- light / dark
+hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(fui .. "wallpaper toggle"))   -- live / still wallpaper
 
 -- screenshots: region to clipboard / whole screen to ~/Pictures
-hl.bind("Print",         hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy && ' .. bin .. 'fui-sound screenshot'))
-hl.bind("SHIFT + Print", hl.dsp.exec_cmd("mkdir -p ~/Pictures && grim ~/Pictures/$(date +%Y%m%d-%H%M%S).png && " .. bin .. "fui-sound screenshot"))
+hl.bind("Print",         hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy && ' .. fui .. 'sound screenshot'))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("mkdir -p ~/Pictures && grim ~/Pictures/$(date +%Y%m%d-%H%M%S).png && " .. fui .. "sound screenshot"))
 
 -- focus and move with arrows
 for _, dir in ipairs({ "left", "right", "up", "down" }) do
@@ -242,7 +242,7 @@ hl.bind(k("mouse:272"),  hl.dsp.window.drag(),   { mouse = true })
 hl.bind(k("mouse:273"),  hl.dsp.window.resize(), { mouse = true })
 
 -- media / volume keys
-local blip = " && " .. bin .. "fui-sound volume"
+local blip = " && " .. fui .. "sound volume"
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" .. blip), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-" .. blip),      { locked = true, repeating = true })
 hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true })

@@ -1,0 +1,16 @@
+# Folders linked into $HOME with GNU Stow (each mirrors $HOME). Read by install.sh and fui doctor.
+hypr
+waybar
+kitty
+rofi
+mako
+zsh
+starship
+fastfetch
+btop
+gtk
+qt
+fui
+nvim
+lazygit
+cava

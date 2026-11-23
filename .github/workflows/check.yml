@@ -1,0 +1,29 @@
+# HUD // checks: every push installs the dotfiles in a fresh Arch Linux container and
+# verifies the result (see tests/run.sh). A red X on GitHub means: don't pull this yet.
+name: check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 40
+    steps:
+      - name: Prepare Arch
+        run: |
+          pacman -Syu --noconfirm --needed git sudo base-devel shellcheck luacheck python
+          useradd -m tester
+          echo 'tester ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/tester
+
+      - uses: actions/checkout@v4
+
+      - name: Install and test as a normal user
+        run: |
+          cp -a "$GITHUB_WORKSPACE" /home/tester/.dotfiles
+          chown -R tester: /home/tester/.dotfiles
+          sudo -u tester -H env DOTFILES_DIR=/home/tester/.dotfiles \
+            bash /home/tester/.dotfiles/tests/run.sh

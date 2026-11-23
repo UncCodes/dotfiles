@@ -1,5 +1,5 @@
 // HUD // WAYBAR, compact
-// fui-bar picks this on screens narrower than 1400 px (e.g. 1024x768), where the full bar
+// fui bar picks this on screens narrower than 1400 px (e.g. 1024x768), where the full bar
 // runs off the right edge. Everything not set here comes from config.jsonc.
 {
   "include": ["~/.config/waybar/config.jsonc"],

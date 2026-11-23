@@ -104,7 +104,7 @@ sound_theme  = "ocean"           # event sounds: Plasma's Ocean, what EndeavourO
 
 # ── light mode ──────────────────────────────────────────────────────────
 # Same roles, daylight values: pale fog ground, ink text, accents deepened so
-# they keep contrast on light glass. `fui-mode toggle` (SUPER+SHIFT+T) switches
+# they keep contrast on light glass. `fui mode toggle` (SUPER+SHIFT+T) switches
 # every app between the two. Keys left out fall back to the dark values above.
 [light.color]
 void        = "#E6EAEB"

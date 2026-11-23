@@ -34,5 +34,5 @@ for p in "${listed[@]}"; do
 done
 pacman -S --needed --noconfirm "${pkgs[@]}"
 
-sudo -u "$user" env HOME="$home" bash "$home/.dotfiles/install.sh" --no-packages --no-chsh
+sudo -u "$user" env HOME="$home" bash "$home/.dotfiles/install.sh" --no-packages --no-hardware --no-chsh
 chsh -s /usr/bin/zsh "$user"

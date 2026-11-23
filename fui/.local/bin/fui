@@ -1,0 +1,680 @@
+#!/usr/bin/env bash
+# HUD // fui: one command for the desktop.
+#
+#   fui mode [toggle|dark|light|apply|status]   light / dark (SUPER+SHIFT+T)
+#   fui wallpaper [start|toggle|live|still]     live or still wallpaper (SUPER+SHIFT+W)
+#   fui sound <event>|on|off|status             desktop sounds
+#   fui bar                                     (re)start the bar, sized for the screen
+#   fui tabs                                    open the startup tabs (SUPER+SHIFT+Return)
+#   fui tui <command>                           a terminal tool in a floating window
+#   fui update                                  pull the dotfiles, install, reload
+#   fui doctor [--fix]                          check the machine, optionally fix what it can
+#   fui setup [gpu|audio|bluetooth|firmware|all] [--yes]   hardware setup
+#   fui shot [label] | --tour                   screenshots into ~/Pictures/fui/
+#   fui help
+set -u
+
+DOTS="${DOTFILES_DIR:-$HOME/.dotfiles}"
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/fui"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
+SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+
+have()   { command -v "$1" >/dev/null 2>&1; }
+upper()  { echo "$1" | tr '[:lower:]' '[:upper:]'; }
+detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/null 2>&1 & fi; }
+die()    { echo "fui: $*" >&2; exit 1; }
+
+usage() { sed -n '3,15p' "$SELF" | sed 's/^# \{0,1\}//'; }
+
+
+# ── mode ────────────────────────────────────────────────────────────────
+# theme/build.py writes every themed file twice: the dark original and a "-light" copy.
+# Each app reads a fui-mode.* link next to them; this points the links at one set.
+current_mode() {
+  local m
+  m=$(cat "$STATE/mode" 2>/dev/null)
+  [ "$m" = light ] && echo light || echo dark
+}
+
+mode_link() {   # <dir> <dark file> <light file> <link name>
+  local dir="$1" target="$2"
+  [ "$NEW_MODE" = light ] && target="$3"
+  [ -e "$dir/$target" ] || return 0
+  [ "$(readlink "$dir/$4" 2>/dev/null)" = "$target" ] || ln -sfn "$target" "$dir/$4"
+}
+
+cmd_mode() {
+  local cmd="${1:-status}" quiet=0 cur a
+  for a in "$@"; do [ "$a" = --quiet ] && quiet=1; done
+  cur=$(current_mode)
+  case "$cmd" in
+    status)
+      if [ "${2:-}" = --bar ]; then
+        echo "<span alpha='55%' size='small' letter_spacing='2048'>MODE</span> $(upper "$cur")"
+      else
+        echo "$cur"
+      fi
+      return 0 ;;
+    toggle) [ "$cur" = dark ] && NEW_MODE=light || NEW_MODE=dark ;;
+    dark|light) NEW_MODE="$cmd" ;;
+    apply) NEW_MODE="$cur" ;;
+    *) die "usage: fui mode [toggle|dark|light|apply|status]" ;;
+  esac
+
+  mkdir -p "$STATE"
+  [ "$NEW_MODE" = "$cur" ] && [ -e "$STATE/mode" ] || echo "$NEW_MODE" > "$STATE/mode"
+
+  mode_link "$CFG/kitty"   colors.conf          colors-light.conf          fui-mode.conf
+  mode_link "$CFG/waybar"  style.css            style-light.css            fui-mode.css
+  mode_link "$CFG/rofi"    config.rasi          config-light.rasi          fui-mode.rasi
+  mode_link "$CFG/mako"    config               config-light               fui-mode
+  mode_link "$CFG/hypr"    hyprlock.conf        hyprlock-light.conf        fui-mode-hyprlock.conf
+  mode_link "$CFG/gtk-3.0" fui.css              fui-light.css              fui-mode.css
+  mode_link "$CFG/gtk-4.0" fui.css              fui-light.css              fui-mode.css
+  mode_link "$CFG/fui"     term.sh              term-light.sh              fui-mode.sh
+  mode_link "$CFG/fui"     ../starship.toml     ../starship-light.toml     starship.toml
+  mode_link "$CFG/git"     fui-colors.gitconfig fui-colors-light.gitconfig fui-mode.gitconfig
+
+  # Qt and btop keep the theme path inside their own config file
+  local sfx=""
+  [ "$NEW_MODE" = light ] && sfx="-light"
+  if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
+    sed -i -E "s|(colors/fui)[^/]*\.conf|\1$sfx.conf|; s|(qss/fui)[^/]*\.qss|\1$sfx.qss|" "$CFG/qt6ct/qt6ct.conf"
+  fi
+  if [ -f "$CFG/btop/btop.conf" ]; then
+    sed -i -E "s|^color_theme = .*|color_theme = \"hud$sfx\"|" "$CFG/btop/btop.conf"
+  fi
+
+  [ "$cmd" = apply ] && return 0
+
+  # tell running apps; base GTK theme and icons come from the tokens
+  local gtk icons
+  gtk=$(python3 -c '
+import json, sys
+t = json.load(open(sys.argv[2]))
+d = dict(t["desktop"])
+if sys.argv[1] == "light":
+    d.update(t.get("light", {}).get("desktop", {}))
+print(d["gtk_base"], d["icon_theme"])
+' "$NEW_MODE" "$CFG/fui/tokens.json" 2>/dev/null)
+  icons="${gtk#* }"; gtk="${gtk%% *}"
+  if [ -z "$gtk" ]; then
+    if [ "$NEW_MODE" = light ]; then gtk=adw-gtk3; icons=Papirus-Light; else gtk=adw-gtk3-dark; icons=Papirus-Dark; fi
+  fi
+  if have gsettings; then
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-$NEW_MODE"
+    gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
+    gsettings set org.gnome.desktop.interface icon-theme "$icons"
+  fi
+  pkill -USR1 -x kitty 2>/dev/null           # kitty re-reads kitty.conf
+  pkill -USR2 -x waybar 2>/dev/null          # waybar re-reads its style
+  have makoctl && makoctl reload 2>/dev/null
+  have hyprctl && hyprctl reload >/dev/null 2>&1
+  detach "$SELF" wallpaper start
+  cmd_sound mode
+  [ "$quiet" = 1 ] || { have notify-send && notify-send -t 2000 "MODE" "$(upper "$NEW_MODE")"; }
+  return 0
+}
+
+
+# ── wallpaper ───────────────────────────────────────────────────────────
+# Live: the portfolio's drifting grid + a radar sweep, rendered once per mode and screen
+# size by theme/make-wallpaper.py into ~/.cache/fui/, played by mpvpaper.
+# Still: swaybg with the PNG (also shown while the loop renders, and as the fallback).
+cmd_wallpaper() {
+  mkdir -p "$STATE" "$CACHE"
+  local pref
+  pref=$(cat "$STATE/wallpaper" 2>/dev/null)
+  [ "$pref" = still ] || pref=live
+  case "${1:-start}" in
+    start) ;;
+    toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper" ;;
+    live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
+    status) echo "$pref"; return 0 ;;
+    *) die "usage: fui wallpaper [start|toggle|live|still|status]" ;;
+  esac
+
+  local mode png
+  mode=$(current_mode)
+  png="$CFG/hypr/wallpaper.png"
+  [ "$mode" = light ] && [ -e "$CFG/hypr/wallpaper-light.png" ] && png="$CFG/hypr/wallpaper-light.png"
+
+  # one instance at a time: a newer call (mode switch) takes over from an older one
+  exec 9>"$CACHE/.wallpaper.lock"
+  pkill -f "make-wallpaper.py --live" 2>/dev/null
+  have flock && flock 9
+
+  pkill -x mpvpaper 2>/dev/null
+  pkill -x swaybg 2>/dev/null
+  detach swaybg -i "$png" -m fill
+
+  [ "$pref" = live ] || return 0
+  have mpvpaper && have ffmpeg && [ -f "$DOTS/theme/make-wallpaper.py" ] || return 0
+
+  local w h key video tmp
+  read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
+    print(m["width"] // 2 * 2, m["height"] // 2 * 2)
+except Exception:
+    print(1920, 1080)
+' 2>/dev/null)
+  w=${w:-1920}; h=${h:-1080}
+  key=$(cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
+  video="$CACHE/live-$mode-${w}x$h-$key.mp4"
+
+  if [ ! -s "$video" ]; then
+    rm -f "$CACHE"/live-"$mode"-"${w}x$h"-*.mp4
+    tmp="$video.part.mp4"
+    if ! python3 "$DOTS/theme/make-wallpaper.py" --live --mode "$mode" "$tmp" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
+      rm -f "$tmp"
+      return 0                        # keep the still image; see ~/.cache/fui/render.log
+    fi
+    mv "$tmp" "$video"
+  fi
+
+  # -p pauses the loop while a fullscreen window hides the wallpaper
+  mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0" ALL "$video" >"$CACHE/mpvpaper.log" 2>&1
+  sleep 1.5
+  if pgrep -x mpvpaper >/dev/null; then
+    pkill -x swaybg
+  else
+    echo "mpvpaper exited; still image kept. See $CACHE/mpvpaper.log" >> "$CACHE/render.log"
+  fi
+  return 0
+}
+
+
+# ── sound ───────────────────────────────────────────────────────────────
+# Theme: [desktop] sound_theme in tokens.toml (Ocean), freedesktop as fallback.
+cmd_sound() {
+  local ev="${1:-}" names theme file n t d f
+  case "$ev" in
+    on|off) mkdir -p "$STATE"; echo "$ev" > "$STATE/sound"; return 0 ;;
+    status) cat "$STATE/sound" 2>/dev/null || echo on; return 0 ;;
+    "") die "usage: fui sound <event>|on|off|status" ;;
+  esac
+  [ "$(cat "$STATE/sound" 2>/dev/null)" = off ] && return 0
+
+  case "$ev" in
+    login)      names="desktop-login service-login" ;;
+    logout)     names="desktop-logout service-logout" ;;
+    message)    names="message-new-instant message" ;;
+    alert)      names="dialog-warning dialog-error" ;;
+    volume)     names="audio-volume-change" ;;
+    screenshot) names="screen-capture camera-shutter" ;;
+    mode)       names="button-pressed dialog-information" ;;
+    error)      names="dialog-error" ;;
+    *)          names="$ev" ;;
+  esac
+
+  theme=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["desktop"].get("sound_theme","ocean"))' \
+          "$CFG/fui/tokens.json" 2>/dev/null)
+  theme="${theme:-ocean}"
+  file=""
+  for n in $names; do
+    for t in "$theme" freedesktop; do
+      for d in "$HOME/.local/share/sounds" /usr/share/sounds; do
+        for f in "$d/$t/stereo/$n".oga "$d/$t/stereo/$n".ogg "$d/$t/$n".oga "$d/$t/$n".ogg; do
+          [ -f "$f" ] && { file="$f"; break 4; }
+        done
+      done
+    done
+  done
+  [ -n "$file" ] || return 0
+
+  # at login the audio server may not have an output yet: wait up to 15 s for one
+  if [ "$ev" = login ] && have wpctl; then
+    for _ in $(seq 30); do
+      wpctl inspect @DEFAULT_AUDIO_SINK@ >/dev/null 2>&1 && break
+      sleep 0.5
+    done
+  fi
+  # volume key repeats: cut the previous blip instead of stacking them
+  [ "$ev" = volume ] && pkill -f "pw-play .*audio-volume-change" 2>/dev/null
+
+  if have pw-play; then detach pw-play --volume 0.7 "$file"
+  elif have paplay; then detach paplay "$file"
+  fi
+  return 0
+}
+
+
+# ── bar / tabs / tui ────────────────────────────────────────────────────
+cmd_bar() {
+  local dir="$CFG/waybar" width config style
+  cmd_mode apply --quiet
+  width=$(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = json.load(sys.stdin)
+    print(min(int(x["width"] / x["scale"]) for x in m) if m else 1920)
+except Exception:
+    print(1920)
+' 2>/dev/null)
+  config="$dir/config.jsonc"
+  [ "${width:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
+  style="$dir/fui-mode.css"
+  [ -e "$style" ] || style="$dir/style.css"
+  pkill -x waybar 2>/dev/null
+  exec waybar -c "$config" -s "$style"
+}
+
+cmd_tabs() {
+  local session="$CFG/kitty/startup.session.local"
+  [ -e "$session" ] || session="$CFG/kitty/startup.session"
+  [ -s "$session" ] || return 0          # an empty startup.session.local turns them off
+  exec kitty --class fui-main --session "$session"
+}
+
+cmd_tui() {
+  [ $# -gt 0 ] || die "usage: fui tui <command> [args]"
+  exec kitty --class fui-tui --title "$(upper "$1")" "$@"
+}
+
+
+# ── update ──────────────────────────────────────────────────────────────
+cmd_update() {
+  [ -d "$DOTS/.git" ] || die "no git checkout at $DOTS"
+  local before
+  before=$(git -C "$DOTS" rev-parse HEAD)
+  if ! git -C "$DOTS" pull --ff-only; then
+    echo
+    echo "The update stopped: files in $DOTS were changed on this machine."
+    echo "See them:      git -C $DOTS status"
+    echo "Drop them:     git -C $DOTS checkout -- . && fui update"
+    return 1
+  fi
+  if [ "$before" = "$(git -C "$DOTS" rev-parse HEAD)" ]; then
+    echo "Already up to date; re-running the installer to repair anything missing."
+  else
+    echo "New:"; git -C "$DOTS" log --oneline "$before..HEAD" | sed 's/^/  /'
+  fi
+  bash "$DOTS/install.sh" "$@"
+  local rc=$?
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    hyprctl reload >/dev/null 2>&1
+    detach "$SELF" bar
+    have makoctl && makoctl reload 2>/dev/null
+    echo "Reloaded. Log out and back in (SUPER+SHIFT+E) for anything that still looks old."
+  fi
+  return $rc
+}
+
+
+# ── doctor ──────────────────────────────────────────────────────────────
+D_OK=0; D_WARN=0; D_FAIL=0
+FIXES=()
+ok()   { D_OK=$((D_OK + 1));     printf '  [ OK ] %s\n' "$*"; }
+warn() { D_WARN=$((D_WARN + 1)); printf '  [WARN] %s\n' "$*"; }
+bad()  { D_FAIL=$((D_FAIL + 1)); printf '  [FAIL] %s\n' "$*"; }
+info() { printf '         %s\n' "$*"; }
+fix()  { FIXES+=("$1|$2"); printf '         fix: %s\n' "$2"; }   # <function> <description>
+section() { printf '\n%s\n' "$(upper "$1")"; }
+
+stow_packages() { sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DOTS/stow.txt" 2>/dev/null | grep -v '^$'; }
+
+listed_packages() { sed -e 's/#.*//' -e 's/[[:space:]]//g' "$1" 2>/dev/null | grep -v '^$'; }
+
+conflict_installed() {   # prints the installed package that conflicts with $1, if any
+  local c
+  for c in $(pacman -Si "$1" 2>/dev/null | sed -n 's/^Conflicts With *: *//p' | head -1); do
+    c="${c%%[<>=]*}"
+    [ "$c" != None ] && pacman -Qq "$c" >/dev/null 2>&1 && { echo "$c"; return 0; }
+  done
+  return 1
+}
+
+# one line per graphics device: "<lspci description>|<driver in use or none>"
+gpu_lines() {
+  lspci -nnk 2>/dev/null | awk '
+    /^[^\t]/ { if (dev) print dev "|" (drv ? drv : "none"); dev = ""; drv = "" }
+    /^[^\t]/ && /VGA|3D controller|Display controller/ { dev = $0 }
+    /^\tKernel driver in use:/ { if (dev) drv = $NF }
+    END { if (dev) print dev "|" (drv ? drv : "none") }'
+}
+
+fix_audio_output() { cmd_setup audio --yes; }
+fix_audio_services() { systemctl --user enable --now pipewire pipewire-pulse wireplumber; }
+fix_sound_on() { cmd_sound on; }
+fix_links() { bash "$DOTS/install.sh" --no-packages --no-hardware --no-chsh; }
+fix_mode_links() { cmd_mode apply --quiet; }
+fix_packages() { bash "$DOTS/install.sh" --no-hardware --no-chsh; }
+fix_gpu() { cmd_setup gpu; }
+stale_links() {   # links into the dotfiles whose target no longer exists
+  local l repo
+  repo="$(basename "$DOTS")/"
+  find "$CFG" "$HOME/.local/bin" -xtype l 2>/dev/null | while read -r l; do
+    if [[ "$(readlink "$l")" == *"$repo"* ]]; then echo "$l"; fi
+  done
+}
+fix_broken_links() {
+  local l
+  stale_links | while read -r l; do rm -f "$l" && echo "removed $l"; done
+}
+
+cmd_doctor() {
+  local do_fix=0 a
+  for a in "$@"; do [ "$a" = --fix ] && do_fix=1; done
+  echo "fui doctor  $(date '+%Y-%m-%d %H:%M')"
+  [ -r /etc/os-release ] && . /etc/os-release && echo "${PRETTY_NAME:-Linux}  kernel $(uname -r)"
+
+  section "session"
+  if have Hyprland; then
+    local out
+    if out=$(Hyprland --verify-config 2>&1); then
+      ok "Hyprland config has no errors ($(Hyprland --version 2>/dev/null | head -1 | cut -c1-40))"
+    else
+      bad "Hyprland config has errors:"
+      echo "$out" | grep -iE 'error|unknown|fail' | head -5 | sed 's/^/           /'
+    fi
+  else
+    bad "Hyprland is not installed"
+  fi
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && ok "running inside Hyprland" || info "not inside a Hyprland session: some checks skipped"
+
+  section "graphics"
+  local line dev drv any=0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    any=1; dev="${line%|*}"; drv="${line##*|}"
+    dev=$(echo "$dev" | sed -E 's/^[0-9a-f:.]+ //; s/ \[[0-9a-f]{4}(:[0-9a-f]{4})?\]//g; s/ \(rev [0-9a-f]+\)//' | cut -c1-80)
+    case "$drv" in
+      none) bad "$dev: no driver loaded"; info "the screen runs in basic mode (low resolution, no acceleration)"; fix fix_gpu "fui setup gpu (then reboot)" ;;
+      nouveau) warn "$dev: open-source nouveau driver (slow for Hyprland)"; fix fix_gpu "fui setup gpu: install the NVIDIA driver (then reboot)" ;;
+      *) ok "$dev: driver $drv" ;;
+    esac
+  done < <(gpu_lines)
+  [ "$any" = 1 ] || warn "no graphics card found by lspci (is pciutils installed?)"
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    hyprctl -j monitors all 2>/dev/null | python3 -c '
+import json, sys
+for m in json.load(sys.stdin):
+    modes = m.get("availableModes", [])
+    print(f"{m[\"name\"]}|{m[\"width\"]}x{m[\"height\"]}@{round(m[\"refreshRate\"])}|{len(modes)}|{modes[0] if modes else \"\"}")
+' 2>/dev/null | while IFS='|' read -r name cur n best; do
+      if [ "${n:-0}" -le 1 ]; then
+        warn "$name at $cur offers only one mode: usually means no proper graphics driver"
+      else
+        ok "$name at $cur ($n modes, best $best)"
+      fi
+    done
+  fi
+
+  section "audio"
+  local svc
+  for svc in pipewire wireplumber pipewire-pulse; do
+    if systemctl --user is-active --quiet "$svc" 2>/dev/null; then ok "$svc running"
+    else bad "$svc not running"; fix fix_audio_services "systemctl --user enable --now pipewire pipewire-pulse wireplumber"; break
+    fi
+  done
+  if have pactl && pactl info >/dev/null 2>&1; then
+    local sink vol others
+    sink=$(pactl get-default-sink 2>/dev/null)
+    vol=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | grep -oE '[0-9]+%' | head -1)
+    others=$(pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -v -e "^$sink\$" -e hdmi | head -1)
+    case "$sink" in
+      *hdmi*|*HDMI*|*DisplayPort*)
+        if [ -n "$others" ]; then warn "output is the monitor (HDMI/DisplayPort), which often has no speakers"; fix fix_audio_output "fui setup audio: switch to $others"
+        else ok "output: $sink (the only one)"; fi ;;
+      "") bad "no audio output found" ;;
+      *) ok "output: $sink" ;;
+    esac
+    if pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null | grep -q yes; then
+      warn "output is muted"; fix fix_audio_output "unmute and set 60%"
+    elif [ "${vol%\%}" -lt 10 ] 2>/dev/null; then
+      warn "volume is $vol"; fix fix_audio_output "set 60%"
+    else
+      ok "volume $vol"
+    fi
+  else
+    info "pactl can't reach the audio server: output checks skipped"
+  fi
+  if [ -d /usr/share/sounds/ocean ] || [ -d /usr/share/sounds/freedesktop ]; then ok "sound themes installed"
+  else bad "no sound theme installed"; fix fix_packages "install the package list"; fi
+  [ "$(cmd_sound status)" = off ] && { warn "desktop sounds are turned off"; fix fix_sound_on "fui sound on"; }
+
+  section "network"
+  if have nmcli; then
+    case "$(nmcli networking connectivity 2>/dev/null)" in
+      full) ok "online" ;;
+      limited|portal) warn "limited connectivity (captive portal or no internet)" ;;
+      *) bad "offline"; info "connect with: fui tui nmtui  (or SUPER+N)" ;;
+    esac
+  else
+    warn "NetworkManager (nmcli) not installed"
+  fi
+
+  section "packages"
+  if have pacman; then
+    local p missing="" alt=""
+    while IFS= read -r p; do
+      pacman -Qq "$p" >/dev/null 2>&1 && continue
+      local c; c=$(conflict_installed "$p") && { alt="$alt $p→$c"; continue; }
+      missing="$missing $p"
+    done < <(listed_packages "$DOTS/packages.txt")
+    [ -z "$missing" ] && ok "all repo packages installed" || { bad "missing:$missing"; fix fix_packages "install the package list"; }
+    [ -n "$alt" ] && info "using installed alternatives:$alt"
+    missing=""
+    while IFS= read -r p; do pacman -Qq "$p" >/dev/null 2>&1 || missing="$missing $p"; done < <(listed_packages "$DOTS/aur.txt")
+    [ -z "$missing" ] && ok "AUR packages installed" || { warn "AUR packages missing:$missing"; info "install with: yay -S$missing"; }
+  fi
+
+  section "dotfiles"
+  if [ -d "$DOTS" ]; then
+    local pkg f rel nmiss=0 first=""
+    while IFS= read -r pkg; do
+      while IFS= read -r f; do
+        rel="${f#"$DOTS/$pkg/"}"
+        if [ "$(readlink -f "$HOME/$rel" 2>/dev/null)" != "$(readlink -f "$f")" ]; then
+          nmiss=$((nmiss + 1)); [ -n "$first" ] || first="~/$rel"
+        fi
+      done < <(find "$DOTS/$pkg" -type f 2>/dev/null)
+    done < <(stow_packages)
+    [ "$nmiss" = 0 ] && ok "every config file is linked" || { bad "$nmiss config files not linked (e.g. $first)"; fix fix_links "re-link the dotfiles"; }
+    local broken
+    broken=$(stale_links | wc -l | tr -d ' ')
+    [ "$broken" = 0 ] && ok "no broken links" || { warn "$broken links point at files that no longer exist"; fix fix_broken_links "remove them"; }
+    local l nml=0
+    for l in kitty/fui-mode.conf waybar/fui-mode.css rofi/fui-mode.rasi mako/fui-mode gtk-3.0/fui-mode.css fui/fui-mode.sh; do
+      [ -e "$CFG/$l" ] || nml=$((nml + 1))
+    done
+    [ "$nml" = 0 ] && ok "$(current_mode) mode links in place" || { bad "$nml light/dark links missing"; fix fix_mode_links "fui mode apply"; }
+    if [ -d "$DOTS/.git" ]; then
+      local dirty behind
+      dirty=$(git -C "$DOTS" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+      [ "$dirty" = 0 ] && ok "no local changes in $DOTS" || warn "$dirty files changed locally in $DOTS (fui update will refuse until they're dropped or committed)"
+      if timeout 8 git -C "$DOTS" fetch -q 2>/dev/null; then
+        behind=$(git -C "$DOTS" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+        [ "$behind" = 0 ] && ok "up to date with GitHub" || warn "$behind updates available: run fui update"
+      else
+        info "couldn't reach GitHub to check for updates"
+      fi
+    fi
+  else
+    bad "no dotfiles at $DOTS"
+  fi
+  fc-list 2>/dev/null | grep -q "JetBrainsMono Nerd" && ok "JetBrainsMono Nerd Font installed" || bad "JetBrainsMono Nerd Font missing"
+
+  section "wallpaper"
+  local pref; pref=$(cat "$STATE/wallpaper" 2>/dev/null || echo live)
+  info "set to: $pref (SUPER+SHIFT+W switches)"
+  if pgrep -x mpvpaper >/dev/null; then ok "live wallpaper playing"
+  elif pgrep -x swaybg >/dev/null; then
+    if [ "$pref" = live ]; then
+      if pgrep -f "make-wallpaper.py --live" >/dev/null; then info "still image shown while the live loop renders"
+      elif ! have mpvpaper; then warn "mpvpaper not installed: still image only"; info "install with: yay -S mpvpaper"
+      else warn "live wallpaper not running"; [ -s "$CACHE/render.log" ] && tail -n 3 "$CACHE/render.log" | sed 's/^/           /'
+        [ -s "$CACHE/mpvpaper.log" ] && tail -n 3 "$CACHE/mpvpaper.log" | sed 's/^/           /'
+      fi
+    else ok "still wallpaper shown"; fi
+  else
+    [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && warn "no wallpaper program running (fui wallpaper start)"
+  fi
+
+  section "disk"
+  local use; use=$(df -P / 2>/dev/null | awk 'NR==2 {print $5}')
+  [ "${use%\%}" -lt 90 ] 2>/dev/null && ok "root filesystem ${use} full" || warn "root filesystem ${use} full"
+
+  printf '\n%s ok, %s warnings, %s problems\n' "$D_OK" "$D_WARN" "$D_FAIL"
+  if [ ${#FIXES[@]} -gt 0 ]; then
+    if [ "$do_fix" = 1 ]; then
+      local item fn done_list=""
+      for item in "${FIXES[@]}"; do
+        fn="${item%%|*}"
+        case " $done_list " in *" $fn "*) continue ;; esac
+        done_list="$done_list $fn"
+        echo; echo "fixing: ${item#*|}"
+        "$fn"
+      done
+      echo; echo "Done. Run fui doctor again to check."
+    else
+      echo "Run fui doctor --fix to apply the fixes listed above."
+    fi
+  fi
+  [ "$D_FAIL" = 0 ]
+}
+
+
+# ── setup (hardware) ────────────────────────────────────────────────────
+confirm() {   # confirm "question": yes when --yes was given or the answer is y
+  [ "$YES" = 1 ] && return 0
+  [ -t 0 ] || return 1
+  local r; read -r -p "  $1 [y/N] " r
+  case "$r" in y|Y|yes) return 0 ;; *) return 1 ;; esac
+}
+
+setup_gpu() {
+  echo "▣ graphics driver"
+  local ids found=0
+  ids=$(lspci -nn 2>/dev/null | grep -E 'VGA|3D controller|Display controller' | grep -oE '\[[0-9a-f]{4}:[0-9a-f]{4}\]' | cut -c2-5)
+  if echo "$ids" | grep -q 10de; then
+    found=1
+    if lspci -nnk | grep -A3 -E 'VGA|3D' | grep -q 'Kernel driver in use: nvidia'; then
+      echo "  NVIDIA driver already loaded"
+    elif have nvidia-inst; then
+      echo "  NVIDIA card: EndeavourOS's nvidia-inst picks the right driver for it."
+      confirm "Run sudo nvidia-inst now?" && sudo nvidia-inst && echo "  Reboot to use the new driver: systemctl reboot"
+    else
+      echo "  NVIDIA card, but nvidia-inst isn't available: install it with sudo pacman -S nvidia-inst"
+    fi
+    local lc="$CFG/hypr/local.lua"
+    if [ -f "$lc" ] && ! grep -q LIBVA_DRIVER_NAME "$lc"; then
+      printf '\n-- NVIDIA (added by fui setup)\nhl.env("LIBVA_DRIVER_NAME", "nvidia")\nhl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")\nhl.env("NVD_BACKEND", "direct")\n' >> "$lc"
+      echo "  added the NVIDIA settings to ~/.config/hypr/local.lua"
+    fi
+  fi
+  if echo "$ids" | grep -q 1002; then
+    found=1; echo "  AMD graphics: mesa + Vulkan"
+    sudo pacman -S --needed --noconfirm mesa vulkan-radeon
+  fi
+  if echo "$ids" | grep -q 8086; then
+    found=1; echo "  Intel graphics: mesa + Vulkan + video decoding"
+    sudo pacman -S --needed --noconfirm mesa vulkan-intel intel-media-driver
+  fi
+  [ "$found" = 1 ] || echo "  no NVIDIA, AMD or Intel graphics found (virtual machine?): nothing to do"
+}
+
+setup_audio() {
+  echo "▣ audio output"
+  have pactl && pactl info >/dev/null 2>&1 || { echo "  audio server not reachable (run this inside the desktop)"; return 0; }
+  local sink alt
+  sink=$(pactl get-default-sink 2>/dev/null)
+  case "$sink" in
+    *hdmi*|*HDMI*|*DisplayPort*)
+      alt=$(pactl list short sinks | awk '{print $2}' | grep -v -e hdmi -e HDMI | head -1)
+      if [ -n "$alt" ]; then
+        pactl set-default-sink "$alt" && echo "  output: $sink -> $alt"
+      else
+        echo "  the monitor is the only output: plug speakers or headphones into the PC to get another"
+      fi ;;
+    *) echo "  output: $sink" ;;
+  esac
+  pactl set-sink-mute @DEFAULT_SINK@ 0
+  local vol; vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oE '[0-9]+%' | head -1)
+  [ "${vol%\%}" -lt 10 ] 2>/dev/null && pactl set-sink-volume @DEFAULT_SINK@ 60%
+  echo "  unmuted, volume $(pactl get-sink-volume @DEFAULT_SINK@ | grep -oE '[0-9]+%' | head -1)"
+}
+
+setup_bluetooth() {
+  echo "▣ Bluetooth"
+  if [ -z "$(ls /sys/class/bluetooth 2>/dev/null)" ]; then
+    echo "  no Bluetooth adapter: nothing to do"; return 0
+  fi
+  sudo pacman -S --needed --noconfirm bluez bluez-utils bluetui && sudo systemctl enable --now bluetooth.service
+  echo "  ready: run bluetui to pair devices"
+}
+
+setup_firmware() {
+  echo "▣ firmware updates"
+  sudo pacman -S --needed --noconfirm fwupd
+  echo "  check for BIOS / device firmware: fwupdmgr refresh && fwupdmgr get-updates"
+}
+
+cmd_setup() {
+  YES=0
+  local what="all" a
+  for a in "$@"; do case "$a" in --yes|-y) YES=1 ;; gpu|audio|bluetooth|firmware|all) what="$a" ;; esac; done
+  case "$what" in
+    gpu) setup_gpu ;;
+    audio) setup_audio ;;
+    bluetooth) setup_bluetooth ;;
+    firmware) setup_firmware ;;
+    all) setup_gpu; setup_audio; setup_bluetooth; setup_firmware ;;
+  esac
+}
+
+
+# ── shot ────────────────────────────────────────────────────────────────
+dispatch() { hyprctl dispatch "$1" >/dev/null 2>&1; }
+
+cmd_shot() {
+  have grim || die "grim is not installed"
+  local dir
+  dir="$HOME/Pictures/fui/$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$dir"
+  if [ "${1:-}" != --tour ]; then
+    local f="$dir/${1:-desktop}.png"
+    grim "$f" && echo "$f"
+    cmd_sound screenshot
+    return 0
+  fi
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || die "run the tour inside Hyprland"
+  local ws mode
+  ws=$(hyprctl -j activeworkspace 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' 2>/dev/null || echo 1)
+  mode=$(current_mode)
+  echo "Taking the tour shots; hands off for about 20 seconds."
+  snap() { sleep "${2:-1}"; grim "$dir/$1.png" && echo "  $1"; }
+
+  [ "$mode" = dark ] || { cmd_mode dark --quiet >/dev/null; sleep 2; }
+  snap 01-dark-desktop 0.5
+  dispatch "hl.dsp.focus({ workspace = 'empty' })"; snap 02-dark-empty 1.5
+  detach rofi -config "$CFG/rofi/fui-mode.rasi" -show drun; snap 03-dark-launcher 1.2; pkill -x rofi
+  have notify-send && notify-send "HUD // TEST" "Sample notification for the screenshot tour"; snap 04-dark-notification 1
+  cmd_mode light --quiet >/dev/null; snap 05-light-empty 3
+  dispatch "hl.dsp.focus({ workspace = '$ws' })"; snap 06-light-desktop 1.5
+  detach rofi -config "$CFG/rofi/fui-mode.rasi" -show drun; snap 07-light-launcher 1.2; pkill -x rofi
+  [ "$mode" = light ] || cmd_mode dark --quiet >/dev/null
+  echo "Saved in $dir"
+}
+
+
+# ── main ────────────────────────────────────────────────────────────────
+sub="${1:-help}"
+[ $# -gt 0 ] && shift
+case "$sub" in
+  mode)      cmd_mode "$@" ;;
+  wallpaper) cmd_wallpaper "$@" ;;
+  sound)     cmd_sound "$@" ;;
+  bar)       cmd_bar "$@" ;;
+  tabs)      cmd_tabs "$@" ;;
+  tui)       cmd_tui "$@" ;;
+  update)    cmd_update "$@" ;;
+  doctor)    cmd_doctor "$@" ;;
+  setup)     cmd_setup "$@" ;;
+  shot)      cmd_shot "$@" ;;
+  help|-h|--help) usage ;;
+  *) echo "fui: unknown command '$sub'" >&2; usage >&2; exit 2 ;;
+esac

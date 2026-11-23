@@ -3,5 +3,5 @@ hypr/.config/hypr/local.lua
 *.local
 .DS_Store
 
-# ...but not the ~/.local folder of the fui package (fui-mode, fui-bar, fui-wallpaper, ...)
+# ...but not the ~/.local folder of the fui package (fui mode, fui bar, fui wallpaper, ...)
 !/fui/.local/

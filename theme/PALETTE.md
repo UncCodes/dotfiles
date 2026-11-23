@@ -6,7 +6,7 @@ bracketed geometry, micro-geometry, "muted neon" colour, technical mono type.
 The source of truth is [`tokens.toml`](tokens.toml); this page is generated from it.
 
 ## Colour
-Two modes share every role. `fui-mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
+Two modes share every role. `fui mode toggle` (SUPER+SHIFT+T) switches the whole desktop.
 
 | Token | Dark | Light | Role |
 |---|---|---|---|

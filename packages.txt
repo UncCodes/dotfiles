@@ -31,6 +31,7 @@ playerctl
 pipewire
 pipewire-pulse
 wireplumber
+libpulse      # pactl: fui doctor / fui setup audio
 
 # event sounds: Ocean (EndeavourOS KDE's theme), freedesktop as fallback
 ocean-sound-theme
@@ -80,6 +81,5 @@ papirus-icon-theme
 adw-gtk-theme
 fontconfig
 python
-
-# AUR, installed by install.sh with yay (not by the installer hook):
-#   mpvpaper   plays the live wallpaper
+pciutils      # lspci: graphics detection
+# AUR packages are listed in aur.txt

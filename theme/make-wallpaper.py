@@ -32,6 +32,10 @@ MODE = "dark"
 if "--mode" in args:
     MODE = args[args.index("--mode") + 1]
     del args[args.index("--mode"):args.index("--mode") + 2]
+SECONDS_ARG = None
+if "--seconds" in args:                      # shorter render for tests (the loop is only seamless at 20)
+    SECONDS_ARG = int(args[args.index("--seconds") + 1])
+    del args[args.index("--seconds"):args.index("--seconds") + 2]
 args = [a for a in args if a != "--live"]
 HYPR = Path(__file__).resolve().parent.parent / "hypr/.config/hypr"
 OUT = Path(args[0]) if args else HYPR / ("wallpaper-light.png" if MODE == "light" else "wallpaper.png")
@@ -168,7 +172,7 @@ if not LIVE:
 
 
 # ── live loop ───────────────────────────────────────────────────────────
-FPS, SECONDS = 24, 20
+FPS, SECONDS = 24, (SECONDS_ARG or 20)
 CELL, DRIFT = 24, 96                       # the portfolio's grid: 24 px cells, -96 px per 20 s
 base = img.convert("RGBA")
 
@@ -209,10 +213,10 @@ ff = subprocess.Popen(
     stdin=subprocess.PIPE)
 for n in range(FPS * SECONDS):
     t = n / FPS
-    o = (DRIFT * t / SECONDS) % CELL                 # grid slides up-left, wraps every cell
+    o = (DRIFT * t / 20) % CELL                 # grid slides up-left, wraps every cell
     frame = base.copy()
     frame.alpha_composite(grid.transform((W, H), Image.AFFINE, (1, 0, o, 0, 1, o), resample=Image.BILINEAR))
-    angle = 360 * t / SECONDS                        # one turn per loop, clockwise
+    angle = 360 * t / 20                        # one turn per loop, clockwise
     frame.alpha_composite(sweep.rotate(-angle, resample=Image.BICUBIC), dest=(sx, sy))
     if t % 2 < 1:
         ImageDraw.Draw(frame).rectangle((bx - 2, by - 2, bx + 2, by + 2), fill=rgba(ICE_HI, 0.85))

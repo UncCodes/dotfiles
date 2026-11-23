@@ -10,6 +10,33 @@ wide-tracked micro-labels. Colours and rules: [`theme/PALETTE.md`](theme/PALETTE
 Open [`theme/preview.html`](theme/preview.html) for a mock of the full desktop and
 [`theme/components.html`](theme/components.html) for the component geometry.
 
+## The `fui` command
+
+One command runs the desktop's moving parts. `fui help` lists it all.
+
+| Command | Does |
+|---|---|
+| `fui update` | pull the dotfiles from GitHub, re-run the installer, reload |
+| `fui doctor` | check graphics driver, audio, network, packages, links, wallpaper, updates |
+| `fui doctor --fix` | the same, then apply the fixes it found |
+| `fui setup gpu` / `audio` / `bluetooth` / `firmware` / `all` | hardware setup (driver, output, Bluetooth, firmware updates) |
+| `fui mode toggle` | light / dark (`SUPER+SHIFT+T`) |
+| `fui wallpaper toggle` | live / still wallpaper (`SUPER+SHIFT+W`) |
+| `fui sound off` / `on` | desktop sounds |
+| `fui tabs` | the startup tabs (`SUPER+SHIFT+Return`) |
+| `fui tui <command>` | a terminal tool in a floating window |
+| `fui shot` / `fui shot --tour` | screenshots into `~/Pictures/fui/`; the tour takes a fixed set (dark, light, launcher, notification) for design reviews |
+
+When something looks wrong, run `fui doctor` and send its output.
+
+## Testing
+
+Every push runs [`.github/workflows/check.yml`](.github/workflows/check.yml) in an Arch Linux
+container: shellcheck and luacheck, the theme build check, a check that every file the
+installer needs is in git, a full `install.sh --ci` (real packages, real links), Hyprland's own
+`--verify-config` on the installed config, the light/dark switch, and a short wallpaper render.
+Run the same locally on an Arch machine with `bash tests/run.sh`.
+
 ## Light and dark
 
 `SUPER+SHIFT+T` (or click `MODE` in the bar) switches the whole desktop between dark and
@@ -17,7 +44,7 @@ light: Hyprland borders and glow, the bar, launcher, notifications, lock screen,
 prompt, shell colours, GTK, Qt, btop, git, Neovim and the wallpaper. The light palette is
 `[light.color]` in [`theme/tokens.toml`](theme/tokens.toml); same roles, daylight values.
 
-From a terminal: `fui-mode toggle`, `fui-mode light`, `fui-mode dark`, `fui-mode status`.
+From a terminal: `fui mode toggle`, `fui mode light`, `fui mode dark`, `fui mode status`.
 
 Kitty, the bar, notifications, Hyprland and the wallpaper change at once. GTK and Qt apps
 that are already open, and open shells, pick up the new mode when restarted.
@@ -33,7 +60,7 @@ The wallpaper moves: the fine grid from the portfolio drifts diagonally across i
 20 s), a radar sweep turns once per loop and one status mark blinks. `SUPER+SHIFT+W`
 switches between live and still.
 
-`fui-wallpaper` renders a seamless 20 s loop for your screen size and mode with
+`fui wallpaper` renders a seamless 20 s loop for your screen size and mode with
 [`theme/make-wallpaper.py`](theme/make-wallpaper.py) the first time (20 to 60 s, the still
 image shows meanwhile), caches it in `~/.cache/fui/`, and plays it with `mpvpaper` (AUR,
 installed by `install.sh`). It pauses while a fullscreen window covers it. Without mpvpaper
@@ -67,7 +94,7 @@ startup tabs off.
 | glow | markdown reader | `glow README.md` |
 | zoxide | jump to folders | `z dotfiles` |
 
-The bar and the keys open them in a floating window (`fui-tui <command>`). Their colours are
+The bar and the keys open them in a floating window (`fui tui <command>`). Their colours are
 ANSI names, so they follow kitty's palette in both modes.
 
 ## Sounds
@@ -75,14 +102,14 @@ ANSI names, so they follow kitty's palette in both modes.
 Desktop event sounds use Ocean, the sound theme EndeavourOS's KDE edition plays (EndeavourOS
 has no sound theme of its own), with the freedesktop set as a fallback: login, notifications,
 alerts, volume keys, screenshots and the mode switch. GTK apps use the same theme.
-`fui-sound off` silences them, `fui-sound on` brings them back. The theme is
+`fui sound off` silences them, `fui sound on` brings them back. The theme is
 `[desktop] sound_theme` in `tokens.toml`.
 
 ## Small screens
 
-`fui-bar` starts waybar with [`config-compact.jsonc`](waybar/.config/waybar/config-compact.jsonc)
+`fui bar` starts waybar with [`config-compact.jsonc`](waybar/.config/waybar/config-compact.jsonc)
 on screens narrower than 1400 px (for example 1024x768). It drops the window title,
-temperature and keyboard readouts so the bar fits. After changing resolution, run `fui-bar`
+temperature and keyboard readouts so the bar fits. After changing resolution, run `fui bar`
 or log in again.
 
 ## System-wide theming
@@ -146,7 +173,7 @@ They still get the window rules, fonts and dark-mode preference.
 | `btop`      | `hud` theme                          |
 | `gtk`       | GTK3/4 FUI overrides + geometry assets (generated) |
 | `qt`        | qt6ct palette + assets (generated)             |
-| `fui`       | theme env, fontconfig, git, browser flags (generated); `fui-mode`, `fui-bar`, `fui-wallpaper`, `fui-sound`, `fui-tui`, `fui-startup` in `~/.local/bin` |
+| `fui`       | theme env, fontconfig, git, browser flags (generated); the `fui` command in `~/.local/bin` |
 | `nvim`      | FUI colorscheme (generated)                    |
 
 Each folder mirrors `$HOME` and is linked with GNU Stow (`--no-folding`).
@@ -171,8 +198,17 @@ Each folder mirrors `$HOME` and is linked with GNU Stow (`--no-folding`).
 bash <(curl -fsSL https://raw.githubusercontent.com/UncCodes/dotfiles/main/install.sh)
 ```
 
-Anything it would overwrite is moved to `~/.dotfiles-backup/<timestamp>/` first.
-`--no-packages` only links files; `--no-chsh` keeps your current shell.
+Anything it would overwrite is moved to `~/.dotfiles-backup/<timestamp>/` first. It's safe to run
+again: each step reports ok / skip / FAIL, a failed step doesn't stop the rest, and a summary
+lists what needs attention. Options: `--no-packages`, `--no-hardware`, `--no-chsh`, `--ci`.
+Package lists: [`packages.txt`](packages.txt) (official repos), [`aur.txt`](aur.txt) (AUR, via
+yay), [`stow.txt`](stow.txt) (folders linked into `$HOME`).
+
+### Updating
+
+```bash
+fui update
+```
 
 ## Keys
 
