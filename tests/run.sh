@@ -56,12 +56,17 @@ t "every package exists in the official repos" bash -c '
   done
   [ -z "$missing" ] || { echo "not found:$missing"; exit 1; }' _ "$DOTS"
 
-t "still wallpaper renders" python3 "$DOTS/theme/make-wallpaper.py" /tmp/fui-test.png 320 180
-if command -v ffmpeg >/dev/null; then
-  t "live wallpaper renders" python3 "$DOTS/theme/make-wallpaper.py" --live --seconds 1 /tmp/fui-test.mp4 320 240
-fi
+
+wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the install provides
+  python3 -c "import PIL" 2>/dev/null || { echo "  [skip] wallpaper renders (no Pillow)"; return; }
+  t "still wallpaper renders" python3 "$DOTS/theme/make-wallpaper.py" /tmp/fui-test.png 320 180
+  if command -v ffmpeg >/dev/null; then
+    t "live wallpaper renders" python3 "$DOTS/theme/make-wallpaper.py" --live --seconds 1 /tmp/fui-test.mp4 320 240
+  fi
+}
 
 if [ "$lint_only" = 1 ]; then
+  wallpaper_checks
   printf '\n%s passed, %s failed\n' "$pass" "$fail"; [ "$fail" = 0 ]; exit
 fi
 
@@ -80,12 +85,16 @@ t "every stowed file is linked" bash -c '
     done < <(find "$1/$pkg" -type f)
   done
   exit $bad' _ "$DOTS"
-t "fui is on the path and runs" "$HOME/.local/bin/fui" help
+t "fui runs from ~/.local/bin" "$HOME/.local/bin/fui" help
+t "fui is on the default PATH" env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/bin HOME="$HOME" bash -c 'command -v fui && fui help >/dev/null'
+# Hyprland wants a runtime folder even just to check the config; containers have none
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"; chmod 700 "$XDG_RUNTIME_DIR"; export XDG_RUNTIME_DIR
 t "Hyprland --verify-config" Hyprland --verify-config
 t "light / dark links in place" bash -c 'for l in kitty/fui-mode.conf waybar/fui-mode.css rofi/fui-mode.rasi mako/fui-mode hypr/fui-mode-hyprlock.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css fui/fui-mode.sh fui/starship.toml git/fui-mode.gitconfig; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done'
 t "switch to light" bash -c '"$HOME/.local/bin/fui" mode light --quiet && [ "$(readlink "$HOME/.config/kitty/fui-mode.conf")" = colors-light.conf ] && grep -q fui-light.conf "$HOME/.config/qt6ct/qt6ct.conf"'
 t "switch back to dark" bash -c '"$HOME/.local/bin/fui" mode dark --quiet && [ "$(readlink "$HOME/.config/kitty/fui-mode.conf")" = colors.conf ] && [ "$(readlink "$HOME/.config/waybar/fui-mode.css")" = style.css ]'
 t "fui doctor runs to the end" bash -c '"$HOME/.local/bin/fui" doctor > /tmp/doctor.txt 2>&1; grep -q "ok, .* warnings, .* problems" /tmp/doctor.txt || { cat /tmp/doctor.txt; exit 1; }'
+wallpaper_checks
 t "zsh loads the shell config" zsh -ic 'echo "$LS_COLORS" | grep -q "di=" && command -v starship >/dev/null'
 
 printf '\n%s passed, %s failed\n' "$pass" "$fail"

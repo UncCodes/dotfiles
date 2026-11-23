@@ -19,7 +19,7 @@ jobs:
           useradd -m tester
           echo 'tester ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/tester
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install and test as a normal user
         run: |

@@ -166,7 +166,7 @@ except Exception:
   video="$CACHE/live-$mode-${w}x$h-$key.mp4"
 
   if [ ! -s "$video" ]; then
-    rm -f "$CACHE"/live-"$mode"-"${w}x$h"-*.mp4
+    rm -f "$CACHE/live-$mode-${w}x$h-"*.mp4
     tmp="$video.part.mp4"
     if ! python3 "$DOTS/theme/make-wallpaper.py" --live --mode "$mode" "$tmp" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
       rm -f "$tmp"
@@ -469,11 +469,11 @@ for m in json.load(sys.stdin):
       while IFS= read -r f; do
         rel="${f#"$DOTS/$pkg/"}"
         if [ "$(readlink -f "$HOME/$rel" 2>/dev/null)" != "$(readlink -f "$f")" ]; then
-          nmiss=$((nmiss + 1)); [ -n "$first" ] || first="~/$rel"
+          nmiss=$((nmiss + 1)); [ -n "$first" ] || first="$rel"
         fi
       done < <(find "$DOTS/$pkg" -type f 2>/dev/null)
     done < <(stow_packages)
-    [ "$nmiss" = 0 ] && ok "every config file is linked" || { bad "$nmiss config files not linked (e.g. $first)"; fix fix_links "re-link the dotfiles"; }
+    [ "$nmiss" = 0 ] && ok "every config file is linked" || { bad "$nmiss config files not linked (e.g. ~/$first)"; fix fix_links "re-link the dotfiles"; }
     local broken
     broken=$(stale_links | wc -l | tr -d ' ')
     [ "$broken" = 0 ] && ok "no broken links" || { warn "$broken links point at files that no longer exist"; fix fix_broken_links "remove them"; }
@@ -487,7 +487,7 @@ for m in json.load(sys.stdin):
       dirty=$(git -C "$DOTS" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
       [ "$dirty" = 0 ] && ok "no local changes in $DOTS" || warn "$dirty files changed locally in $DOTS (fui update will refuse until they're dropped or committed)"
       if timeout 8 git -C "$DOTS" fetch -q 2>/dev/null; then
-        behind=$(git -C "$DOTS" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+        behind=$(git -C "$DOTS" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)
         [ "$behind" = 0 ] && ok "up to date with GitHub" || warn "$behind updates available: run fui update"
       else
         info "couldn't reach GitHub to check for updates"

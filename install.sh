@@ -192,6 +192,19 @@ toolkit_files() {
   return 0
 }
 
+fui_on_path() {
+  # ~/.local/bin is added to PATH by the shell config, but only in shells started after the
+  # install; a link in /usr/local/bin makes `fui` work everywhere, right away
+  local want="$HOME/.local/bin/fui"
+  [ "$(readlink /usr/local/bin/fui 2>/dev/null)" = "$want" ] && { NOTE="/usr/local/bin/fui"; return 0; }
+  if sudo -n true 2>/dev/null || [ -t 0 ]; then
+    sudo mkdir -p /usr/local/bin && sudo ln -sfn "$want" /usr/local/bin/fui || { NOTE="couldn't link /usr/local/bin/fui"; return 1; }
+    NOTE="/usr/local/bin/fui"
+  else
+    NOTE="no sudo here: fui works in new terminals via ~/.local/bin"; return 3
+  fi
+}
+
 apply_mode() {
   # light / dark links for the current mode (dark on a fresh install)
   "$HOME/.local/bin/fui" mode apply --quiet || return 1
@@ -218,6 +231,7 @@ step "link config files"   link_files
 step "remove stale links"  remove_stale_links
 step "machine files"       machine_files
 step "toolkit files"       toolkit_files
+step "fui command"         fui_on_path
 step "light / dark"        apply_mode
 step "login shell"         login_shell
 
