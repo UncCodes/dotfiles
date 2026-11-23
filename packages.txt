@@ -1,0 +1,58 @@
+# Official Arch / EndeavourOS repo packages. One per line; comments allowed.
+
+# compositor and session
+hyprland
+hyprlock
+hypridle
+hyprpolkitagent
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+qt5-wayland
+qt6-wayland
+qt6ct
+qt6-svg
+
+# desktop pieces
+waybar
+swaybg
+rofi
+mako
+libnotify
+kitty
+thunar
+gvfs
+network-manager-applet
+pavucontrol
+playerctl
+pipewire
+pipewire-pulse
+wireplumber
+
+# screenshots and clipboard
+grim
+slurp
+wl-clipboard
+cliphist
+
+# shell and tools
+zsh
+zsh-autosuggestions
+zsh-syntax-highlighting
+starship
+fastfetch
+btop
+eza
+bat
+fzf
+neovim
+git
+stow
+
+# look
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-emoji
+papirus-icon-theme
+adw-gtk-theme
+fontconfig
+python

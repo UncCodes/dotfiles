@@ -1,0 +1,102 @@
+# ┌─ FUI DESIGN TOKENS ── single source of truth ─────────────────────────┐
+# │ Every colour, opacity, blur, border, chamfer, font and gap lives here.│
+# │ After editing, run:   python3 theme/build.py                          │
+# │ build.py regenerates the toolkit themes (GTK3/4, Qt, btop, nvim, env, │
+# │ fontconfig, git, Hyprland) and sweeps changed colours through every   │
+# │ hand-written config, so nothing else needs editing by hand.           │
+# └───────────────────────────────────────────────────────────────────────┘
+
+[meta]
+name = "FUI"
+
+# ── colour: "muted neon" ── desaturated, clinical, emissive ─────────────
+[color]
+void        = "#020304"   # wallpaper ground, the darkest black
+term_bg     = "#030506"   # terminal and Hyprland background
+term_black  = "#080C0E"   # ANSI 0, panel ground
+surface_deep= "#080E12"   # launcher glass base
+surface     = "#0A1014"   # panel / view base (used with alpha)
+raised      = "#0E1519"   # raised row, selected background
+surface_hi  = "#18242A"   # top of the panel glass gradient
+line        = "#1A2428"   # hairlines, grid, inactive borders
+line_hi     = "#2A3A40"   # brighter hairline, hover
+black_hi    = "#2A3338"   # ANSI 8
+
+fg          = "#E6EBEC"   # stark off-white text
+fg_dim      = "#7D8A8F"   # low-opacity grey: labels, telemetry
+silver      = "#B8C2C5"   # ANSI 7
+white       = "#F4F6F6"   # ANSI 15, text on accent fills
+
+ice         = "#8FD3DC"   # pale ice cyan: line work, focus, data
+ice_hi      = "#C8EEF2"   # lit edges, L-brackets
+ice_dim     = "#2E5560"   # fills behind ice
+steel       = "#6F8FB0"   # washed-out steel blue
+steel_hi    = "#93AECB"
+amber       = "#C99A4E"   # dim amber: the one accent per screen
+amber_hi    = "#DDB677"
+amber_dim   = "#7A5E30"
+crimson     = "#B5555A"   # muted crimson: alerts
+crimson_hi  = "#CC7378"
+ok          = "#6FAF8A"
+ok_hi       = "#92C7A6"
+fault       = "#9A86B8"
+fault_hi    = "#B5A6CC"
+
+# ANSI 16, by token name. Every terminal app inherits these.
+[ansi]
+normal = ["term_black", "crimson", "ok", "amber", "steel", "fault", "ice", "silver"]
+bright = ["black_hi", "crimson_hi", "ok_hi", "amber_hi", "steel_hi", "fault_hi", "ice_hi", "white"]
+
+# ── surfaces ────────────────────────────────────────────────────────────
+[opacity]
+panel        = 0.55   # hazy glass fill (bar segments, popovers)
+panel_strong = 0.88   # menus, tooltips: still hazy, readable
+terminal     = 0.70   # kitty background
+window_active   = 0.96
+window_inactive = 0.88
+hairline     = 0.22   # resting hairline strength (relative to ice)
+hairline_lit = 0.65   # lit edge (bracket side)
+
+[blur]
+size       = 10
+passes     = 3
+noise      = 0.03
+contrast   = 0.90
+brightness = 0.78
+vibrancy   = 0.30
+
+[glow]
+range   = 28
+alpha   = 0.20      # focused-window haze strength
+
+# ── geometry ────────────────────────────────────────────────────────────
+[geometry]
+border      = 1     # px, every hairline
+radius      = 0     # never rounded
+chamfer     = 6     # px, 45° clip on controls (top-left + bottom-right)
+chamfer_lg  = 10    # px, 45° clip on popovers, menus, frames
+bracket     = 5     # px, serif length of [ ] button brackets
+notch       = 8     # px, step height of notched headerbars / tabs
+tab_slant   = 5     # px, horizontal slant of parallelogram tabs
+segment     = 4     # px, segment length in slotted progress / level bars
+segment_gap = 2     # px
+tick_step   = 8     # px, scrollbar / ruler tick spacing
+gaps_in     = 5
+gaps_out    = 14
+
+# ── type ────────────────────────────────────────────────────────────────
+[font]
+mono          = "JetBrainsMono Nerd Font"
+size          = 10        # UI point size
+terminal_size = 11.5
+tracking      = 1         # px letter-spacing on ordinary labels
+label_tracking= 2         # px letter-spacing on micro-labels / titles
+system_wide_mono = true   # fontconfig: prefer the mono face for sans-serif too
+fallback      = ["Noto Sans Arabic", "Noto Sans", "Noto Color Emoji"]
+
+# ── desktop ─────────────────────────────────────────────────────────────
+[desktop]
+icon_theme   = "Papirus-Dark"
+cursor_theme = "Adwaita"
+cursor_size  = 24
+gtk_base     = "adw-gtk3-dark"   # base GTK3 theme the overrides sit on

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FUI components</title>
+<link rel="stylesheet" href="web/fui-tokens.css">
+<style>
+  /* Component gallery. Colours and sizes come from web/fui-tokens.css (generated from
+     tokens.toml). Controls use the same SVG assets the GTK and Qt themes load, so this
+     page shows the real silhouettes; clip-path adds the chamfers GTK draws with gradients. */
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--fui-void); color: var(--fui-fg); font: 13px/1.5 var(--fui-font-mono);
+    font-variant-numeric: tabular-nums; padding: 48px; min-height: 100vh;
+    background-image: radial-gradient(circle at 75% 30%, rgba(111,143,176,.10), transparent 45%);
+  }
+  .A { --a: url(../gtk/.config/gtk-4.0/assets/); }
+  h1 { font-size: 11px; letter-spacing: 6px; color: var(--fui-ice); font-weight: 600; }
+  .lab { font-size: 10px; letter-spacing: var(--fui-label-tracking); color: var(--fui-fg-dim); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .lab::before { content: ""; width: 4px; height: 4px; background: var(--fui-ice); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; margin-top: 28px; }
+
+  /* panel: hazy glass, chamfered TL/BR, lit corner, L-brackets, notched header */
+  .panel { position: relative; padding: 18px; background: linear-gradient(160deg, rgba(24,36,42,.55), rgba(10,16,20,.40));
+    backdrop-filter: blur(14px); clip-path: polygon(var(--fui-chamfer-lg) 0, 100% 0, 100% calc(100% - var(--fui-chamfer-lg)), calc(100% - var(--fui-chamfer-lg)) 100%, 0 100%, 0 var(--fui-chamfer-lg));
+    border: 10px solid transparent; border-image: url(../gtk/.config/gtk-4.0/assets/chamfer-lg.svg) 12 / 10px stretch; }
+  .panel .hdr { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 3px; color: var(--fui-ice); padding-bottom: 10px; margin-bottom: 14px;
+    background: url(../gtk/.config/gtk-4.0/assets/notch.svg) left bottom / 64px 8px no-repeat, linear-gradient(var(--fui-line), var(--fui-line)) left bottom / 100% 1px no-repeat; }
+  .panel .hdr span:last-child { color: var(--fui-fg-dim); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+
+  /* [ ] bracket buttons */
+  .btn { border: 6px solid transparent; border-image: url(../gtk/.config/gtk-4.0/assets/bracket.svg) 6 / 6px stretch; background: rgba(24,36,42,.55); color: var(--fui-fg);
+    font: inherit; letter-spacing: var(--fui-tracking); padding: 2px 8px; cursor: pointer;
+    clip-path: polygon(var(--fui-chamfer) 0, 100% 0, 100% calc(100% - var(--fui-chamfer)), calc(100% - var(--fui-chamfer)) 100%, 0 100%, 0 var(--fui-chamfer)); }
+  .btn:hover { border-image-source: url(../gtk/.config/gtk-4.0/assets/bracket-hover.svg); background: rgba(143,211,220,.10); color: var(--fui-ice-hi); }
+  .btn.acc { border-image-source: url(../gtk/.config/gtk-4.0/assets/bracket-accent.svg); background: rgba(46,85,96,.85); color: var(--fui-white); }
+  .btn.alert { border-image-source: url(../gtk/.config/gtk-4.0/assets/bracket-alert.svg); background: rgba(181,85,90,.35); }
+  .btn.chev::after { content: " ›"; color: var(--fui-ice); }
+
+  /* chamfered entry */
+  .entry { border: 6px solid transparent; border-image: url(../gtk/.config/gtk-4.0/assets/chamfer.svg) 8 / 6px stretch; background: rgba(2,3,4,.75);
+    color: var(--fui-fg); font: inherit; padding: 2px 4px; width: 100%; caret-color: var(--fui-amber); outline: none;
+    clip-path: polygon(var(--fui-chamfer) 0, 100% 0, 100% calc(100% - var(--fui-chamfer)), calc(100% - var(--fui-chamfer)) 100%, 0 100%, 0 var(--fui-chamfer)); }
+  .entry:focus { border-image-source: url(../gtk/.config/gtk-4.0/assets/chamfer-focus.svg); }
+
+  /* diamond checks, square radios */
+  .ctl { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; letter-spacing: var(--fui-tracking); }
+  .ctl i { width: 14px; height: 14px; background: url(../gtk/.config/gtk-4.0/assets/check.svg); }
+  .ctl.on i { background-image: url(../gtk/.config/gtk-4.0/assets/check-on.svg); }
+  .ctl.mix i { background-image: url(../gtk/.config/gtk-4.0/assets/check-mixed.svg); }
+  .ctl.r i { background-image: url(../gtk/.config/gtk-4.0/assets/radio.svg); }
+  .ctl.r.on i { background-image: url(../gtk/.config/gtk-4.0/assets/radio-on.svg); }
+
+  /* switch */
+  .sw { width: 40px; height: 18px; border: 1px solid rgba(143,211,220,.35); background: var(--fui-void); position: relative; }
+  .sw::after { content: ""; position: absolute; top: 1px; left: 1px; width: 14px; height: 14px; background: var(--fui-fg-dim); }
+  .sw.on { border-color: var(--fui-ice); background: repeating-linear-gradient(90deg, rgba(46,85,96,.9) 0 4px, transparent 4px 6px); }
+  .sw.on::after { left: 23px; background: var(--fui-ice-hi); }
+
+  /* slider: segmented fill over a ticked rail, notched thumb */
+  .slider { position: relative; height: 14px; width: 100%; }
+  .slider::before { content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: var(--fui-line); }
+  .slider .fill { position: absolute; left: 0; top: 6px; height: 2px; width: 62%; background: repeating-linear-gradient(90deg, var(--fui-ice) 0 4px, transparent 4px 6px); }
+  .slider .thumb { position: absolute; left: calc(62% - 7px); top: 0; width: 14px; height: 14px; background: url(../gtk/.config/gtk-4.0/assets/thumb.svg); }
+  .ticks { display: flex; justify-content: space-between; margin-top: 4px; }
+  .ticks i { width: 1px; height: 4px; background: var(--fui-line-hi); } .ticks i:nth-child(5n+1) { height: 7px; background: var(--fui-fg-dim); }
+
+  /* skewed, slotted progress */
+  .prog { height: 8px; border: 1px solid var(--fui-line); background: var(--fui-void); padding: 1px; }
+  .prog b { display: block; height: 100%; width: 72%; background: repeating-linear-gradient(115deg, var(--fui-ice) 0 4px, transparent 4px 6px); }
+  .prog.warn b { width: 28%; background: repeating-linear-gradient(115deg, var(--fui-amber) 0 4px, transparent 4px 6px); }
+  .tele { display: flex; justify-content: space-between; font-size: 10px; color: var(--fui-fg-dim); letter-spacing: 2px; margin: 4px 0 12px; }
+
+  /* parallelogram tabs */
+  .tabs { display: flex; gap: 2px; box-shadow: inset 0 -1px var(--fui-line); }
+  .tab { border: 8px solid transparent; border-bottom: 0; border-image: url(../gtk/.config/gtk-4.0/assets/tab.svg) 8 8 0 8 / 8px 8px 0 8px stretch; padding: 0 10px 4px; color: var(--fui-fg-dim); letter-spacing: var(--fui-tracking); }
+  .tab.on { border-image-source: url(../gtk/.config/gtk-4.0/assets/tab-active.svg); color: var(--fui-ice-hi); }
+
+  /* ticked scrollbar + list with bracketed selection */
+  .list { display: flex; gap: 10px; }
+  .list ul { list-style: none; padding: 0; flex: 1; }
+  .list li { padding: 5px 10px; border-left: 2px solid transparent; }
+  .list li.sel { background: rgba(143,211,220,.12); border-left-color: var(--fui-ice); color: var(--fui-ice-hi); }
+  .sb { width: 6px; position: relative; background: repeating-linear-gradient(0deg, rgba(26,36,40,.9) 0 1px, transparent 1px 16px); }
+  .sb b { position: absolute; top: 18%; left: 1px; width: 4px; height: 36%; background: rgba(143,211,220,.45) repeating-linear-gradient(0deg, transparent 0 7px, rgba(2,3,4,.9) 7px 8px); }
+
+  /* popover / menu */
+  .menu { width: 230px; }
+  .menu li { list-style: none; padding: 5px 10px; display: flex; justify-content: space-between; }
+  .menu li span { color: var(--fui-fg-dim); font-size: 11px; }
+  .menu li.sel { background: rgba(143,211,220,.12); box-shadow: inset 2px 0 var(--fui-ice); color: var(--fui-ice-hi); }
+  .menu hr { border: 0; height: 1px; margin: 4px 6px; background: repeating-linear-gradient(90deg, var(--fui-line-hi) 0 2px, transparent 2px 4px); }
+
+  /* micro-geometry strip */
+  .dots { display: grid; grid-template-columns: repeat(24, 3px); gap: 5px; }
+  .dots i { width: 3px; height: 3px; background: var(--fui-ice); opacity: .15; } .dots i.on { opacity: .55; }
+  .rt { width: 16px; height: 16px; background: url(../gtk/.config/gtk-4.0/assets/reticle.svg); }
+  .alert { color: var(--fui-crimson); }
+</style>
+</head>
+<body>
+  <h1>⌖ FUI // COMPONENT REFERENCE</h1>
+  <div class="grid">
+    <section class="panel"><div class="hdr"><span>CONTROLS</span><span>∷∷ 01</span></div>
+      <div class="lab">buttons</div>
+      <div class="row"><button class="btn">CANCEL</button><button class="btn chev">NEXT</button><button class="btn acc">CONFIRM</button><button class="btn alert">PURGE</button></div>
+      <div class="lab">entry</div>
+      <div class="row"><input class="entry" value="sector-04.local" spellcheck="false"></div>
+      <div class="lab">check / radio / switch</div>
+      <div class="row"><span class="ctl on"><i></i>SYNC</span><span class="ctl"><i></i>LOG</span><span class="ctl mix"><i></i>PARTIAL</span></div>
+      <div class="row"><span class="ctl r on"><i></i>AUTO</span><span class="ctl r"><i></i>MANUAL</span><span class="sw on"></span><span class="sw"></span></div>
+    </section>
+
+    <section class="panel"><div class="hdr"><span>TELEMETRY</span><span>∷∷ 02</span></div>
+      <div class="lab">slider</div>
+      <div class="slider"><div class="fill"></div><div class="thumb"></div></div>
+      <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="lab" style="margin-top:14px">progress</div>
+      <div class="prog"><b></b></div><div class="tele"><span>UPLINK</span><span>72.0%</span></div>
+      <div class="prog warn"><b></b></div><div class="tele"><span>BUFFER</span><span>28.4%</span></div>
+      <div class="lab">micro-geometry</div>
+      <div class="row"><div class="rt"></div><div class="dots" id="dots"></div></div>
+    </section>
+
+    <section class="panel"><div class="hdr"><span>NAVIGATION</span><span>∷∷ 03</span></div>
+      <div class="lab">tabs</div>
+      <div class="tabs"><span class="tab on">OVERVIEW</span><span class="tab">LOGS</span><span class="tab">NODES</span></div>
+      <div class="lab" style="margin-top:14px">list + scrollbar</div>
+      <div class="list"><ul><li>NODE 0281</li><li class="sel">NODE 0282</li><li>NODE 0283</li><li class="alert">NODE 0284  OFFLINE</li><li>NODE 0285</li></ul><div class="sb"><b></b></div></div>
+    </section>
+
+    <section class="panel menu"><div class="hdr"><span>MENU</span><span>∷∷ 04</span></div>
+      <ul style="padding:0"><li>OPEN<span>CTRL+O</span></li><li class="sel">SAVE<span>CTRL+S</span></li><li>EXPORT<span>›</span></li><hr><li class="alert">DELETE<span>DEL</span></li></ul>
+    </section>
+  </div>
+  <script>
+    const d = document.getElementById('dots');
+    for (let i = 0; i < 72; i++) { const e = document.createElement('i'); if (Math.sin(i * 1.7) > .35) e.className = 'on'; d.appendChild(e); }
+  </script>
+</body>
+</html>

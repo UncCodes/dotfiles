@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUD desktop preview</title>
+<style>
+  /* A static mock of the desktop built from the same values as the real configs. */
+  :root {
+    --bg0:#030506; --bg1:#080C0E; --bg2:#0E1519; --line:#1A2428; --lineHi:#2A3A40;
+    --fg:#E6EBEC; --dim:#7D8A8F; --teal:#8FD3DC; --tealDim:#2E5560; --resin:#C99A4E;
+    --red:#B5555A; --green:#6FAF8A; --blue:#6F8FB0; --mag:#9A86B8; --white:#B8C2C5;
+  }
+  * { box-sizing:border-box; margin:0; }
+  html, body { width:1920px; height:1080px; overflow:hidden; background:var(--bg0); }
+  body {
+    font-family:"JetBrains Mono","JetBrainsMono Nerd Font",ui-monospace,monospace;
+    color:var(--fg); font-size:13px; font-variant-numeric:tabular-nums;
+    background:url(../hypr/.config/hypr/wallpaper.png) center/cover;
+    position:relative;
+  }
+  /* bar */
+  .bar { position:absolute; top:8px; left:14px; right:14px; height:30px; display:flex; align-items:stretch; font-size:12px; }
+  .bar .grp { display:flex; gap:6px; }
+  .bar .l { flex:1; } .bar .r { flex:1; justify-content:flex-end; }
+  .seg { border-left-color:rgba(143,211,220,.65) !important; letter-spacing:1px; background:linear-gradient(180deg,rgba(24,36,42,.55),rgba(10,16,20,.40)); backdrop-filter:blur(14px) saturate(1.3); border:1px solid rgba(143,211,220,.22); box-shadow:inset 0 1px rgba(200,238,242,.10); padding:0 12px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .seg .k { color:var(--dim); font-size:10px; letter-spacing:2px; }
+  .tag { color:var(--teal); font-weight:700; letter-spacing:2px; border-left:3px solid var(--teal); }
+  .ws { padding:0 2px; gap:2px; }
+  .ws span { padding:3px 7px; color:var(--dim); }
+  .ws span.on { background:var(--teal); color:var(--bg0); font-weight:700; }
+  .win { color:var(--dim); letter-spacing:1px; }
+  .clock { color:var(--resin); font-weight:700; font-size:14px; letter-spacing:2px; padding:0 18px; border-color:var(--lineHi); }
+  /* windows */
+  .w { position:absolute; background:linear-gradient(160deg,rgba(20,30,36,.42),rgba(3,6,8,.58)); border:1px solid rgba(143,211,220,.15); backdrop-filter:blur(22px) saturate(1.5) brightness(.82); box-shadow:inset 0 1px rgba(200,238,242,.08); }
+  .w.focus { border:1px solid rgba(200,238,242,.80); border-right-color:rgba(111,143,176,.6); border-bottom-color:rgba(111,143,176,.6); box-shadow:0 0 28px rgba(143,211,220,.20), inset 0 1px rgba(200,238,242,.10); }
+  .term { padding:14px; font-size:14px; line-height:1.45; white-space:pre; }
+  .t1 { left:14px; top:52px; width:1037px; height:1014px; }
+  .t2 { left:1056px; top:52px; width:850px; height:505px; opacity:.88; }
+  .t3 { left:1056px; top:562px; width:850px; height:504px; opacity:.88; }
+  .c-teal{color:var(--teal)} .c-dim{color:var(--dim)} .c-resin{color:var(--resin)} .c-line{color:var(--line)}
+  .c-red{color:var(--red)} .c-green{color:var(--green)} .c-blue{color:var(--blue)} .c-mag{color:var(--mag)} .b{font-weight:700}
+  .sw { display:inline-block; width:28px; height:16px; vertical-align:middle; }
+  .cursor { background:var(--resin); color:var(--bg0); }
+  /* btop-ish */
+  .box { border:1px solid var(--line); margin:10px; padding:8px 10px; position:relative; }
+  .box > .ttl { position:absolute; top:-9px; left:10px; background:#0b1a1c; padding:0 6px; color:var(--teal); font-size:12px; }
+  .bars { display:flex; align-items:flex-end; gap:3px; height:120px; margin-top:8px; }
+  .bars i { flex:1; background:linear-gradient(to top, var(--tealDim), var(--teal)); }
+  .bars i.hot { background:linear-gradient(to top, var(--teal), var(--resin)); }
+  .meter { display:flex; gap:8px; align-items:center; margin:6px 0; font-size:12px; }
+  .meter .track { flex:1; height:6px; background:var(--bg2); }
+  .meter .fill { height:100%; background:var(--teal); }
+  /* rofi */
+  .rofi { position:absolute; left:50%; top:230px; transform:translateX(-50%); width:560px; background:rgba(10,24,26,.55); backdrop-filter:blur(22px) saturate(1.35); border:1px solid rgba(143,211,220,.8); box-shadow:0 0 32px rgba(143,211,220,.22); font-size:14px; }
+  .rofi .hd { display:flex; justify-content:space-between; padding:8px 14px; background:rgba(10,16,20,.4); border-bottom:1px solid var(--line); font-size:11px; }
+  .rofi .in { display:flex; gap:12px; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .rofi .in .p { background:var(--teal); color:var(--bg1); padding:0 8px; }
+  .rofi ul { list-style:none; padding:6px 0; margin:0; }
+  .rofi li { padding:7px 14px; border-left:2px solid transparent; display:flex; gap:12px; }
+  .rofi li .ic { width:18px; height:18px; border:1px solid var(--lineHi); }
+  .rofi li.sel { background:rgba(143,211,220,.13); border-left-color:var(--teal); color:var(--teal); }
+  .rofi .ft { padding:6px 14px; border-top:1px solid var(--line); color:var(--dim); font-size:11px; }
+  /* notification */
+  .note { position:absolute; right:28px; top:66px; width:360px; background:rgba(10,16,20,.55); backdrop-filter:blur(22px); border:1px solid rgba(143,211,220,.6); padding:12px 14px; font-size:13px; line-height:1.5; }
+
+  /* FUI: L-brackets on every window corner */
+  .w::before, .w::after { content:""; position:absolute; width:14px; height:14px; pointer-events:none; }
+  .w::before { top:-1px; left:-1px; border-top:1px solid rgba(200,238,242,.85); border-left:1px solid rgba(200,238,242,.85); }
+  .w::after { bottom:-1px; right:-1px; border-bottom:1px solid rgba(200,238,242,.85); border-right:1px solid rgba(200,238,242,.85); }
+  .rofi::before { content:""; position:absolute; top:-5px; right:-5px; width:6px; height:6px; background:rgba(143,211,220,.7); }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="grp l">
+      <div class="seg tag">⌖</div>
+      <div class="seg ws"><span class="on">01</span><span>02</span><span>03</span><span>04</span><span>05</span></div>
+      <div class="seg win">// kitty  ~/projects/api</div>
+    </div>
+    <div class="grp"><div class="seg clock">18:24</div></div>
+    <div class="grp r">
+      <div class="seg"><span class="k">CPU</span>12%</div>
+      <div class="seg"><span class="k">MEM</span>31%</div>
+      <div class="seg"><span class="k">TMP</span>47°</div>
+      <div class="seg"><span class="k">NET</span>ETH</div>
+      <div class="seg"><span class="k">VOL</span>60%</div>
+      <div class="seg"><span class="k">KBD</span>us</div>
+    </div>
+  </div>
+
+  <div class="w t1 focus term"><span class="c-line">┌</span> <span class="c-teal">▣</span> <span class="b">~/projects/api</span> <span class="c-teal"> main</span> <span class="c-resin">✱</span> <span class="c-dim">py 3.13</span>
+<span class="c-line">└</span> <span class="c-teal b">›</span> fastfetch
+
+<span class="c-teal">      /\        </span>   <span class="c-teal b">▣ mo@dell</span>
+<span class="c-teal">     /  \       </span>   <span class="c-line">────────────────────────────────</span>
+<span class="c-teal">    /\   \      </span>   <span class="c-dim">OS     </span>  EndeavourOS x86_64
+<span class="c-resin">   /      \     </span>   <span class="c-dim">KERNEL </span>  6.17.8-arch1-1
+<span class="c-resin">  /   ,,   \    </span>   <span class="c-dim">WM     </span>  Hyprland 0.57.2
+<span class="c-resin"> /   |  |  -\   </span>   <span class="c-dim">SHELL  </span>  zsh 5.9.2
+<span class="c-teal">/_-''    ''-_\  </span>   <span class="c-dim">TERM   </span>  kitty 0.51.0
+                    <span class="c-dim">CPU    </span>  Intel Core i7 (16) @ 4.90 GHz
+                    <span class="c-dim">GPU    </span>  NVIDIA GeForce RTX
+                    <span class="c-dim">MEM    </span>  5.02 GiB / 15.5 GiB (32%)
+                    <span class="c-dim">DISK   </span>  48.3 GiB / 476 GiB (10%)
+                    <span class="c-dim">UPTIME </span>  2 hours, 14 mins
+
+                    <span class="sw" style="background:#080C0E"></span><span class="sw" style="background:var(--red)"></span><span class="sw" style="background:var(--green)"></span><span class="sw" style="background:var(--resin)"></span><span class="sw" style="background:var(--blue)"></span><span class="sw" style="background:var(--mag)"></span><span class="sw" style="background:var(--teal)"></span><span class="sw" style="background:var(--white)"></span>
+
+<span class="c-line">┌</span> <span class="c-teal">▣</span> <span class="b">~/projects/api</span> <span class="c-teal"> main</span> <span class="c-resin">✱</span> <span class="c-dim">py 3.13</span>
+<span class="c-line">└</span> <span class="c-teal b">›</span> ll
+<span class="c-blue b">src</span>         <span class="c-blue b">docs</span>       <span class="c-blue b">tests</span>       README.md      <span class="c-green">run.sh</span>         pyproject.toml
+
+<span class="c-line">┌</span> <span class="c-teal">▣</span> <span class="b">~/projects/api</span> <span class="c-teal"> main</span> <span class="c-resin">✱</span> <span class="c-dim">T+3s</span>
+<span class="c-line">└</span> <span class="c-teal b">›</span> <span class="cursor"> </span></div>
+
+  <div class="w t2">
+    <div class="box"><span class="ttl">┤ CPU ├</span>
+      <div class="bars">
+        <i style="height:22%"></i><i style="height:30%"></i><i style="height:26%"></i><i style="height:41%"></i><i style="height:35%"></i><i style="height:52%"></i><i style="height:47%"></i><i style="height:60%"></i><i style="height:44%"></i><i style="height:38%"></i><i style="height:57%"></i><i class="hot" style="height:78%"></i><i style="height:63%"></i><i style="height:49%"></i><i style="height:36%"></i><i style="height:42%"></i><i style="height:31%"></i><i style="height:28%"></i><i style="height:39%"></i><i style="height:51%"></i><i style="height:46%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:29%"></i><i style="height:37%"></i><i style="height:44%"></i><i style="height:40%"></i><i style="height:34%"></i><i style="height:27%"></i><i style="height:22%"></i>
+      </div>
+    </div>
+    <div class="box"><span class="ttl">┤ MEM ├</span>
+      <div class="meter"><span class="c-dim">USED </span><div class="track"><div class="fill" style="width:32%"></div></div><span>5.0G</span></div>
+      <div class="meter"><span class="c-dim">CACHE</span><div class="track"><div class="fill" style="width:21%;background:var(--lineHi)"></div></div><span>3.3G</span></div>
+      <div class="meter"><span class="c-dim">FREE </span><div class="track"><div class="fill" style="width:47%;background:var(--tealDim)"></div></div><span>7.2G</span></div>
+    </div>
+  </div>
+
+  <div class="w t3 term"><span class="c-line">┌</span> <span class="c-teal">▣</span> <span class="b">~/.dotfiles</span> <span class="c-teal"> main</span>
+<span class="c-line">└</span> <span class="c-teal b">›</span> git log --oneline
+<span class="c-resin">a1c4e02</span> <span class="c-teal">(HEAD -> main)</span> HUD theme for Hyprland
+<span class="c-resin">9e2b7d1</span> Add installer hook
+
+<span class="c-line">┌</span> <span class="c-teal">▣</span> <span class="b">~/.dotfiles</span> <span class="c-teal"> main</span>
+<span class="c-line">└</span> <span class="c-teal b">›</span> </div>
+
+  <div class="rofi">
+    <div class="hd"><span class="c-teal" style="letter-spacing:3px">⌖ LAUNCH // APPS</span><span class="c-dim">∷∷ SYS.ONLINE</span></div>
+    <div class="in"><span class="p">RUN</span><span>fire<span class="cursor"> </span></span></div>
+    <ul>
+      <li class="sel"><span class="ic"></span>Firefox</li>
+      <li><span class="ic"></span>Firewall Configuration</li>
+      <li><span class="ic"></span>File Manager (Thunar)</li>
+      <li><span class="ic"></span>Fastfetch</li>
+    </ul>
+    <div class="ft">┌ ENTER RUN   ESC CLOSE   CTRL+TAB MODE ┘</div>
+  </div>
+
+  <div class="note"><span class="c-teal" style="font-size:11px">⌖  NOTIFY-SEND</span><br><b>Build finished</b><br><span class="c-dim">128 tests passed</span></div>
+</body>
+</html>

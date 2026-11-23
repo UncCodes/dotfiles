@@ -1,0 +1,4 @@
+# machine-specific files, created by install.sh and never committed
+hypr/.config/hypr/local.lua
+*.local
+.DS_Store

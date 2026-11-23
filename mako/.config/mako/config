@@ -1,0 +1,25 @@
+# HUD // MAKO
+
+font=JetBrainsMono Nerd Font 10
+background-color=#0A10148C
+text-color=#E6EBEC
+border-color=#8FD3DC99
+border-size=1
+border-radius=0
+padding=12,14
+margin=14
+width=360
+height=160
+anchor=top-right
+default-timeout=6000
+icons=1
+max-icon-size=32
+format=<span color="#8FD3DC" size="small">⌖  %a</span>\n<b>%s</b>\n%b
+
+[urgency=low]
+border-color=#1A2428
+
+[urgency=critical]
+border-color=#B5555A
+default-timeout=0
+format=<span color="#B5555A" size="small">⌖  ALERT // %a</span>\n<b>%s</b>\n%b

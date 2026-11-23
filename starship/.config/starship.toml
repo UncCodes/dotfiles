@@ -1,0 +1,61 @@
+# HUD // STARSHIP
+# ┌ ▣ ~/projects/app  main ✱  py 3.13
+# └ ›
+
+add_newline = true
+
+format = """
+[┌](#1A2428) [▣](#8FD3DC) $directory$git_branch$git_status$python$nodejs$rust$golang$cmd_duration
+[└](#1A2428) $character"""
+
+[character]
+success_symbol = "[›](bold #8FD3DC)"
+error_symbol   = "[›](bold #B5555A)"
+vimcmd_symbol  = "[‹](bold #C99A4E)"
+
+[directory]
+style = "bold #E6EBEC"
+truncation_length = 4
+truncate_to_repo = false
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " RO"
+
+[git_branch]
+symbol = " "
+style = "#8FD3DC"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "#C99A4E"
+format = "[$all_status$ahead_behind]($style) "
+modified = "✱"
+staged = "+"
+untracked = "?"
+deleted = "-"
+ahead = "↑${count}"
+behind = "↓${count}"
+
+[cmd_duration]
+min_time = 2000
+style = "#7D8A8F"
+format = "[T+$duration]($style) "
+
+[python]
+symbol = "py "
+style = "#7D8A8F"
+format = "[$symbol$version]($style) "
+
+[nodejs]
+symbol = "node "
+style = "#7D8A8F"
+format = "[$symbol$version]($style) "
+
+[rust]
+symbol = "rs "
+style = "#7D8A8F"
+format = "[$symbol$version]($style) "
+
+[golang]
+symbol = "go "
+style = "#7D8A8F"
+format = "[$symbol$version]($style) "
