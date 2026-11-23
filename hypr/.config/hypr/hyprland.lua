@@ -74,11 +74,15 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("wl-paste --watch cliphist store")
+    hl.exec_cmd(bin .. "fui-sound login")                -- event sounds (fui-sound off to silence)
+    hl.exec_cmd(bin .. "fui-startup")                    -- prepared terminal tabs (kitty/startup.session)
     -- dark or light + theme for GTK and libadwaita apps (they ignore settings.ini)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-" .. mode)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme " .. T.desktop.gtk_base)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface icon-theme " .. T.desktop.icon_theme)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. T.desktop.cursor_theme)
+    hl.exec_cmd("gsettings set org.gnome.desktop.sound theme-name " .. (T.desktop.sound_theme or "ocean"))
+    hl.exec_cmd("gsettings set org.gnome.desktop.sound event-sounds true")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface monospace-font-name '" .. T.font.mono .. " " .. T.font.size .. "'")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface font-name '" .. T.font.mono .. " " .. T.font.size .. "'")
 end)
@@ -175,6 +179,15 @@ hl.window_rule({
     border_size = T.geometry.border,
 })
 
+-- terminal tools opened from the bar (fui-tui): floating, centred
+hl.window_rule({
+    name   = "fui-tui",
+    match  = { class = "^fui-tui$" },
+    float  = true,
+    size   = "monitor_w*0.62 monitor_h*0.66",
+    center = true,
+})
+
 -- ── frosted bar, launcher and notifications ─────────────────────────────
 -- Blur what's behind these layers so their translucent panels read as glass.
 -- ignore_alpha keeps the blur off the fully transparent gaps between bar segments.
@@ -193,6 +206,10 @@ local function k(keys) return mod .. " + " .. keys end
 hl.bind(k("Return"), hl.dsp.exec_cmd(terminal))
 hl.bind(k("D"),      hl.dsp.exec_cmd(menu))
 hl.bind(k("E"),      hl.dsp.exec_cmd(fileManager))
+hl.bind(k("Y"),      hl.dsp.exec_cmd(bin .. "fui-tui yazi"))         -- files (TUI)
+hl.bind(k("A"),      hl.dsp.exec_cmd(bin .. "fui-tui wiremix"))      -- audio mixer
+hl.bind(k("N"),      hl.dsp.exec_cmd(bin .. "fui-tui nmtui"))        -- network
+hl.bind(k("SHIFT + Return"), hl.dsp.exec_cmd(bin .. "fui-startup"))  -- the startup tabs again
 hl.bind(k("Q"),      hl.dsp.window.close())
 hl.bind(k("F"),      hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(k("V"),      hl.dsp.window.float({ action = "toggle" }))
@@ -205,8 +222,8 @@ hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(bin .. "fui-mode toggle"))        -- lig
 hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(bin .. "fui-wallpaper toggle"))   -- live / still wallpaper
 
 -- screenshots: region to clipboard / whole screen to ~/Pictures
-hl.bind("Print",         hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
-hl.bind("SHIFT + Print", hl.dsp.exec_cmd("mkdir -p ~/Pictures && grim ~/Pictures/$(date +%Y%m%d-%H%M%S).png"))
+hl.bind("Print",         hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy && ' .. bin .. 'fui-sound screenshot'))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("mkdir -p ~/Pictures && grim ~/Pictures/$(date +%Y%m%d-%H%M%S).png && " .. bin .. "fui-sound screenshot"))
 
 -- focus and move with arrows
 for _, dir in ipairs({ "left", "right", "up", "down" }) do
@@ -226,8 +243,9 @@ hl.bind(k("mouse:272"),  hl.dsp.window.drag(),   { mouse = true })
 hl.bind(k("mouse:273"),  hl.dsp.window.resize(), { mouse = true })
 
 -- media / volume keys
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
+local blip = " && " .. bin .. "fui-sound volume"
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" .. blip), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-" .. blip),      { locked = true, repeating = true })
 hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true })
 hl.bind("XF86AudioPlay",        hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioNext",        hl.dsp.exec_cmd("playerctl next"),       { locked = true })

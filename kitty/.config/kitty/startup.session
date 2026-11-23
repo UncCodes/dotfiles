@@ -1,0 +1,26 @@
+# HUD // STARTUP TABS
+# Opened at login by fui-startup, and again with SUPER+SHIFT+Return.
+# One block per tab: new_tab <title>, the folder (cd), and what to run (launch).
+# Tools run inside zsh, so quitting one leaves a shell in that tab.
+# Machine-only version: copy this to startup.session.local (ignored by git).
+# An empty startup.session.local turns the startup tabs off.
+# Full syntax: https://sw.kovidgoyal.net/kitty/sessions/
+
+new_tab SHELL
+cd ~
+launch zsh
+
+new_tab FILES
+cd ~
+launch zsh -ic 'yazi; exec zsh'
+
+new_tab GIT
+cd ~/.dotfiles
+launch zsh -ic 'lazygit; exec zsh'
+
+new_tab SYS
+cd ~
+launch zsh -ic 'btop; exec zsh'
+
+# the tab that has focus when the session opens (0 = first)
+focus_tab 0

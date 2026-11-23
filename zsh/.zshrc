@@ -34,6 +34,17 @@ export EDITOR=nvim
 
 command -v fzf >/dev/null && source <(fzf --zsh)
 command -v starship >/dev/null && eval "$(starship init zsh)"
+command -v zoxide >/dev/null && eval "$(zoxide init zsh)"     # z <part of a path>
+
+# y: yazi that leaves the shell in the folder you quit in
+y() {
+  local tmp cwd
+  tmp="$(mktemp -t yazi-cwd.XXXXXX)"
+  yazi "$@" --cwd-file="$tmp"
+  IFS= read -r -d '' cwd < "$tmp"
+  [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+  rm -f -- "$tmp"
+}
 
 for plugin in \
   /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh \

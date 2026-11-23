@@ -449,7 +449,10 @@ def gtk(sfx=""):
               + f"gtk-icon-theme-name={D['icon_theme']}\n"
                 f"gtk-font-name={F['mono']} {F['size']}\n"
                 f"gtk-cursor-theme-name={D['cursor_theme']}\n"
-                f"gtk-cursor-theme-size={D['cursor_size']}\n")
+                f"gtk-cursor-theme-size={D['cursor_size']}\n"
+                f"gtk-sound-theme-name={D['sound_theme']}\n"
+                f"gtk-enable-event-sounds=1\n"
+                f"gtk-enable-input-feedback-sounds=0\n")
 
 
 # ── 2c. Qt (qt6ct) ──────────────────────────────────────────────────────

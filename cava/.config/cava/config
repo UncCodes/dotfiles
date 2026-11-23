@@ -1,0 +1,16 @@
+# HUD // CAVA (audio visualiser: run `cava`)
+# Colours are ANSI names, so they follow kitty's palette in dark and light mode.
+
+[general]
+framerate = 30
+bar_width = 1
+bar_spacing = 1
+
+[input]
+method = pipewire
+
+[output]
+method = ncurses
+
+[color]
+foreground = 'cyan'

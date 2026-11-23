@@ -42,6 +42,42 @@ the still image is used.
 A moving wallpaper makes Hyprland redraw the blur behind windows on every frame. On a weak
 GPU, or without the proper graphics driver, use still (`SUPER+SHIFT+W`).
 
+## Startup tabs
+
+At login a kitty window opens with prepared tabs: `SHELL`, `FILES` (yazi), `GIT` (lazygit in
+`~/.dotfiles`) and `SYS` (btop). `SUPER+SHIFT+Return` opens them again. They are listed in
+[`kitty/.config/kitty/startup.session`](kitty/.config/kitty/startup.session); edit that file
+to add, remove or reorder tabs. For a version only one machine uses, copy it to
+`~/.config/kitty/startup.session.local` (ignored by git). An empty `.local` file turns the
+startup tabs off.
+
+## Terminal tools
+
+| Tool | For | Open with |
+|---|---|---|
+| yazi | files | `SUPER+Y`, or `y` in the shell (stays in the folder you quit in) |
+| lazygit | git | `lazygit` |
+| btop | system monitor | click CPU / MEM in the bar |
+| wiremix | audio mixer | `SUPER+A`, or click VOL |
+| nmtui | network / Wi-Fi | `SUPER+N`, or click NET |
+| gdu | disk usage | `gdu` |
+| nvtop | GPU monitor | `nvtop` |
+| cava | audio visualiser | `cava` |
+| tealdeer | short command examples | `tldr tar` |
+| glow | markdown reader | `glow README.md` |
+| zoxide | jump to folders | `z dotfiles` |
+
+The bar and the keys open them in a floating window (`fui-tui <command>`). Their colours are
+ANSI names, so they follow kitty's palette in both modes.
+
+## Sounds
+
+Desktop event sounds use Ocean, the sound theme EndeavourOS's KDE edition plays (EndeavourOS
+has no sound theme of its own), with the freedesktop set as a fallback: login, notifications,
+alerts, volume keys, screenshots and the mode switch. GTK apps use the same theme.
+`fui-sound off` silences them, `fui-sound on` brings them back. The theme is
+`[desktop] sound_theme` in `tokens.toml`.
+
 ## Small screens
 
 `fui-bar` starts waybar with [`config-compact.jsonc`](waybar/.config/waybar/config-compact.jsonc)
@@ -104,11 +140,13 @@ They still get the window rules, fonts and dark-mode preference.
 | `mako`      | notifications                                  |
 | `zsh`       | shell; `.zprofile` starts Hyprland on tty1     |
 | `starship`  | prompt                                         |
+| `lazygit`   | git TUI                                        |
+| `cava`      | audio visualiser                               |
 | `fastfetch` | system info                                    |
 | `btop`      | `hud` theme                          |
 | `gtk`       | GTK3/4 FUI overrides + geometry assets (generated) |
 | `qt`        | qt6ct palette + assets (generated)             |
-| `fui`       | theme env, fontconfig, git, browser flags (generated); `fui-mode`, `fui-bar`, `fui-wallpaper` in `~/.local/bin` |
+| `fui`       | theme env, fontconfig, git, browser flags (generated); `fui-mode`, `fui-bar`, `fui-wallpaper`, `fui-sound`, `fui-tui`, `fui-startup` in `~/.local/bin` |
 | `nvim`      | FUI colorscheme (generated)                    |
 
 Each folder mirrors `$HOME` and is linked with GNU Stow (`--no-folding`).
@@ -143,6 +181,10 @@ Anything it would overwrite is moved to `~/.dotfiles-backup/<timestamp>/` first.
 | `SUPER+Return`       | terminal                            |
 | `SUPER+D`            | launcher                            |
 | `SUPER+E`            | file manager                        |
+| `SUPER+Y`            | files in the terminal (yazi)        |
+| `SUPER+A`            | audio mixer (wiremix)               |
+| `SUPER+N`            | network (nmtui)                     |
+| `SUPER+SHIFT+Return` | the startup tabs again              |
 | `SUPER+Q`            | close window                        |
 | `SUPER+F` / `V`      | fullscreen / float                  |
 | `SUPER+arrows`       | focus (add `SHIFT` to move window)  |

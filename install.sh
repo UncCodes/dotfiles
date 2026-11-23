@@ -13,7 +13,7 @@ set -euo pipefail
 
 REPO="https://github.com/UncCodes/dotfiles.git"
 DOTS="${DOTFILES_DIR:-$HOME/.dotfiles}"
-PKGS=(hypr waybar kitty rofi mako zsh starship fastfetch btop gtk qt fui nvim)
+PKGS=(hypr waybar kitty rofi mako zsh starship fastfetch btop gtk qt fui nvim lazygit cava)
 
 do_packages=1
 do_chsh=1
@@ -113,6 +113,7 @@ if command -v git >/dev/null && ! git config --global --get-all include.path 2>/
 fi
 
 command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1 || true
+command -v tldr >/dev/null && { tldr --update >/dev/null 2>&1 || true; }   # tealdeer's page cache
 
 # light / dark links: keep the current mode (dark on a fresh install)
 "$HOME/.local/bin/fui-mode" apply --quiet || true
@@ -125,5 +126,6 @@ fi
 
 say "done. Log out and back in (or reboot). On tty1, Hyprland starts on its own."
 say "SUPER+SHIFT+T switches light / dark, SUPER+SHIFT+W live / still wallpaper."
+say "Startup tabs: ~/.config/kitty/startup.session. Sounds off: fui-sound off"
 [ -d "$backup" ] && say "your old files are in $backup"
 exit 0

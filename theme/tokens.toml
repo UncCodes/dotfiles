@@ -100,6 +100,7 @@ icon_theme   = "Papirus-Dark"
 cursor_theme = "Adwaita"
 cursor_size  = 24
 gtk_base     = "adw-gtk3-dark"   # base GTK3 theme the overrides sit on
+sound_theme  = "ocean"           # event sounds: Plasma's Ocean, what EndeavourOS's KDE edition plays
 
 # ── light mode ──────────────────────────────────────────────────────────
 # Same roles, daylight values: pale fog ground, ink text, accents deepened so

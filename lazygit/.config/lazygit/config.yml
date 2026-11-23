@@ -1,0 +1,19 @@
+# HUD // LAZYGIT
+# Colours are ANSI names, so they follow kitty's palette in dark and light mode.
+gui:
+  nerdFontsVersion: "3"
+  border: single
+  showRandomTip: false
+  theme:
+    activeBorderColor: [cyan, bold]
+    inactiveBorderColor: [white]
+    searchingActiveBorderColor: [yellow, bold]
+    optionsTextColor: [blue]
+    selectedLineBgColor: [reverse]
+    inactiveViewSelectedLineBgColor: [bold]
+    cherryPickedCommitFgColor: [cyan]
+    cherryPickedCommitBgColor: [default]
+    markedBaseCommitFgColor: [yellow]
+    markedBaseCommitBgColor: [default]
+    unstagedChangesColor: [red]
+    defaultFgColor: [default]

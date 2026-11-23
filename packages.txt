@@ -24,12 +24,33 @@ libnotify
 kitty
 thunar
 gvfs
+networkmanager           # nmtui: network setup (SUPER+N, click NET)
 network-manager-applet
 pavucontrol
 playerctl
 pipewire
 pipewire-pulse
 wireplumber
+
+# event sounds: Ocean (EndeavourOS KDE's theme), freedesktop as fallback
+ocean-sound-theme
+sound-theme-freedesktop
+
+# terminal tools (TUIs)
+yazi          # files            SUPER+Y, `y` in the shell
+lazygit       # git
+wiremix       # audio mixer      SUPER+A, click VOL
+gdu           # disk usage
+nvtop         # GPU monitor
+cava          # audio visualiser
+tealdeer      # tldr: short command examples
+glow          # markdown reader
+zoxide        # z: jump to folders
+fd
+ripgrep
+jq
+poppler       # PDF previews in yazi
+7zip          # archive previews in yazi
 
 # screenshots and clipboard
 grim

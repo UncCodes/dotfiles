@@ -10,6 +10,7 @@ configuration {
   display-run: "CMD";
   display-window: "WIN";
   drun-display-format: "{name}";
+  terminal: "kitty";              /* terminal apps (yazi, btop, ...) open in kitty */
 }
 
 * {
