@@ -11,7 +11,7 @@ export EZA_COLORS="da=90:uu=36:gu=34:un=33:sn=97:sb=90:ur=36:uw=33:ux=32:ue=32:g
 export GREP_COLORS="ms=1;33:mc=33:sl=:cx=:fn=36:ln=32:bn=32:se=90"
 export GCC_COLORS="error=1;31:warning=1;33:note=1;34:caret=1;36:locus=90:quote=97"
 export JQ_COLORS="0;90:0;33:0;33:0;34:0;32:1;37:1;37:1;36"
-export FZF_DEFAULT_OPTS="--color=bg+:0,fg:7,fg+:15,hl:6,hl+:14,border:8,prompt:6,pointer:6,marker:3,info:8,header:4,spinner:6,gutter:-1 --border=sharp --prompt='> ' --pointer='▌' --marker='▣'"
+export FZF_DEFAULT_OPTS="--color=bg+:0,fg:7,fg+:15,hl:6,hl+:14,border:8,prompt:6,pointer:6,marker:3,info:8,header:4,spinner:6,gutter:-1 --border=sharp --prompt='> ' --pointer='▌' --marker='■'"
 export BAT_THEME="ansi"
 export GROFF_NO_SGR="1"
 export LESS="-R --use-color -Dd+c -Du+b"

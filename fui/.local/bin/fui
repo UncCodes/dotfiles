@@ -1181,7 +1181,7 @@ confirm() {   # confirm "question": yes when --yes was given or the answer is y
 }
 
 setup_gpu() {
-  echo "▣ graphics driver"
+  echo "■ graphics driver"
   local ids found=0
   ids=$(lspci -nn 2>/dev/null | grep -E 'VGA|3D controller|Display controller' | grep -oE '\[[0-9a-f]{4}:[0-9a-f]{4}\]' | cut -c2-5)
   if echo "$ids" | grep -q 10de; then
@@ -1212,7 +1212,7 @@ setup_gpu() {
 }
 
 setup_audio() {
-  echo "▣ audio output"
+  echo "■ audio output"
   have pactl && pactl info >/dev/null 2>&1 || { echo "  audio server not reachable (run this inside the desktop)"; return 0; }
   local sink alt
   sink=$(pactl get-default-sink 2>/dev/null)
@@ -1233,7 +1233,7 @@ setup_audio() {
 }
 
 setup_bluetooth() {
-  echo "▣ Bluetooth"
+  echo "■ Bluetooth"
   if [ -z "$(ls /sys/class/bluetooth 2>/dev/null)" ]; then
     echo "  no Bluetooth adapter: nothing to do"; return 0
   fi
@@ -1242,14 +1242,14 @@ setup_bluetooth() {
 }
 
 setup_firmware() {
-  echo "▣ firmware updates"
+  echo "■ firmware updates"
   sudo pacman -S --needed --noconfirm fwupd
   echo "  check for BIOS / device firmware: fwupdmgr refresh && fwupdmgr get-updates"
 }
 
 
 setup_system() {
-  echo "▣ system services"
+  echo "■ system services"
   # passwords for browsers and apps: the secret service starts on demand (no PAM changes)
   sudo pacman -S --needed --noconfirm gnome-keyring libsecret >/dev/null && echo "  keyring: gnome-keyring (unlocks on first use)"
   # firewall: keep firewalld if it is already running, otherwise ufw denying incoming connections
@@ -1267,7 +1267,7 @@ setup_system() {
 }
 
 setup_firefox() {
-  echo "▣ Firefox"
+  echo "■ Firefox"
   have firefox || { echo "  Firefox is not installed"; return 0; }
   local profs
   profs=$(firefox_profiles)
@@ -1292,7 +1292,7 @@ setup_firefox() {
 }
 
 setup_boot() {
-  echo "▣ boot splash and console"
+  echo "■ boot splash and console"
   have python3 || { echo "  python3 is needed"; return 1; }
   sudo pacman -S --needed --noconfirm plymouth terminus-font >/dev/null || return 1
   local tmp; tmp=$(mktemp -d)

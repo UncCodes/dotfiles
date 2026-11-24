@@ -566,7 +566,7 @@ def shell_env():
         "GCC_COLORS": "error=1;31:warning=1;33:note=1;34:caret=1;36:locus=90:quote=97",
         "JQ_COLORS": "0;90:0;33:0;33:0;34:0;32:1;37:1;37:1;36",
         "FZF_DEFAULT_OPTS": ("--color=bg+:0,fg:7,fg+:15,hl:6,hl+:14,border:8,prompt:6,pointer:6,marker:3,info:8,"
-                             "header:4,spinner:6,gutter:-1 --border=sharp --prompt='> ' --pointer='▌' --marker='▣'"),
+                             "header:4,spinner:6,gutter:-1 --border=sharp --prompt='> ' --pointer='▌' --marker='■'"),
         "BAT_THEME": "ansi",
         "GROFF_NO_SGR": "1",
         "LESS": "-R --use-color -Dd+c -Du+b",
@@ -945,7 +945,7 @@ def meters():
     meter never overstates; the last icon (99 % and up) is the full meter."""
     n = G["meter"]
     seg = lambda v: n if v >= 99 else v * n // 100
-    icons = ["▮" * seg(v) + "▯" * (n - seg(v)) for v in range(100)]
+    icons = ["█" * seg(v) + "░" * (n - seg(v)) for v in range(100)]   # JetBrains Mono has these (not ▮▯)
     arr = json.dumps(icons, ensure_ascii=False)
     write("waybar/.config/waybar/meters.jsonc",
           f"// {banner('').strip()}\n// The bar's segment meters ({n} segments, rounded down). config.jsonc includes this.\n"

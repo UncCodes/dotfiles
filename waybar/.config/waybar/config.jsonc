@@ -96,7 +96,7 @@
   // a segment meter (meters.jsonc: rounded down, never more than the true value) and the number
   "pulseaudio": {
     "format": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> {icon} {volume:02}%",
-    "format-muted": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> ▯▯▯▯▯ MUTE",
+    "format-muted": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> ░░░░░ MUTE",
     "on-click": "~/.local/bin/fui tui wiremix",
     "on-click-middle": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",

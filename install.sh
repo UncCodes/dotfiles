@@ -43,7 +43,7 @@ say() { printf '  %s\n' "$*"; }
 RESULTS=()
 step() {
   local name="$1"; shift
-  printf '\n%s▣ %s%s\n' "$ICE" "$name" "$OFF"
+  printf '\n%s■ %s%s\n' "$ICE" "$name" "$OFF"
   NOTE=""
   "$@"
   local rc=$?

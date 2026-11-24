@@ -90,7 +90,7 @@ import json, re, sys
 m = json.loads(re.sub(r"^\s*//.*$", "", open(sys.argv[1]).read(), flags=re.M))
 icons = m["pulseaudio"]["format-icons"]["default"]
 assert len(icons) == 100, len(icons)
-assert icons[19].count("▮") == 0 and icons[20].count("▮") == 1 and icons[98].count("▮") == 4 and icons[99].count("▯") == 0
+assert icons[19].count("█") == 0 and icons[20].count("█") == 1 and icons[98].count("█") == 4 and icons[99].count("░") == 0
 ' "$DOTS/waybar/.config/waybar/meters.jsonc"
 t "waybar configs parse" python3 -c '
 import json, re, sys
@@ -187,6 +187,10 @@ t "idle steps do nothing on lcd" bash -c 'f="$HOME/.local/bin/fui"; "$f" display
 t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
 t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/stereo/desktop-login.oga"
 t "fonts: Michroma, Inter, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "Inter" && fc-list | grep -q "JetBrainsMono Nerd"'
+t "the data face carries every glyph the bar and shell use (█ ░ ■ ▌ ⏻ ·)" bash -c '
+  for cp in 2588 2591 25a0 258c 23fb b7; do
+    fc-list ":family=JetBrainsMono Nerd Font:charset=$cp" | grep -q . || { echo "JetBrainsMono Nerd Font lacks U+$cp"; exit 1; }
+  done'
 t "the brand mark follows the edition" bash -c '[ -e "$HOME/.local/share/fui/brand/mark.png" ] && [ "$(readlink "$HOME/.local/share/fui/brand/mark.png")" = "mark-$("$HOME/.local/bin/fui" mode status).png" ]'
 t "fui brand reads the tokens" bash -c '[ "$("$HOME/.local/bin/fui" brand --bar)" = FUI ]'
 t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test

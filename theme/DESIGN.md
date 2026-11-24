@@ -103,7 +103,7 @@ are sentence case. Numbers keep their units, times are 24-hour, dates ISO in dat
 | **Field** | set in: the well colour, an `edge` boundary, 2 px corners; focus draws the signal; the caret is the signal, blinking at 1 Hz at most |
 | **Row** | flat; the selected one takes `signal_dim` and the stripe |
 | **Button** | secondary: an `edge` outline; primary: a solid signal fill; destructive: a `bad` outline that fills on hover |
-| **Meter** | segments (`▮▮▮▯▯`), rounded down, always with the number beside it |
+| **Meter** | segments (`███░░`, block glyphs the data face carries), rounded down, always with the number beside it |
 | **Readout** | a label dimmed and tracked, then the value in the data voice: `CPU 12%`; over a threshold the whole readout takes the status colour and the label gains its word |
 
 ## Codes
