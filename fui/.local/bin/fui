@@ -642,6 +642,7 @@ fix_links() { bash "$DOTS/install.sh" --no-packages --no-hardware --no-chsh; }
 fix_mode_links() { cmd_mode apply --quiet; }
 fix_packages() { bash "$DOTS/install.sh" --no-hardware --no-chsh; }
 fix_gpu() { cmd_setup gpu; }
+fix_mako() { pkill -x mako; sudo pacman -Rns --noconfirm mako; pgrep -x swaync >/dev/null || detach swaync; }
 stale_links() {   # links into the dotfiles whose target no longer exists
   local l repo
   repo="$(basename "$DOTS")/"
@@ -735,6 +736,12 @@ for m in json.load(sys.stdin):
   elif [ -d /usr/share/sounds/freedesktop ]; then warn "the fui sound theme isn't linked; freedesktop sounds are used"; fix fix_links "re-link the dotfiles"
   else bad "no sound theme installed"; fix fix_packages "install the package list"; fi
   [ "$(cmd_sound status)" = off ] && { warn "desktop sounds are turned off"; fix fix_sound_on "fui sound on"; }
+
+  if pgrep -x mako >/dev/null; then
+    warn "mako (the old notification daemon) is running; swaync shows notifications now"; fix fix_mako "stop mako and remove it"
+  elif pacman -Qq mako >/dev/null 2>&1; then
+    info "mako is still installed (unused): sudo pacman -Rns mako"
+  fi
 
   section "network"
   if have nmcli; then

@@ -33,6 +33,7 @@ jobs:
       - name: Screenshots of the real apps
         if: always()
         continue-on-error: true
+        timeout-minutes: 12
         run: |
           pacman -S --noconfirm --needed xorg-server-xvfb imagemagick gtk3-demos gtk4-demos
           sudo -u tester -H env DOTFILES_DIR=/home/tester/.dotfiles \
