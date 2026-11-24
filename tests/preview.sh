@@ -44,36 +44,58 @@ T 30 "$FUI" mode dark --quiet
 shot_x "kitty" 6 kitty --hold sh -c 'fastfetch; echo; ls -la --color=always ~ | head -12; echo; printf "\033[1;32mmo@fui\033[0m:\033[1;34m~\033[0m$ "'
 kill "$XVFB" 2>/dev/null
 
-# ── a headless Hyprland session ─────────────────────────────────────────
-echo "hyprland (headless)"
-HYPRLAND_HEADLESS_ONLY=1 timeout 150 Hyprland >"$OUT/hyprland.log" 2>&1 &
-HYPR=$!
-for _ in $(seq 20); do
-  sig=$(ls "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1)
-  [ -n "$sig" ] && [ -S "$XDG_RUNTIME_DIR/hypr/$sig/.socket.sock" ] && break
-  sleep 1
+# ── the desktop surfaces, on a headless sway ────────────────────────────
+# Hyprland needs a graphics device to start, which CI machines don't have. Sway renders in
+# software (pixman) and speaks the same layer-shell protocol, so the bar, notifications,
+# control centre, launcher and wallpaper render exactly as styled. (The bar's workspace
+# and window modules are sway's here instead of Hyprland's.)
+echo "desktop (headless sway)"
+TMPD=$(mktemp -d)
+cat > "$TMPD/sway.conf" <<'CONF'
+output HEADLESS-1 resolution 1280x800
+default_border pixel 2
+gaps inner 6
+gaps outer 12
+CONF
+cat > "$TMPD/bar.jsonc" <<'CONF'
+{
+  "include": ["~/.config/waybar/config.jsonc"],
+  "modules-left": ["custom/wordmark", "sway/workspaces"],
+  "modules-center": ["sway/window"],
+  "modules-right": ["cpu", "memory", "network", "pulseaudio", "custom/sound", "custom/mode", "custom/notify", "clock", "custom/power"],
+  "sway/workspaces": { "format": "/{name}", "persistent-workspaces": { "1": [], "2": [], "3": [], "4": [] } },
+  "sway/window": { "format": "/{app_id} <span alpha='55%'>/</span> {title}", "max-length": 60 }
+}
+CONF
+cat > "$TMPD/desktop.sh" <<'EOS'
+set -u
+export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1
+timeout 200 sway -c "$TMPD/sway.conf" >"$OUT/sway.log" 2>&1 &
+for _ in $(seq 15); do [ -S "$XDG_RUNTIME_DIR/wayland-1" ] && break; sleep 1; done
+export WAYLAND_DISPLAY=wayland-1
+SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1); export SWAYSOCK
+unset DISPLAY
+snap() { sleep "${2:-1}"; timeout 15 grim "$OUT/$1.png" 2>/dev/null && echo "  shot $1" || echo "  no shot: $1"; }
+timeout 150 swaync >"$OUT/swaync.log" 2>&1 &
+for m in dark mid light; do
+  timeout 30 "$FUI" mode "$m" --quiet
+  pkill -x swaybg; timeout 150 swaybg -i "$HOME/.config/hypr/wallpaper-$m.png" -m fill >/dev/null 2>&1 &
+  pkill -x waybar; timeout 150 waybar -c "$TMPD/bar.jsonc" -s "$HOME/.config/waybar/style.css" >"$OUT/waybar-$m.log" 2>&1 &
+  timeout 10 swaync-client -rs >/dev/null 2>&1
+  base=adw-gtk3; [ "$m" = dark ] && base=adw-gtk3-dark
+  timeout 60 env GDK_BACKEND=wayland GTK_THEME="$base" gtk3-widget-factory >/dev/null 2>&1 &
+  WF=$!
+  snap "$m-desktop" 5
+  timeout 10 notify-send -a fui "[0x07] sample" "A notification in the $m theme." 2>/dev/null
+  snap "$m-notification" 2
+  timeout 10 swaync-client -op >/dev/null 2>&1; snap "$m-control-centre" 2; timeout 10 swaync-client -cp >/dev/null 2>&1
+  timeout 20 rofi -config "$HOME/.config/rofi/config.rasi" -show drun >"$OUT/rofi-$m.log" 2>&1 &
+  snap "$m-launcher" 3; pkill -x rofi
+  kill "$WF" 2>/dev/null
 done
-if [ -n "${sig:-}" ]; then
-  export HYPRLAND_INSTANCE_SIGNATURE="$sig"
-  T 15 hyprctl output create headless FUI-1 >/dev/null 2>&1
-  T 15 hyprctl dispatch 'hl.dsp.exec_cmd("swaybg -i '"$HOME"'/.config/hypr/wallpaper-dark.png -m fill")' >/dev/null 2>&1
-  sleep 10
-  export WAYLAND_DISPLAY=$(ls "$XDG_RUNTIME_DIR" | grep -E '^wayland-[0-9]+$' | head -1)
-  T 15 grim "$OUT/hypr-1-desktop.png" 2>/dev/null && echo "  shot hypr-1-desktop" || echo "  no shot: hypr-1-desktop"
-  T 15 hyprctl dispatch 'hl.dsp.exec_cmd("kitty --hold fastfetch")' >/dev/null 2>&1; sleep 4
-  T 15 hyprctl dispatch 'hl.dsp.exec_cmd("gtk3-widget-factory")' >/dev/null 2>&1; sleep 4
-  T 15 grim "$OUT/hypr-2-windows.png" 2>/dev/null && echo "  shot hypr-2-windows" || true
-  T 15 rofi -config "$HOME/.config/rofi/config.rasi" -show drun >/dev/null 2>&1 & sleep 3
-  T 15 grim "$OUT/hypr-3-launcher.png" 2>/dev/null && echo "  shot hypr-3-launcher" || true
-  pkill -x rofi
-  T 15 notify-send -a fui "[0x07] sample" "A notification for the preview." 2>/dev/null; sleep 2
-  T 15 grim "$OUT/hypr-4-notification.png" 2>/dev/null && echo "  shot hypr-4-notification" || true
-  T 15 swaync-client -op >/dev/null 2>&1; sleep 2
-  T 15 grim "$OUT/hypr-5-control-centre.png" 2>/dev/null && echo "  shot hypr-5-control-centre" || true
-  T 15 hyprctl dispatch 'hl.dsp.exit()' >/dev/null 2>&1
-else
-  echo "  Hyprland did not start headless (see hyprland.log)"
-fi
-kill "$HYPR" 2>/dev/null
+pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -x sway
+EOS
+OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+  timeout 400 dbus-run-session -- bash "$TMPD/desktop.sh" || echo "  the sway session ended early (see sway.log)"
 ls -la "$OUT"
 exit 0

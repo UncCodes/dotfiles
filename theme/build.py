@@ -66,6 +66,11 @@ def css(c):                      # GTK3 has no #RRGGBBAA: alpha colours become r
     return f"#{r:02X}{g:02X}{b:02X}" if a >= 0.999 else f"rgba({r}, {g}, {b}, {a:.3f})"
 
 
+def qcss(c):                     # Qt stylesheets: alpha as a percentage (0.4 would read as 0)
+    r, g, b, a = parse(c)
+    return f"#{r:02x}{g:02x}{b:02x}" if a >= 0.999 else f"rgba({r}, {g}, {b}, {round(a * 100)}%)"
+
+
 def hyp(c):                      # Hyprland / hyprlock
     return f"rgba({hx8(c)[1:]})"
 
@@ -156,6 +161,19 @@ def contrast_rows():
     return rows, failures
 
 
+def gel_samples(p, n=13):
+    """The gel's stops (0, 46%, 54%, 100%) sampled at n even points, for tools without stop positions."""
+    stops = [(0.0, p["gel_hi"]), (0.46, p["gel_mid"]), (0.54, p["gel"]), (1.0, p["gel_lo"])]
+    out = []
+    for i in range(n):
+        t = i / (n - 1)
+        for (a, ca), (b, cb) in zip(stops, stops[1:]):
+            if a <= t <= b:
+                out.append(hx8(mix(ca, cb, (t - a) / (b - a))))
+                break
+    return out
+
+
 # ── 1. per-theme colour files for the hand-written configs ──────────────
 def colour_includes():
     for m in MODES:
@@ -167,6 +185,9 @@ def colour_includes():
         for app in ("waybar", "swaync", "swayosd"):
             write(f"{app}/.config/{app}/colors-{m}.css", head + defs)
         rasi = "".join(f"  {ident(k)}: {hx8(v)};\n" for k, v in p.items())
+        # rofi gradients take only evenly spaced literal colours: sample the gel's four stops
+        rasi += f"  gel-face: linear-gradient(to bottom, {', '.join(gel_samples(p))});\n"
+        rasi += f"  sheen-face: linear-gradient(135deg, {hx8(p['sheen'])}, {hx8(alpha(p['sheen'], 0))}, {hx8(alpha(p['sheen'], 0))});\n"
         rasi += (f'  font-pixel: "{F["pixel"]} 13.5";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
                  f'  font-mono-small: "{F["mono"]} 9";\n  font-wordmark: "{F["wordmark"]} 12";\n')
         write(f"rofi/.config/rofi/colors-{m}.rasi",
@@ -297,6 +318,14 @@ button.circular, button.image-button {{ padding: 2px 6px; }}
 .linked > button {{ border-radius: 0; }}
 .linked > button:first-child {{ border-top-left-radius: {G['pill_radius']}px; border-bottom-left-radius: {G['pill_radius']}px; }}
 .linked > button:last-child {{ border-top-right-radius: {G['pill_radius']}px; border-bottom-right-radius: {G['pill_radius']}px; }}
+.linked > entry {{ border-radius: 0; }}
+.linked > entry:first-child {{ border-top-left-radius: {G['pill_radius']}px; border-bottom-left-radius: {G['pill_radius']}px; }}
+.linked > entry:last-child {{ border-top-right-radius: {G['pill_radius']}px; border-bottom-right-radius: {G['pill_radius']}px; }}
+
+/* ── checks and radios: the accent, for apps on GTK's own theme too ── */
+check:checked, check:indeterminate, radio:checked {{
+  background-color: {c('nav_accent')}; background-image: none; border-color: {mix(p['nav_accent'], '#000000', 0.3)}; color: {c('white')};
+}}
 
 /* ── fields: inset wells ── */
 entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{
@@ -312,7 +341,7 @@ entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{
 textview text, textview {{ background-color: {c('well')}; color: {c('text')}; }}
 
 /* ── views, lists, frames: the inset well ── */
-.view, iconview, list, listview, treeview.view {{ background-color: {c('well')}; color: {c('text')}; }}
+.view, iconview, list, listview, treeview.view, columnview, gridview, notebook > stack {{ background-color: {c('well')}; color: {c('text')}; }}
 frame > border, .frame, list.boxed-list, .boxed-list, .card {{
   background-color: {c('well')};
   border: 1px solid {c('edge')};
@@ -437,21 +466,21 @@ def qt():
         disabled = ", ".join(qargb(alpha(r, 0.45)) if i in (0, 6, 8) else qargb(r) for i, r in enumerate(roles))
         write(f"qt/.config/qt6ct/colors/fui-{m}.conf",
               f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
-        q = lambda k: css(p[k])
+        q = lambda k: qcss(p[k])
         gel = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {q('gel_hi')}, stop:0.46 {q('gel_mid')}, "
                f"stop:0.54 {q('gel')}, stop:1 {q('gel_lo')})")
-        pill = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {css(over(p['gloss'], p['card']))}, stop:0.45 {css(over(p['gloss'], p['card']))}, "
-                f"stop:0.55 {css(over(p['gloss_lo'], p['card']))}, stop:1 {css(over(p['gloss_lo'], p['card']))})")
+        pill = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {qcss(over(p['gloss'], p['card']))}, stop:0.45 {qcss(over(p['gloss'], p['card']))}, "
+                f"stop:0.55 {qcss(over(p['gloss_lo'], p['card']))}, stop:1 {qcss(over(p['gloss_lo'], p['card']))})")
         graphite = (f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {q('graphite_hi')}, stop:0.46 {q('graphite')}, "
                     f"stop:0.54 {q('graphite_mid')}, stop:1 {q('graphite_lo')})")
         r, wr = G["radius"], G["well_radius"]
         write(f"theme/templates/fui-{m}.qss.in", f"""{banner('/*')}
-/* fui // Qt · {m} theme: applied to every Qt6 app through qt6ct */
+/* fui: Qt, {m} theme, applied to every Qt6 app through qt6ct. (No double slashes in this file: qt6ct strips them as comments.) */
 QWidget {{ background-color: {q('bg')}; color: {q('text')}; selection-background-color: {q('nav_accent')}; selection-color: #ffffff; }}
 QMainWindow, QDialog {{ background-color: {q('bg')}; }}
 QMenuBar {{ background: {gel}; color: {q('gel_text')}; border-bottom: 1px solid {q('gel_edge')}; }}
 QMenuBar::item {{ background: transparent; padding: 4px 10px; }}
-QMenuBar::item:selected {{ background: rgba(255, 255, 255, 0.18); border-radius: 4px; }}
+QMenuBar::item:selected {{ background: rgba(255, 255, 255, 18%); border-radius: 4px; }}
 QMenu {{ background-color: {q('card')}; border: 1px solid {q('edge')}; border-radius: {r}px; padding: 4px; }}
 QMenu::item {{ padding: 4px 18px 4px 12px; border-radius: {wr}px; }}
 QMenu::item:selected {{ background-color: {q('nav_accent')}; color: #ffffff; }}
@@ -459,8 +488,8 @@ QMenu::separator {{ height: 1px; background: {q('edge')}; margin: 4px 6px; }}
 QPushButton, QToolButton {{ background: {pill}; border: 1px solid {q('edge')}; border-radius: 12px; padding: 3px 14px; color: {q('text')}; min-height: 18px; }}
 QPushButton:hover, QToolButton:hover {{ border-color: {q('nav_accent')}; }}
 QPushButton:pressed, QPushButton:checked, QToolButton:checked {{ background: {q('well')}; }}
-QPushButton:default {{ background: {q('nav_accent')}; color: #ffffff; border-color: {css(mix(p['nav_accent'], '#000000', 0.3))}; }}
-QPushButton:disabled {{ color: {css(alpha(p['text'], 0.45))}; }}
+QPushButton:default {{ background: {q('nav_accent')}; color: #ffffff; border-color: {qcss(mix(p['nav_accent'], '#000000', 0.3))}; }}
+QPushButton:disabled {{ color: {qcss(alpha(p['text'], 0.45))}; }}
 QToolButton[autoRaise="true"] {{ background: transparent; border-color: transparent; }}
 QToolButton[autoRaise="true"]:hover {{ background: {q('well')}; border-color: {q('edge')}; }}
 QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{
@@ -479,13 +508,13 @@ QScrollBar:horizontal {{ height: 14px; background: {q('well')}; margin: 0; }}
 QScrollBar::handle {{ background: {pill}; border: 1px solid {q('edge')}; border-radius: 5px; margin: 2px; min-height: 24px; min-width: 24px; }}
 QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page {{ height: 0; width: 0; background: none; border: none; }}
 QTabWidget::pane {{ border: 1px solid {q('edge')}; border-radius: {wr}px; top: -1px; }}
-QTabBar::tab {{ background: {css(mix(p['card'], p['skin_teal'], 0.10))}; border: 1px solid {q('edge')}; border-bottom: none;
+QTabBar::tab {{ background: {qcss(mix(p['card'], p['skin_teal'], 0.10))}; border: 1px solid {q('edge')}; border-bottom: none;
   border-top-left-radius: 4px; border-top-right-radius: 12px; padding: 4px 14px; color: {q('muted')}; }}
-QTabBar::tab:selected {{ background: {css(mix(p['card'], p['skin_teal'], 0.22))}; color: {q('text')}; border-bottom: 2px solid {q('skin_teal')}; }}
+QTabBar::tab:selected {{ background: {qcss(mix(p['card'], p['skin_teal'], 0.22))}; color: {q('text')}; border-bottom: 2px solid {q('skin_teal')}; }}
 QGroupBox {{ border: 1px solid {q('edge')}; border-radius: {wr}px; margin-top: 14px; padding-top: 6px; }}
 QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 4px; color: {q('nav_accent')}; }}
 QHeaderView::section {{ background: {pill}; color: {q('text')}; border: none; border-right: 1px solid {q('edge')}; border-bottom: 1px solid {q('edge')}; padding: 4px 6px; }}
-QTableView, QTreeView, QListView {{ background: {q('well')}; alternate-background-color: {css(mix(p['well'], p['card'], 0.5))}; gridline-color: {q('edge')}; border: 1px solid {q('edge')}; border-radius: {wr}px; }}
+QTableView, QTreeView, QListView {{ background: {q('well')}; alternate-background-color: {qcss(mix(p['well'], p['card'], 0.5))}; gridline-color: {q('edge')}; border: 1px solid {q('edge')}; border-radius: {wr}px; }}
 QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {q('nav_accent')}; color: #ffffff; }}
 QToolTip {{ background: {graphite}; color: {q('plate_ink')}; border: 1px solid #000000; border-radius: {wr}px; padding: 3px 6px; }}
 QStatusBar {{ background: {q('card')}; color: {q('muted')}; border-top: 1px solid {q('edge')}; }}
@@ -493,7 +522,7 @@ QSplitter::handle {{ background: {q('edge')}; }}
 QCheckBox::indicator, QRadioButton::indicator {{ width: 14px; height: 14px; border: 1px solid {q('edge')}; background: {q('well')}; }}
 QCheckBox::indicator {{ border-radius: 3px; }}
 QRadioButton::indicator {{ border-radius: 7px; }}
-QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('nav_accent')}; border-color: {css(mix(p['nav_accent'], '#000000', 0.3))}; }}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('nav_accent')}; border-color: {qcss(mix(p['nav_accent'], '#000000', 0.3))}; }}
 """)
 
 

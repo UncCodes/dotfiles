@@ -44,7 +44,7 @@ window#waybar {
   transition: all 0.25s ease-in;
 }
 #workspaces button:hover { background: @light_gray; color: @white; animation: blink 2s linear infinite; }
-#workspaces button.active { background: @nav_accent; color: @white; animation: blink 2s linear infinite; }
+#workspaces button.active, #workspaces button.focused { background: @nav_accent; color: @white; animation: blink 2s linear infinite; }
 #workspaces button.urgent { background: @bad; color: @white; }
 @keyframes blink {
   0%   { opacity: 0.5; }

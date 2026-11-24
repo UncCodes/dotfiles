@@ -74,7 +74,7 @@
   /* the white nav buttons: the label blinks while hovered */
   nav ul { list-style: none; display: grid; gap: 8px; }
   nav a { position: relative; display: block; padding: .35rem 1rem; font: .95rem var(--mono); letter-spacing: 2px;
-    color: var(--nav); background: var(--white); text-decoration: none; }
+    color: var(--nav); background: var(--white); text-decoration: none; box-shadow: 0 0 0 1px var(--edge); }
   nav a::after { content: ""; position: absolute; left: 0; top: 7.5%; width: 0; height: 85%; background: var(--light-gray); transition: width .25s ease-in; z-index: 0; }
   nav a span { position: relative; z-index: 1; }
   nav a:hover, nav a:focus-visible { color: var(--white); }

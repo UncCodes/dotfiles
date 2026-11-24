@@ -144,6 +144,14 @@ button.circular, button.image-button { padding: 2px 6px; }
 .linked > button { border-radius: 0; }
 .linked > button:first-child { border-top-left-radius: 999px; border-bottom-left-radius: 999px; }
 .linked > button:last-child { border-top-right-radius: 999px; border-bottom-right-radius: 999px; }
+.linked > entry { border-radius: 0; }
+.linked > entry:first-child { border-top-left-radius: 999px; border-bottom-left-radius: 999px; }
+.linked > entry:last-child { border-top-right-radius: 999px; border-bottom-right-radius: 999px; }
+
+/* ── checks and radios: the accent, for apps on GTK's own theme too ── */
+check:checked, check:indeterminate, radio:checked {
+  background-color: @fui_nav_accent; background-image: none; border-color: #86081D; color: @fui_white;
+}
 
 /* ── fields: inset wells ── */
 entry, spinbutton:not(.vertical) {
@@ -159,7 +167,7 @@ entry:focus-within, spinbutton:focus-within { border-color: @fui_nav_accent; box
 textview text, textview { background-color: @fui_well; color: @fui_text; }
 
 /* ── views, lists, frames: the inset well ── */
-.view, iconview, list, listview, treeview.view { background-color: @fui_well; color: @fui_text; }
+.view, iconview, list, listview, treeview.view, columnview, gridview, notebook > stack { background-color: @fui_well; color: @fui_text; }
 frame > border, .frame, list.boxed-list, .boxed-list, .card {
   background-color: @fui_well;
   border: 1px solid @fui_edge;

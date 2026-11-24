@@ -54,6 +54,8 @@
   kind-green: #4FE0A0FF;
   kind-amber: #FFBD59FF;
   kind-rose: #FF7D97FF;
+  gel-face: linear-gradient(to bottom, #2AB2A9FF, #28A8A0FF, #259E97FF, #23958DFF, #218B84FF, #1E817BFF, #1A726CFF, #186964FF, #196C66FF, #1A6F69FF, #1B726CFF, #1B756FFF, #1C7872FF);
+  sheen-face: linear-gradient(135deg, #FFFFFF1A, #FFFFFF00, #FFFFFF00);
   font-pixel: "ProFontIIx Nerd Font 13.5";
   font-mono: "JetBrainsMono Nerd Font 10";
   font-mono-small: "JetBrainsMono Nerd Font 9";

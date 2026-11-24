@@ -43,6 +43,7 @@ if command -v luacheck >/dev/null; then
   t "luacheck" luacheck --config "$DOTS/.luacheckrc" "$DOTS/hypr/.config/hypr" "$DOTS/nvim/.config/nvim"
 fi
 t "theme build is current, contrast passes" python3 "$DOTS/theme/build.py" --check
+t "Qt stylesheets have no // (qt6ct strips it as a comment)" bash -c '! grep -l "//" "$1"/theme/templates/*.qss.in' _ "$DOTS"
 t "waybar configs parse" python3 -c '
 import json, re, sys
 for f in sys.argv[1:]:

@@ -31,7 +31,7 @@ window {
   border-color: @edge;
   border-radius: 10px;
   background-color: @glass;
-  background-image: linear-gradient(135deg, @sheen, transparent);
+  background-image: @sheen-face;
 }
 
 mainbox {
@@ -47,7 +47,7 @@ titlebar {
   border: 1px solid;
   border-color: @gel-edge;
   border-radius: 999px;
-  background-image: linear-gradient(to bottom, @gel-hi 0%, @gel-mid 46%, @gel 54%, @gel-lo 100%);
+  background-image: @gel-face;
 }
 textbox-title {
   content: "[0x01] run";
