@@ -443,6 +443,9 @@ notebook > header tab:checked, tabbar tab:selected {{ color: {c('ink')}; box-sha
 
 /* ── separators and links ── */
 separator {{ min-height: {hair}px; min-width: {hair}px; background-color: {c('rule')}; }}
+{'' if gtk3 else f"""frame {{ border: {hair}px solid {c('rule')}; border-radius: {r}px; }}
+scale highlight, scale fill, progressbar progress {{ margin: 0; }}
+scale slider {{ margin: -5px; }}"""}
 {'*:link, link' if gtk3 else 'link, label > link'} {{ color: {c('info')}; }}
 """
 

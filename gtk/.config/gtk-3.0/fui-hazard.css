@@ -215,4 +215,5 @@ notebook > header tab:checked, tabbar tab:selected { color: @fui_ink; box-shadow
 
 /* ── separators and links ── */
 separator { min-height: 1px; min-width: 1px; background-color: @fui_rule; }
+
 *:link, link { color: @fui_info; }

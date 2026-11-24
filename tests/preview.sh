@@ -115,7 +115,7 @@ timeout 30 "$FUI" display lcd >/dev/null; timeout 30 "$FUI" mode cyan --quiet
 pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
 EOS
 # shellcheck disable=SC2097,SC2098  # the same values, passed on explicitly
-OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DOTFILES_DIR="$DOTFILES_DIR" \
+OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DOTFILES_DIR="$DOTFILES_DIR" EDITIONS="$EDITIONS" \
   timeout 900 dbus-run-session -- bash "$TMPD/desktop.sh" || echo "  the sway session ended early (see sway.log)"
 ls -la "$OUT"
 exit 0

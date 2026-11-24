@@ -215,4 +215,7 @@ notebook > header tab:checked, tabbar tab:selected { color: @fui_ink; box-shadow
 
 /* ── separators and links ── */
 separator { min-height: 1px; min-width: 1px; background-color: @fui_rule; }
+frame { border: 1px solid @fui_rule; border-radius: 4px; }
+scale highlight, scale fill, progressbar progress { margin: 0; }
+scale slider { margin: -5px; }
 link, label > link { color: @fui_info; }
