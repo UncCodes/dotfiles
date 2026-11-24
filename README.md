@@ -1,9 +1,10 @@
 # dotfiles
 
-Hyprland on EndeavourOS as **an instrument issued by an institution**: dark quiet fields,
+Hyprland on EndeavourOS as **an instrument for a trained operator**: dark quiet fields,
 one signal colour, hairline structure, header plates with a signal stripe, tracked capital
 labels and codes, segment meters, numbers shown large and honestly, glass panels over a
-live survey field (a topographic map with data packets riding its contours). Eight colour **editions** (cyan, amber, phosphor, acid, hazard,
+live survey field (a topographic map, its own terrain in every edition, with traces of
+signal running along the contours). Eight colour **editions** (cyan, amber, phosphor, acid, hazard,
 mono, paper, lab), each drawn for three display **tiers**: a tube (`crt`), a backlit panel
 (`lcd`) and a deep-black OLED / HDR panel (`deep`).
 
@@ -52,10 +53,10 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui mode toggle` / `pick` / `<edition>` | the next edition (`SUPER+SHIFT+T`, or click it in the bar) · pick one from a list (`SUPER+ALT+T`) · set one |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the survey backdrop live (data packets travelling the contours) or still (`SUPER+SHIFT+W`) |
+| `fui wallpaper toggle` | the survey backdrop live (traces running along the contours) or still (`SUPER+SHIFT+W`); it follows the edition |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
-| `fui brand` | the institution: name, division, motto (`[brand]` in `tokens.toml`) |
+| `fui brand` | the machine's names: host, OS, operator (the bar badge, lock screen, start page and boot use them) |
 | `fui palette` | every action in one window (`SUPER+Space`) |
 | `fui power` · `fui keys` · `fui clipboard` | power menu (`SUPER+X`), the key list (`SUPER+/`), clipboard history (`SUPER+SHIFT+V`) |
 | `fui shot region` / `screen` / `edit` | screenshots, saved and copied (`Print`, `SHIFT+Print`, `SUPER+Print` to annotate) |
@@ -73,12 +74,13 @@ When something looks wrong, run `fui doctor` and send its output.
 
 | Area | What you get |
 |---|---|
+| Icons | one outline family (the Nerd Font's Material Design set) on everything: every palette command and menu row, the bar, the control centre, the lock screen, the start page, notifications, the prompt, fastfetch, terminal tabs, the key list and the doctor; registered in `tokens.toml` `[icons]` |
 | Windows | flat panels, radius 4, a hairline edge (the focused one in the signal), no shadows (a soft signal halo on deep screens); dialogs, pickers and small tools float centred; picture-in-picture pinned |
 | Bar | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts (`CPU`, `MEM`, `NET`), volume and battery segment meters, now playing, updates, recording, the edition and tier, notices, the clock |
 | Launcher | apps, the command palette, the edition and tier pickers, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |
 | Notices | memos with a stripe by urgency (a critical one as a solid plate); the system console (`SUPER+N`) with do-not-disturb, toggles, volume and media |
 | Volume / brightness | a small plate with a segment meter |
-| Lock screen | authentication: the institution, a large clock, operator and node, a passphrase field, the notice |
+| Lock screen | authentication: the distribution's logo, the host and the OS, a large clock, operator and kernel, a passphrase field, the notice |
 | Apps | GTK3, GTK4 / libadwaita and Qt6 in all eight editions, including apps installed later |
 | Terminal | the edition's console (light editions keep a dark one); zsh, starship, fastfetch (the workstation's asset sheet), btop, Neovim, git, mpv, zathura, imv and satty on the same palette |
 | Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
@@ -114,7 +116,6 @@ geometry, type, motion and safety limits. After editing:
 python3 theme/build.py                 # regenerate everything (and check contrast)
 python3 theme/make-wallpaper.py --all  # redraw the fallback backdrop
 python3 theme/make-sounds.py           # re-synthesise the sounds
-python3 theme/make-brand.py            # redraw the mark for every edition
 ```
 
 `build.py` writes, per edition, a colour file for each app (waybar, rofi, swaync, swayosd,
@@ -122,7 +123,7 @@ hyprlock, kitty, Firefox, mpv, zathura, imv, satty, btop), the whole GTK and Qt 
 the console; per tier, small overlay files that switch colours and strokes; and once, the
 Hyprland token table, Neovim's colours, the start page, the shell colours, fonts, the bar's
 meters, the screen finish and the docs. `fui mode` points each app's `fui-colors.*` link (and
-the mark) at an edition, `fui display` points the `fui-tier.*` links at a tier, and both
+the btop theme) at an edition, `fui display` points the `fui-tier.*` links at a tier, and both
 reload what's running. The palette model is shared by every script
 ([`theme/palette.py`](theme/palette.py)); the backdrop is a seeded survey field
 ([`theme/survey.py`](theme/survey.py)), rendered per edition, tier and screen size into

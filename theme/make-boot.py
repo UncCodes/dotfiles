@@ -3,8 +3,8 @@
 
   python3 theme/make-boot.py OUTDIR
 writes
-  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the institution's survey field on the
-                     first edition's floor, the mark and name, a 4 px signal progress line that
+  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the survey field on the first
+                     edition's floor, the distribution's logo, the host and the OS, a 4 px signal progress line that
                      fills as the system starts, a status line, and a passphrase field when asked
   OUTDIR/console/    issue (the sign-in banner), vtrgb (the console palette for setvtrgb) and
                      the systemd unit that applies it
@@ -20,8 +20,29 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from palette import EDS, TOK, E, console  # noqa: E402
 
+
+def os_release():
+    """(name, id) of the distribution, read on the machine."""
+    vals = {}
+    try:
+        for line in open("/etc/os-release"):
+            k, _, v = line.strip().partition("=")
+            vals[k] = v.strip('"')
+    except OSError:
+        pass
+    return vals.get("NAME", "Linux"), vals.get("ID", "")
+
+
+LOGOS = {"endeavouros": "\uf322", "arch": "\uf303", "manjaro": "\uf312", "fedora": "\uf30a",
+         "debian": "\uf306", "ubuntu": "\uf31b"}
+OS_NAME, OS_ID = os_release()
+try:
+    HOST = open("/etc/hostname").read().strip() or "workstation"
+except OSError:
+    HOST = "workstation"
+
 C = E(EDS[0])                                         # the splash: the first edition (cyan)
-BR = TOK["brand"]
+NOTICE = TOK["workstation"]["notice"]
 F = TOK["font"]
 
 
@@ -45,16 +66,13 @@ def font(family, size, fallback="DejaVu Sans Mono"):
 
 
 def masthead():
-    """The centre of the splash: the mark, the institution, the division, a status line."""
+    """The centre of the splash: the distribution's logo, the host, the OS, a status line."""
     W, H = 640, 260
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    mark_png = HERE.parent / f"fui/.local/share/fui/brand/mark-{EDS[0]}.png"
-    if mark_png.exists():
-        m = Image.open(mark_png).convert("RGBA").resize((64, 64), Image.LANCZOS)
-        img.alpha_composite(m, ((W - 64) // 2, 10))
-    d.text((W / 2, 112), BR["name"], font=font(F["brand"], 26), fill=rgba(C["ink"]), anchor="mm")
-    d.text((W / 2, 146), BR["division"], font=font(F["mono"], 12), fill=rgba(C["muted"]), anchor="mm")
+    d.text((W / 2, 46), LOGOS.get(OS_ID, "\uf17c"), font=font(F["mono"], 56), fill=rgba(C["signal"]), anchor="mm")
+    d.text((W / 2, 112), HOST.upper(), font=font(F["brand"], 26), fill=rgba(C["ink"]), anchor="mm")
+    d.text((W / 2, 146), OS_NAME.upper(), font=font(F["mono"], 12), fill=rgba(C["muted"]), anchor="mm")
     d.text((W / 2, 236), "STARTING WORKSTATION", font=font(F["mono"], 12), fill=rgba(C["muted"]), anchor="mm")
     return img
 
@@ -66,7 +84,7 @@ def track(width=360, height=4):
     return t, f
 
 
-SCRIPT = r"""// fui // Plymouth: the institution's masthead over the survey field (made by theme/make-boot.py)
+SCRIPT = r"""// fui // Plymouth: the machine's masthead over the survey field (made by theme/make-boot.py)
 Window.SetBackgroundTopColor(%(bg)s);
 Window.SetBackgroundBottomColor(%(bg)s);
 sw = Window.GetWidth(); sh = Window.GetHeight();
@@ -152,9 +170,9 @@ def main(out):
     term[0] = cons["bg"]
     chans = list(zip(*(rgba(c)[:3] for c in term)))
     (con / "vtrgb").write_text("\n".join(",".join(str(v) for v in ch) for ch in chans) + "\n")
-    (con / "issue").write_text(f"\n\\e{{cyan}}{BR['name']}\\e{{reset}}  {BR['division']}\n"
-                               f"\\e{{bold}}NODE\\e{{reset}} \\n   \\e{{bold}}TERMINAL\\e{{reset}} \\l   \\d \\t\n"
-                               f"{BR['notice']}\n\n")
+    (con / "issue").write_text(f"\n\\e{{cyan}}\\n\\e{{reset}}  \\S{{NAME}}\n"
+                               f"\\e{{bold}}TERMINAL\\e{{reset}} \\l   \\e{{bold}}KERNEL\\e{{reset}} \\r   \\d \\t\n"
+                               f"{NOTICE}\n\n")
     (con / "fui-vtrgb.service").write_text(
         "[Unit]\nDescription=fui: the console palette on the text consoles\nDefaultDependencies=no\n"
         "After=systemd-vconsole-setup.service\nBefore=getty@tty1.service\n\n"

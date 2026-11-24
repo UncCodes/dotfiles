@@ -1,8 +1,9 @@
 # fui design
 
-**An instrument issued by an institution to a trained operator.** The desktop is a
-workstation issued by an original institution (`[brand]` in `tokens.toml`; never a real
-company or one from a film or game). Its screens are dark, quiet fields with one signal
+**An instrument for a trained operator.** The desktop is a workstation that names itself by
+its own machine (the distribution's logo, the host, the operating system and the operator,
+read on the machine; never a company's name or mark). Its screens are dark, quiet fields with
+one signal
 colour, hairline structure, labels and codes everywhere, numbers shown large and honestly,
 and ornament that measures, frames or indexes something. It is drawn for the display it runs
 on: a tube, a backlit panel, or a deep-black OLED / HDR panel.
@@ -87,13 +88,24 @@ An LCD on a VGA cable also reports an analog input, so `auto` calls it a tube: p
 
 | Voice | Face | Used for |
 |---|---|---|
-| brand | Michroma | the institution, the clock |
+| brand | Michroma | the host name, the clock |
 | interface | Inter | controls and prose |
 | data | JetBrains Mono | labels (tracked capitals), values, codes, terminals |
 
 Labels are nouns in capitals (`DIRECTORY`, `SYSTEM CONSOLE`); actions are verbs; messages
 are sentence case. Numbers keep their units, times are 24-hour, dates ISO in data and
 `Tue 24 Nov` in chrome. No exclamation marks or emoji in system text.
+
+## Icons
+
+Everything carries an icon: every command in the palette and every row of every menu and
+picker, every bar readout, the control centre's tiles, the lock screen, the start page,
+notifications, fastfetch, the prompt, the terminal tabs, the key reference and the doctor's
+output. One family only, Material Design outline glyphs from the Nerd Font, registered by
+name in `tokens.toml` `[icons]` (the list with every glyph is in [`PALETTE.md`](PALETTE.md)).
+Icons lead their label and dim with it; a status word still joins an icon over a threshold
+(`CPU HIGH`), so state is never an icon or a colour alone. Edition pickers show a swatch of
+each edition's signal. Apps keep their own (Papirus) icons in the launcher.
 
 ## The panel
 
@@ -126,18 +138,18 @@ Every code names a real panel and stays stable:
 | Surface | Built as |
 |---|---|
 | Windows (Hyprland) | panels, the focused edge in the signal, no shadows; a soft signal halo on deep |
-| Bar (waybar) | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts, volume and battery meters, the edition and tier, the clock in the brand voice |
+| Bar (waybar) | the status rail: the badge (the distribution's logo and the operator), workspace index segments `01 02 03`, the focused window, labelled readouts, volume and battery meters, the edition and tier, the clock in the brand voice |
 | Launcher, palette, session, keys, pickers (rofi) | a directory panel: header plate, set-in search with a signal prompt, flat rows |
 | Notifications (swaync) | memos: a stripe by urgency; a critical memo's summary is a solid plate in `bad` |
 | Control centre (swaync) | the system console: header plate, flat toggle tiles, square sliders |
 | OSD (swayosd) | a small plate with the stripe and a segment meter |
-| Lock screen (hyprlock) | authentication: header plate, the mark and institution, the clock, operator and node in bracketed readouts, a passphrase field, the notice |
+| Lock screen (hyprlock) | authentication: header plate, the distribution's logo, the host and the OS, the clock, operator and kernel in bracketed readouts, a passphrase field, the notice |
 | Apps (GTK3/4, libadwaita, Qt) | header plates, outlined controls, square checks, set-in fields, signal selection, square progress |
 | Terminal (kitty) and console tools | the edition's console: 16 colours mapped from the roles (light editions keep a dark console); shell colours are ANSI numbers so everything follows it |
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
-| Start page | masthead, bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
-| Boot (Plymouth), consoles | the masthead over the survey field with a 4 px progress line; the console palette and a sign-in banner with the notice |
-| Backdrop | the survey field: a topographic map of a seeded terrain, contour hairlines with every fifth an index contour strung with survey stations, data packets in the signal riding the contours when live; floor on lcd, true black on deep and crt. No text |
+| Start page | masthead (the distribution's logo, the host, the OS), bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
+| Boot (Plymouth), consoles | the distribution's logo, the host and the OS over the survey field with a 4 px progress line; the console palette and a sign-in banner with the notice |
+| Backdrop | the survey field: a topographic map of a terrain each edition seeds differently, contour hairlines with every fifth an index contour strung with survey stations, and traces (lit stretches of contour, bright at the head) running along the lines when live; floor on lcd, true black on deep and crt. No text |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
 ## Motion

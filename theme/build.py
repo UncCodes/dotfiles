@@ -4,7 +4,7 @@
   python3 theme/build.py            # regenerate everything
   python3 theme/build.py --check    # exit 1 if anything is stale or a contrast pair fails
 
-The workstation is an instrument issued by an institution: dark quiet fields, one signal
+The workstation is an instrument for a trained operator: dark quiet fields, one signal
 colour, hairline structure, labels and codes, honest numbers. Colours come in EDITIONS
 (cyan, amber, phosphor, acid, hazard, mono, paper, lab), each drawn for three display
 TIERS (crt, lcd, deep). Components use roles (floor, panel, ink, signal ...), never hex.
@@ -39,9 +39,15 @@ from survey import survey, svg_beads, svg_lines  # noqa: E402
 from palette import (CRT_SWAP, DEEP_SWAP, EDS, ROLES, TIERS, TOK, E, T, alpha, console, contrast,  # noqa: E402
                      css, full, hx, hx8, is_dark, mix, over, parse)
 
-TIER, G, GL, O, BL, SCR, F, MO, D, BR, SAFE = (TOK[k] for k in ("tier", "geometry", "glass", "opacity", "blur", "screen",
-                                                              "font", "motion", "desktop", "brand", "safety"))
+TIER, G, GL, O, BL, SCR, F, MO, D, WS, SAFE = (TOK[k] for k in ("tier", "geometry", "glass", "opacity", "blur", "screen",
+                                                              "font", "motion", "desktop", "workstation", "safety"))
+ICONS = TOK["icons"]
 CHECK = "--check" in sys.argv
+
+
+def ic(name):
+    """An icon from the registry, as its character."""
+    return chr(int(ICONS[name], 16))
 changed = []
 
 ALERT_SWAP = {"signal": "bad", "signal_hi": "bad", "signal_dim": "bad_dim", "on_signal": "on_bad", "packet": "bad"}
@@ -192,7 +198,7 @@ def colour_includes():
         for app in ("waybar", "swaync", "swayosd"):
             write(f"{app}/.config/{app}/colors-{ed}.css", head + defs)
         rasi = "".join(f"  {ident(k)}: {hx8(v)};\n" for k, v in p.items())
-        rasi += (f'  font-ui: "{F["ui"]} {F["size"] + 1}";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
+        rasi += (f'  font-ui: "{F["ui"]}, {F["mono"]} {F["size"] + 1}";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
                  f'  font-label: "{F["mono"]} Bold {F["size"] - 1}";\n  font-brand: "{F["brand"]} 10";\n')
         lt = TIER["lcd"]
         rasi += (f"  frame: {lt['hair']}px solid;\n  rule-top: {lt['hair']}px 0 0 0;\n"
@@ -201,7 +207,7 @@ def colour_includes():
               f"{banner('/*')}/* fui // edition {ed} for rofi. config.rasi imports this through fui-colors.rasi. */\n* {{\n{rasi}}}\n")
         hyprvars = "".join(f"${k} = {hyp(v)}\n${k}_hex = {hx(v)[1:]}\n" for k, v in p.items())
         hyprvars += "".join(f"$font_{k} = {v}\n" for k, v in F.items() if isinstance(v, str))
-        hyprvars += "".join(f"$brand_{k} = {v}\n" for k, v in BR.items())
+        hyprvars += f"$notice = {WS['notice']}\n"
         hyprvars += f"$hair = {TIER['lcd']['hair']}\n$stripe = {TIER['lcd']['stripe']}\n"
         write(f"hypr/.config/hypr/colors-{ed}.conf",
               f"{banner()}# fui // edition {ed} for hyprlock (sourced through fui-colors.conf)\n{hyprvars}")
@@ -732,6 +738,13 @@ def console_apps():
               f"[font]\nfamily = \"{F['mono']}\"\nstyle = \"Bold\"\n\n"
               f"# the signal first, then the counter colour and the status colours\n[color-palette]\npalette = [{pal}]\n")
 
+# ── 4c. icons: the registry as shell variables (the fui command sources it) ──
+def icons():
+    lines = [banner(), "# Icons from tokens.toml [icons] (Material Design outline, Nerd Font). Sourced by fui.\n"]
+    lines += [f"I_{k}='{ic(k)}'   # U+{v.upper()}\n" for k, v in ICONS.items()]
+    write("fui/.config/fui/icons.sh", "".join(lines))
+
+
 def fonts():
     fam = lambda fs: "".join(f"      <family>{x}</family>\n" for x in fs)
     write("fui/.config/fontconfig/conf.d/60-fui.conf", f"""<?xml version="1.0"?>
@@ -819,7 +832,6 @@ void main() {{
 # ── 6. the start page: the intranet portal, one file for every edition ──
 def startpage():
     tpl = (ROOT / "theme/templates/start.html.in").read_text()
-    art = survey()
     keys = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint", "signal",
             "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info", "glass", "arc", "bead"]
     d0 = E(EDS[0])
@@ -831,29 +843,22 @@ def startpage():
                       + " ".join(f"--{ident(k)}: {css(p[k])};" for k in keys) + " }")
         blocks.append(f'html[data-theme="{ed}"][data-display="crt"] {{ '
                       + " ".join(f"--{ident(k)}: {css(c[k])};" for k in CRT_SWAP if k in keys)
-                      + f" --glass: {css(c['panel'])}; --hair: {TIER['crt']['hair']}px; --stripe: {TIER['crt']['stripe']}px; }}")
+                      + f" --hair: {TIER['crt']['hair']}px; --stripe: {TIER['crt']['stripe']}px; }}")
         blocks.append(f'html[data-theme="{ed}"][data-display="deep"] {{ --void: {css(T(ed, "deep")["void"])}; }}')
         blocks.append(f'@media (color-gamut: p3) {{ html[data-theme="{ed}"]:not([data-display="crt"]) {{ --signal: {dp["signal_p3"]}; }} }}')
-    marks = "".join(f'<span class="mark" data-for="{ed}">{brand_mark_svg(E(ed)["signal"], E(ed)["ink"])}</span>' for ed in EDS)
-    marks_css = " ".join(f'html[data-theme="{ed}"] .mark {{ display: none; }} html[data-theme="{ed}"] .mark[data-for="{ed}"] {{ display: inline-block; }}'
-                         for ed in EDS)
-    values = {"palettes": "\n  ".join(blocks), "default": EDS[0], "marks_css": marks_css,
-              "lines": svg_lines(art, "currentColor"), "beads": svg_beads(art, "currentColor"),
-              "font_brand": F["brand"], "font_ui": F["ui"], "font_mono": F["mono"], "marks": marks,
-              "hair": f"{TIER['lcd']['hair']}px", "stripe": f"{TIER['lcd']['stripe']}px",
-              **{f"brand_{k}": v for k, v in BR.items()}}
+    # every edition surveys its own terrain: one backdrop per edition, the current one shown
+    maps = ""
+    for ed in EDS:
+        art = survey(ed)
+        maps += (f'<div class="map" data-for="{ed}"><span class="l">{svg_lines(art, "currentColor")}</span>'
+                 f'<span class="b">{svg_beads(art, "currentColor")}</span></div>')
+    maps_css = " ".join(f'html[data-theme="{ed}"] .map[data-for="{ed}"] {{ display: block; }}' for ed in EDS)
+    values = {"palettes": "\n  ".join(blocks), "default": EDS[0], "maps": maps, "maps_css": maps_css,
+              "font_brand": F["brand"], "font_ui": F["ui"], "font_mono": F["mono"],
+              "hair": f"{TIER['lcd']['hair']}px", "stripe": f"{TIER['lcd']['stripe']}px", "notice": WS["notice"],
+              **{f"i_{k}": f'<i class="ic" aria-hidden="true">{ic(k)}</i>' for k in ICONS}}
     html = re.sub(r"\{\{(\w+)\}\}", lambda mt: values[mt.group(1)], tpl)
     write("fui/.config/fui/start/start.html", html.replace("<!--BANNER-->", banner("<!--").strip()))
-
-
-def brand_mark_svg(signal, ink, size=40):
-    """The institution's mark: a square plate with a notched corner (a chamfer) and three bars
-    stepping down, the top one in the signal. Survives 1-bit rendering at 16 px."""
-    a, k = css(signal), css(ink)
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="{size}" height="{size}" aria-hidden="true">'
-            f'<path d="M2 2H30L38 10V38H2Z" fill="none" stroke="{k}" stroke-width="2"/>'
-            f'<rect x="9" y="11" width="20" height="4" fill="{a}"/><rect x="9" y="19" width="14" height="4" fill="{k}"/>'
-            f'<rect x="9" y="27" width="8" height="4" fill="{k}"/></svg>')
 
 
 # ── 7. docs and web tokens ──────────────────────────────────────────────
@@ -899,10 +904,17 @@ Colours 0–15; light editions keep a dark console.
 |---|---|{'---|' * len(EDS)}
 {chr(10).join(crows)}
 
+## Icons
+One family: Material Design outline glyphs from the Nerd Font. `tests/run.sh` checks the
+installed font carries every one.
+
+| Name | Icon | Code point |
+|---|---|---|
+{"".join(f"| `{k}` | {ic(k)} | `U+{v.upper()}` |{chr(10)}" for k, v in ICONS.items())}
 ## Type
 | Voice | Face |
 |---|---|
-| brand: the institution, the clock, display numerals | {F['brand']} |
+| brand: the host name, the clock, display numerals | {F['brand']} |
 | interface: controls and prose | {F['ui']} |
 | data: values, codes, labels, terminals | {F['mono']} |
 """)
@@ -918,7 +930,6 @@ Colours 0–15; light editions keep a dark console.
                    f"{{ --fui-signal: {TOK['edition'][ed]['deep']['signal_p3']}; }} }}\n")
     themed += "@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0ms !important; } }\n"
     write("theme/web/fui-tokens.css", f"{banner('/*')}:root {{\n{root}}}\n{themed}")
-    write("fui/.local/share/fui/brand/mark.svg", brand_mark_svg(E(EDS[0])["signal"], E(EDS[0])["ink"], 256) + "\n")
 
 
 # ── 8. the key reference, read from hyprland.lua's comments ─────────────
@@ -964,6 +975,7 @@ qt()
 shell_env()
 btop()
 console_apps()
+icons()
 neovim()
 fonts()
 hypr()

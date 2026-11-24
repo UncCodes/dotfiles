@@ -1,16 +1,17 @@
 """The survey field: the backdrop. A topographic map of a seeded height field.
 
 Contour lines (isolines) of a smooth terrain, drawn as hairlines; every fifth one is an
-index contour, a little brighter and strung with survey-station beads. Data packets travel
-along the contours in the signal colour: the live version moves them, the still shows them
-where they stand at t = 0. Seeded (mulberry32, the same generator as lattice.py), so every
-render draws the same map. No text, ever.
+index contour, a little brighter and strung with survey-station beads. Traces run along the
+contours in the signal colour: a lit stretch of line, bright at its head and fading behind
+it. The live version moves them; the still shows them where they stand at t = 0. Every
+edition surveys its own terrain (its own seed, mulberry32 as in lattice.py), and each render
+of an edition draws the same map. No text, ever.
 
     from survey import survey, svg_lines, svg_beads
-    art = survey()             # view box 1000 x 700
+    art = survey("amber")      # view box 1000 x 700
     art["lines"]   -> [(points, kind)]           kind: "minor" | "index"
     art["beads"]   -> [(x, y, size)]             survey stations on the index contours
-    art["packets"] -> [(points, closed, speed, phase)]   speed: 0-7, phase: 0-9
+    art["packets"] -> [(points, closed, speed, phase)]   traces; speed: 0-7, phase: 0-9
     svg_lines(art, colour), svg_beads(art, colour) -> SVG markup
 """
 import math
@@ -26,9 +27,12 @@ WIDTH = {"minor": 0.7, "index": 1.1}
 BEAD_GAP = 46                # survey stations along the index contours
 
 
-def _field():
+SEEDS = {"cyan": 19, "amber": 61, "phosphor": 23, "acid": 88, "hazard": 37, "mono": 74, "paper": 52, "lab": 95}
+
+
+def _field(seed):
     """A smooth terrain: seeded hills and hollows on a gentle tilt."""
-    rand = rng(19)
+    rand = rng(seed)
     bumps = []
     for _ in range(16):
         bumps.append((rand() * W * 1.2 - W * 0.1, rand() * H * 1.2 - H * 0.1,
@@ -139,13 +143,13 @@ def walk(points, u):
     return points[-1]
 
 
-def survey():
-    h = _field()
+def survey(edition="cyan"):
+    h = _field(SEEDS.get(edition, 19))
     nx, ny = W // STEP + 3, H // STEP + 3
     grid = [[h((i - 1) * STEP, (j - 1) * STEP) for i in range(nx)] for j in range(ny)]
     lo, hi = min(map(min, grid)), max(map(max, grid))
     lines, beads, routes = [], [], []
-    prand = rng(43)
+    prand = rng(SEEDS.get(edition, 19) + 24)
     for k in range(1, LEVELS):
         level = lo + (hi - lo) * k / LEVELS
         kind = "index" if k % INDEX_EVERY == 0 else "minor"

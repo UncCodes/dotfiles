@@ -10,22 +10,22 @@
   "display": {
     "separator": "   ",
     "color": { "keys": "cyan", "title": "white" },
-    "key": { "width": 10 }
+    "key": { "width": 13 }
   },
   "modules": [
     { "type": "title", "format": "{user-name}@{host-name}", "color": { "user": "cyan", "at": "white", "host": "white" } },
-    { "type": "custom", "format": "\u001b[90mFUI SYSTEMS · WORKSTATION ASSET SHEET" },
-    { "type": "os",       "key": "SYSTEM" },
-    { "type": "kernel",   "key": "KERNEL" },
-    { "type": "wm",       "key": "SHELL UI" },
-    { "type": "shell",    "key": "SHELL" },
-    { "type": "terminal", "key": "TERMINAL" },
-    { "type": "cpu",      "key": "CPU", "showPeCoreCount": false },
-    { "type": "gpu",      "key": "GPU" },
-    { "type": "memory",   "key": "MEMORY" },
-    { "type": "disk",     "key": "STORAGE", "folders": "/" },
-    { "type": "uptime",   "key": "UPTIME" },
-    { "type": "command",  "key": "EDITION", "text": "printf '%s · %s' \"$(~/.local/bin/fui mode status)\" \"$(~/.local/bin/fui display status | cut -d' ' -f1)\"" },
+    { "type": "custom", "format": "\u001b[90m󰧮  WORKSTATION ASSET SHEET" },
+    { "type": "os",       "key": "󰋽  SYSTEM" },
+    { "type": "kernel",   "key": "󰘚  KERNEL" },
+    { "type": "wm",       "key": "󰨝  SHELL UI" },
+    { "type": "shell",    "key": "󰆍  SHELL" },
+    { "type": "terminal", "key": "󰞷  TERMINAL" },
+    { "type": "cpu",      "key": "󰻠  CPU", "showPeCoreCount": false },
+    { "type": "gpu",      "key": "󰍹  GPU" },
+    { "type": "memory",   "key": "󰍛  MEMORY" },
+    { "type": "disk",     "key": "󰋊  STORAGE", "folders": "/" },
+    { "type": "uptime",   "key": "󰔛  UPTIME" },
+    { "type": "command",  "key": "󰸌  EDITION", "text": "printf '%s · %s' \"$(~/.local/bin/fui mode status)\" \"$(~/.local/bin/fui display status | cut -d' ' -f1)\"" },
     "break",
     { "type": "colors", "symbol": "block" }
   ]

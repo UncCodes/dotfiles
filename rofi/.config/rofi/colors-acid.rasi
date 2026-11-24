@@ -39,7 +39,7 @@
   glass-crt: #101210B8;
   glass-well-crt: #05060599;
   void-deep: #000000FF;
-  font-ui: "Inter 11";
+  font-ui: "Inter, JetBrainsMono Nerd Font 11";
   font-mono: "JetBrainsMono Nerd Font 10";
   font-label: "JetBrainsMono Nerd Font Bold 9";
   font-brand: "Michroma 10";

@@ -11,12 +11,13 @@
 #   fui shot [region|screen|edit|tour]               screenshots (Print, SHIFT+Print, SUPER+Print)
 #   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
 #   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
-#   fui updates | brand                              count pending package updates · the institution's name
+#   fui updates | brand                              count pending package updates · the machine's name and OS
 #   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
 #   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
 #   fui help
 set -u
+# shellcheck disable=SC2154  # the I_* icon variables come from icons.sh (generated)
 
 DOTS="${DOTFILES_DIR:-$HOME/.dotfiles}"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -24,13 +25,16 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}/fui"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
 SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/fui"
 SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+# icons (Material Design outline, Nerd Font), generated from tokens.toml [icons]
+# shellcheck source=/dev/null
+. "$CFG/fui/icons.sh" 2>/dev/null || . "$DOTS/fui/.config/fui/icons.sh" 2>/dev/null || true
 
 have()   { command -v "$1" >/dev/null 2>&1; }
 upper()  { echo "$1" | tr '[:lower:]' '[:upper:]'; }
 detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/null 2>&1 & fi; }
 die()    { echo "fui: $*" >&2; exit 1; }
 t3()     { if have timeout; then timeout 3 "$@"; else "$@"; fi; }   # calls to services that may not be running
-note()   { have notify-send && t3 notify-send -t 2200 -a fui "$1" "${2:-}"; return 0; }
+note()   { have notify-send && t3 notify-send -t 2200 -a fui ${3:+-i "$3"} "$1" "${2:-}"; return 0; }   # title body [icon name]
 usage()  { sed -n '3,19p' "$SELF" | sed 's/^# \{0,1\}//'; }
 
 # token lookups from ~/.config/fui/tokens.json (generated from tokens.toml)
@@ -79,7 +83,8 @@ render_startpage() {   # the browser home page for this user, in the current edi
   local src="$CFG/fui/start/start.html"
   [ -f "$src" ] || return 0
   mkdir -p "$SHARE"
-  sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(cat /etc/hostname 2>/dev/null || hostname)|g" \
+  sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(host_name)|g" -e "s|__OS__|$(os_name)|g" \
+      -e "s|__LOGO__|$(os_logo)|g" -e "s|__KERNEL__|$(uname -r)|g" \
       -e "s|__EDITION__|$(current_mode)|g" -e "s|__DISPLAY__|$(current_tier)|g" "$src" > "$SHARE/start.html.tmp" &&
     mv "$SHARE/start.html.tmp" "$SHARE/start.html"
 }
@@ -125,7 +130,7 @@ cmd_mode() {
   case "$cmd" in
     status)
       if [ "${2:-}" = --bar ]; then
-        echo "<span alpha='60%' size='small' letter_spacing='1600'>THEME</span> $cur · $(current_tier)"
+        echo "<span alpha='70%'>${I_edition-}</span> $cur · $(current_tier)"
       else
         echo "$cur"
       fi
@@ -139,11 +144,15 @@ cmd_mode() {
         [ "$m" = "$cur" ] && take=1
       done
       new="${new:-$first}" ;;
-    pick)
-      local m rows="" pick
-      for m in $(modes); do rows="$rows$(printf '%-9s %s' "$m" "$(edition_blurb "$m")")"$'\n'; done
-      pick=$(printf '%s' "$rows" | rofi_window "EDITION" "ED-06" -dmenu -i -p "SET" -no-custom -lines 8) || return 0
-      new="${pick%% *}" ;;
+    pick)   # each edition with a swatch of its signal colour
+      local m rows="" pick sw
+      for m in $(modes); do
+        sw=$(tok "edition.$m.signal")
+        rows="$rows<span color='${sw:-#888888}'>■</span>  $(printf '%-9s' "$m")<span alpha='70%'>$(edition_blurb "$m")</span>"$'\n'
+      done
+      pick=$(printf '%s' "$rows" | rofi_window "${I_edition-}  EDITION" "ED-06" -dmenu -i -p "SET" -no-custom -lines 8 -markup-rows -format i) || return 0
+      # shellcheck disable=SC2046
+      set -- $(modes); shift "$pick" 2>/dev/null || return 0; new="$1" ;;
     apply) new="$cur" ;;
     *)
       local alias; alias=$(tok "meta.renamed.$cmd"); [ -n "$alias" ] && cmd="$alias"
@@ -167,7 +176,6 @@ cmd_mode() {
   mode_link "$CFG/zathura" "colors-$new"       fui-colors
   mode_link "$CFG/imv"     "config-$new"       config
   mode_link "$CFG/satty"   "config-$new.toml"  config.toml
-  mode_link "$SHARE/brand" "mark-$new.png"     mark.png
   if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
     sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$CFG/qt6ct/qt6ct.conf"
   fi
@@ -181,7 +189,7 @@ cmd_mode() {
   # links from earlier looks, which no longer exist in the repo
   rm -f "$CFG/kitty/fui-mode.conf" "$CFG/waybar/fui-mode.css" "$CFG/rofi/fui-mode.rasi" "$CFG/mako/fui-mode" \
         "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" \
-        "$CFG/kitty/console.conf" 2>/dev/null
+        "$CFG/kitty/console.conf" "$SHARE/brand/mark.png" 2>/dev/null
 
   [ "$cmd" = apply ] && return 0
 
@@ -199,7 +207,7 @@ cmd_mode() {
     detach "$SELF" wallpaper start
     cmd_sound move
   fi
-  [ "$quiet" = 1 ] || note "edition" "$new"
+  [ "$quiet" = 1 ] || note "EDITION" "$new" preferences-desktop-theme
   return 0
 }
 
@@ -282,9 +290,10 @@ cmd_display() {
       return 0 ;;
     pick)
       local pick
-      pick=$(printf 'auto      read the screen\ncrt       a tube: 2 px lines, black floor, safe inset, no effects\nlcd       a backlit panel: 1 px hairlines\ndeep      OLED / HDR: true black, a soft halo on the focused window\n' |
-        rofi_window "DISPLAY TIER" "DSP-07" -dmenu -i -p "SET" -no-custom -lines 4) || return 0
-      pref="${pick%% *}" ;;
+      pick=$(printf '%s  auto      read the screen\n%s  crt       a tube: 2 px lines, black floor, safe inset, no effects\n%s  lcd       a backlit panel: 1 px hairlines\n%s  deep      OLED / HDR: true black, a soft halo on the focused window\n' \
+          "${I_auto-}" "${I_crt-}" "${I_lcd-}" "${I_deep-}" |
+        rofi_window "${I_display-}  DISPLAY TIER" "DSP-07" -dmenu -i -p "SET" -no-custom -lines 4 -format i) || return 0
+      case "$pick" in 0) pref=auto ;; 1) pref=crt ;; 2) pref=lcd ;; 3) pref=deep ;; *) return 0 ;; esac ;;
     toggle) case "$pref" in auto) pref=crt ;; crt) pref=lcd ;; lcd) pref=deep ;; *) pref=auto ;; esac ;;
     auto|crt|lcd|deep) pref="$1" ;;
     apply|start) ;;
@@ -307,7 +316,7 @@ cmd_display() {
   [ "${1:-}" = start ] && [ "$t" = "$before" ] && return 0
   restart_services
   [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && detach "$SELF" wallpaper start
-  [ "${1:-}" = start ] || note "display tier" "$t ($reason)"
+  [ "${1:-}" = start ] || note "DISPLAY TIER" "$t ($reason)" video-display
   return 0
 }
 
@@ -331,7 +340,7 @@ cmd_alert() {
       echo "${4:-manual}" > "$STATE/alert-source"
       [ "$cur" = on ] && return 0
       echo on > "$STATE/alert"; alert_links on
-      have notify-send && t3 notify-send -u critical -a fui "$word" "$msg"
+      have notify-send && t3 notify-send -u critical -a fui -i dialog-warning "$word" "$msg"
       cmd_sound alert ;;
     off)
       rm -f "$STATE/alert-source"
@@ -422,10 +431,11 @@ cmd_lockclock() {
 
 
 # ── wallpaper: the survey field ─────────────────────────────────────────
-# Rendered for the edition, the display tier (the ground: floor, or true black on deep and
-# crt) and the screen's size by theme/make-wallpaper.py into ~/.cache/fui/. Live: data
-# packets travel the lines, played by mpvpaper. Still: swaybg with the PNG (also shown while
-# the loop renders). The repo's wallpaper.png is the fallback.
+# Every edition surveys its own terrain in its own colours. Rendered for the edition, the
+# display tier (the ground: floor, or true black on deep and crt) and the screen's size by
+# theme/make-wallpaper.py into ~/.cache/fui/. Live: traces run along the contours, played by
+# mpvpaper. Still: swaybg with the PNG (also shown while the loop renders); before the still
+# exists, the edition's ground colour.
 cmd_wallpaper() {
   mkdir -p "$STATE" "$CACHE"
   local pref
@@ -433,13 +443,13 @@ cmd_wallpaper() {
   [ "$pref" = still ] || pref=live
   case "${1:-start}" in
     start) ;;
-    toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "wallpaper" "$pref" ;;
+    toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "BACKDROP" "$pref" preferences-desktop-wallpaper ;;
     live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
     status) echo "$pref"; return 0 ;;
     *) die "usage: fui wallpaper [start|toggle|live|still|status]" ;;
   esac
 
-  local mode tier w h key png still video tmp maker="$DOTS/theme/make-wallpaper.py"
+  local mode tier w h key still video tmp maker="$DOTS/theme/make-wallpaper.py"
   mode=$(current_mode); tier=$(current_tier)
   read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
 import json, sys
@@ -453,8 +463,17 @@ except Exception:
   key=$(cat "$maker" "$DOTS/theme/survey.py" "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
   still="$CACHE/still-$mode-$tier-${w}x$h-$key.png"
   video="$CACHE/live-$mode-$tier-${w}x$h-$key.mp4"
-  png="$CFG/hypr/wallpaper.png"
-  [ -s "$still" ] && png="$still"
+  # until this edition's survey is drawn, its ground colour (never another edition's picture)
+  local ground
+  ground=$(python3 -c '
+import json, sys
+t = json.load(open(sys.argv[1])); e = t["edition"][sys.argv[2]]; tier = sys.argv[3]
+if tier == "lcd" or e["scheme"] != "dark":
+    print(e.get(tier, {}).get("floor", e["floor"]) if tier == "crt" else e["floor"])
+else:
+    print("#000000")
+' "$CFG/fui/tokens.json" "$mode" "$tier" 2>/dev/null)
+  ground="${ground:-#07090C}"
 
   # one instance at a time: a newer call (an edition change) takes over from an older one
   exec 9>"$CACHE/.wallpaper.lock"
@@ -463,7 +482,7 @@ except Exception:
 
   pkill -x mpvpaper 2>/dev/null
   pkill -x swaybg 2>/dev/null
-  detach swaybg -i "$png" -m fill
+  if [ -s "$still" ]; then detach swaybg -i "$still" -m fill; else detach swaybg -c "$ground"; fi
 
   [ -f "$maker" ] || return 0
   if [ ! -s "$still" ]; then
@@ -513,7 +532,8 @@ cmd_screen() {
   esac
   echo "$cur" > "$STATE/screen"
   [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1
-  if [ "$(current_tier)" = crt ]; then note "screen finish" "$cur (not drawn on a tube)"; else note "screen finish" "$cur"; fi
+  if [ "$(current_tier)" = crt ]; then note "SCREEN FINISH" "$cur (not drawn on a tube)" preferences-desktop-display
+  else note "SCREEN FINISH" "$cur" preferences-desktop-display; fi
 }
 
 
@@ -532,7 +552,7 @@ cmd_sound() {
       return 0 ;;
     status)
       if [ "${2:-}" = --bar ]; then
-        echo "<span alpha='60%' size='small' letter_spacing='1600'>SND</span> $cur"
+        if [ "$cur" = on ]; then echo "<span alpha='70%'>${I_sounds-}</span> on"; else echo "<span alpha='70%'>${I_sounds_off-}</span> off"; fi
       else echo "$cur"; fi
       return 0 ;;
     "") die "usage: fui sound <event>|on|off|toggle|status" ;;
@@ -652,54 +672,58 @@ cmd_tui() {
 
 
 # ── launcher windows: palette, power, keys, clipboard ───────────────────
-cmd_palette() {
+cmd_palette() {   # every action in one window; each row is "icon|label|command"
   local -a rows=(
-    "Applications|rofi -config $CFG/rofi/config.rasi -show drun"
-    "Windows|rofi -config $CFG/rofi/config.rasi -show window"
-    "Run a command|rofi -config $CFG/rofi/config.rasi -show run"
-    "Edition: pick one|$SELF mode pick"
-    "Edition: the next one|$SELF mode toggle"
-    "Display tier: auto, crt, lcd, deep|$SELF display pick"
-    "Backdrop: live or still|$SELF wallpaper toggle"
-    "Screen finish (lcd, deep)|$SELF screen toggle"
-    "Clear the alert|$SELF alert off"
-    "Interface sounds|$SELF sound toggle"
-    "Capture a region|$SELF shot region"
-    "Capture the screen|$SELF shot screen"
-    "Capture and annotate|$SELF shot edit"
-    "Record the screen|$SELF record toggle"
-    "Clipboard|$SELF clipboard"
-    "Emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
-    "Calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
-    "Files|$SELF tui yazi"
-    "Network|$SELF tui nmtui"
-    "Audio|$SELF tui wiremix"
-    "System monitor|$SELF tui btop"
-    "Notices|swaync-client -t -sw"
-    "Key reference|$SELF keys"
-    "Update the workstation|$SELF tui sh -c '$SELF update; echo; read -r -p \"done: press enter\" _'"
-    "Diagnostics|$SELF tui sh -c '$SELF doctor; echo; read -r -p \"press enter\" _'"
-    "Session|$SELF power"
+    "${I_apps-}|Applications|rofi -config $CFG/rofi/config.rasi -show drun"
+    "${I_windows-}|Windows|rofi -config $CFG/rofi/config.rasi -show window"
+    "${I_run-}|Run a command|rofi -config $CFG/rofi/config.rasi -show run"
+    "${I_edition-}|Edition: pick one|$SELF mode pick"
+    "${I_next-}|Edition: the next one|$SELF mode toggle"
+    "${I_display-}|Display tier: auto, crt, lcd, deep|$SELF display pick"
+    "${I_backdrop-}|Backdrop: live or still|$SELF wallpaper toggle"
+    "${I_finish-}|Screen finish (lcd, deep)|$SELF screen toggle"
+    "${I_alert_clear-}|Clear the alert|$SELF alert off"
+    "${I_sounds-}|Interface sounds|$SELF sound toggle"
+    "${I_region-}|Capture a region|$SELF shot region"
+    "${I_screen-}|Capture the screen|$SELF shot screen"
+    "${I_annotate-}|Capture and annotate|$SELF shot edit"
+    "${I_record-}|Record the screen|$SELF record toggle"
+    "${I_clipboard-}|Clipboard|$SELF clipboard"
+    "${I_emoji-}|Emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
+    "${I_calculator-}|Calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
+    "${I_files-}|Files|$SELF tui yazi"
+    "${I_network-}|Network|$SELF tui nmtui"
+    "${I_audio-}|Audio|$SELF tui wiremix"
+    "${I_monitor-}|System monitor|$SELF tui btop"
+    "${I_notices-}|Notices|swaync-client -t -sw"
+    "${I_keys-}|Key reference|$SELF keys"
+    "${I_update-}|Update the workstation|$SELF tui sh -c '$SELF update; echo; read -r -p \"done: press enter\" _'"
+    "${I_doctor-}|Diagnostics|$SELF tui sh -c '$SELF doctor; echo; read -r -p \"press enter\" _'"
+    "${I_session-}|Session|$SELF power"
   )
-  local labels pick row
-  labels=$(printf '%s\n' "${rows[@]}" | cut -d'|' -f1)
-  pick=$(printf '%s\n' "$labels" | rofi_window "COMMAND PALETTE" "CMD-02" -dmenu -i -p "RUN" -no-custom) || return 0
-  for row in "${rows[@]}"; do
-    if [ "${row%%|*}" = "$pick" ]; then cmd_sound tick; eval "detach ${row#*|}"; return 0; fi
-  done
+  local row pick
+  pick=$(for row in "${rows[@]}"; do r="${row#*|}"; printf '%s  %s\n' "${row%%|*}" "${r%%|*}"; done |
+    rofi_window "${I_run-}  COMMAND PALETTE" "CMD-02" -dmenu -i -p "RUN" -no-custom -format i) || return 0
+  [ -n "$pick" ] && [ "$pick" -ge 0 ] 2>/dev/null || return 0
+  row="${rows[$pick]}"; row="${row#*|}"
+  cmd_sound tick; eval "detach ${row#*|}"
 }
 
 cmd_power() {
   local pick="${1:-}"
   if [ -z "$pick" ]; then
-    local choice
-    choice=$(printf 'Lock\nSign out\nSuspend\nRestart\nShut down\n' | rofi_window "SESSION" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 5) || return 0
-    case "$choice" in Lock) pick=lock ;; "Sign out") pick=logout ;; Suspend) pick=suspend ;; Restart) pick=reboot ;; "Shut down") pick=shutdown ;; *) return 0 ;; esac
+    local choice names=(lock logout suspend reboot shutdown) labels=(Lock "Sign out" Suspend Restart "Shut down")
+    choice=$(printf '%s  Lock\n%s  Sign out\n%s  Suspend\n%s  Restart\n%s  Shut down\n' \
+        "${I_lock-}" "${I_logout-}" "${I_suspend-}" "${I_reboot-}" "${I_shutdown-}" |
+      rofi_window "${I_session-}  SESSION" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 5 -format i) || return 0
+    [ -n "$choice" ] && [ "$choice" -ge 0 ] 2>/dev/null && [ "$choice" -lt 5 ] || return 0
+    pick="${names[$choice]}"
     case "$pick" in
       reboot|shutdown|logout)
         local sure
-        sure=$(printf "Confirm: %s\nCancel\n" "$choice" | rofi_window "CONFIRM" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 2) || return 0
-        [ "$sure" = "Confirm: $choice" ] || return 0 ;;
+        sure=$(printf '%s  Confirm: %s\n%s  Cancel\n' "${I_confirm-}" "${labels[$choice]}" "${I_cancel-}" |
+          rofi_window "${I_alert-}  CONFIRM" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 2 -format i) || return 0
+        [ "$sure" = 0 ] || return 0 ;;
     esac
   fi
   case "$pick" in
@@ -713,7 +737,7 @@ cmd_power() {
 }
 
 keys_list() {   # "KEYS | does" for every binding in hyprland.lua that carries a comment
-  python3 - "$CFG/hypr/hyprland.lua" <<'PY'
+  python3 - "$CFG/hypr/hyprland.lua" "$CFG/fui/icons.sh" <<'PY'
 import re, sys
 mod = "SUPER"
 out = []
@@ -729,20 +753,36 @@ for line in open(sys.argv[1], encoding="utf-8"):
         keys = keys.replace(" + ", "+").replace("grave", "`").replace("slash", "/").replace("period", ".").replace("space", "Space")
         out.append((keys, m.group(3)))
 width = max(len(k) for k, _ in out) if out else 10
+icons = {}
+try:
+    for line in open(sys.argv[2], encoding="utf-8"):
+        if line.startswith("I_"):
+            name, _, rest = line.partition("=")
+            icons[name[2:]] = rest.split("'")[1]
+except OSError:
+    pass
+rules = [("terminal", "terminal"), ("palette", "run"), ("keys", "keys"), ("browser", "browser"), ("file", "files"),
+         ("audio", "audio"), ("network", "network"), ("notification", "notices"), ("emoji", "emoji"), ("clipboard", "clipboard"),
+         ("close", "cancel"), ("fullscreen", "window"), ("float", "window"), ("pseudo", "window"), ("split", "window"),
+         ("group", "tab"), ("tab", "tab"), ("lock", "lock"), ("power", "session"), ("quit", "logout"), ("edition", "edition"),
+         ("display", "display"), ("backdrop", "backdrop"), ("finish", "finish"), ("record", "record"), ("annotate", "annotate"),
+         ("screenshot", "screen"), ("workspace", "workspace"), ("focus", "move"), ("move", "move"), ("volume", "media_keys"),
+         ("apps", "apps")]
 for k, d in out:
-    print(f"{k:<{width}}   {d}")
+    i = next((icons.get(v, "") for w, v in rules if w in d.lower()), icons.get("keys", ""))
+    print(f"{i}  {k:<{width}}   {d}")
 PY
 }
 
 cmd_keys() {
   if [ "${1:-}" = --text ] || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then keys_list; return 0; fi
-  keys_list | rofi_window "KEY REFERENCE" "KEY-03" -dmenu -i -p "FIND" -no-custom >/dev/null
+  keys_list | rofi_window "${I_keys-}  KEY REFERENCE" "KEY-03" -dmenu -i -p "FIND" -no-custom >/dev/null
   return 0
 }
 
 cmd_clipboard() {
   have cliphist || die "cliphist is not installed"
-  cliphist list | rofi_window "CLIPBOARD" "CLP-04" -dmenu -i -p "PASTE" -display-columns 2 | cliphist decode | wl-copy
+  cliphist list | rofi_window "${I_clipboard-}  CLIPBOARD" "CLP-04" -dmenu -i -p "PASTE" -display-columns 2 | cliphist decode | wl-copy
 }
 
 
@@ -768,7 +808,7 @@ cmd_shot() {
     *) die "usage: fui shot [region|screen|edit|tour]" ;;
   esac
   cmd_sound screenshot
-  note "screenshot" "saved and copied: ${f/#$HOME/\~}"
+  note "SCREENSHOT" "saved and copied: ${f/#$HOME/\~}" applets-screenshooter
 }
 
 shot_tour() {   # a fixed set of screenshots for design reviews, in every edition
@@ -805,17 +845,17 @@ cmd_record() {
       local f; f="$dir/$(date +%Y%m%d-%H%M%S).mp4"
       date +%s > "$STATE/record-start"; echo "$f" > "$STATE/record-file"
       detach wf-recorder -f "$f"
-      cmd_sound tick; note "recording" "started (SUPER+R stops)" ;;
+      cmd_sound tick; note "RECORDING" "started (SUPER+R stops)" media-record ;;
     stop)
       [ "$running" = 1 ] || return 0
       pkill -INT -x wf-recorder
-      cmd_sound tick; note "recording" "saved: $(sed "s|$HOME|~|" "$STATE/record-file" 2>/dev/null)"
+      cmd_sound tick; note "RECORDING" "saved: $(sed "s|$HOME|~|" "$STATE/record-file" 2>/dev/null)" media-playback-stop
       rm -f "$STATE/record-start" ;;
     status)   # JSON for the bar: shown only while recording
       if [ "$running" = 1 ]; then
         local now began s
         now=$(date +%s); began=$(cat "$STATE/record-start" 2>/dev/null || echo "$now"); s=$((now - began))
-        printf '{"text": "● REC %02d:%02d", "class": "recording", "tooltip": "click to stop"}\n' $((s / 60)) $((s % 60))
+        printf '{"text": "%s REC %02d:%02d", "class": "recording", "tooltip": "click to stop"}\n' "${I_rec-}" $((s / 60)) $((s % 60))
       else
         echo '{"text": ""}'
       fi ;;
@@ -839,12 +879,24 @@ os_logo() {   # the distribution's logo glyph (Nerd Font)
   esac
 }
 
+os_name() {   # the distribution's name, e.g. EndeavourOS
+  local n=""
+  [ -r /etc/os-release ] && n=$(. /etc/os-release && echo "${NAME:-${PRETTY_NAME:-}}")
+  echo "${n:-Linux}"
+}
+
+host_name() { cat /etc/hostname 2>/dev/null || hostname 2>/dev/null || uname -n; }
+
+# The workstation names itself by its machine: the distribution's logo, the host, the OS and
+# the operator. (No company name or mark anywhere.)
 cmd_brand() {
   case "${1:-}" in
-    --bar) tok brand.short ;;
     --badge)   # the bar's badge: the distribution's logo and the operator
       printf "<span font_family='JetBrainsMono Nerd Font' size='large'>%s</span>  %s\n" "$(os_logo)" "${USER:-$(id -un)}" ;;
-    *) printf '%s · %s\n%s\n' "$(tok brand.name)" "$(tok brand.division)" "$(tok brand.motto)" ;;
+    --logo) os_logo; echo ;;
+    --host) host_name | tr '[:lower:]' '[:upper:]' ;;
+    --os) os_name | tr '[:lower:]' '[:upper:]' ;;
+    *) printf '%s · %s · %s\n' "$(host_name)" "$(os_name)" "${USER:-$(id -un)}" ;;
   esac
 }
 
@@ -886,7 +938,7 @@ cmd_updates() {
   local n=$((repo + aur))
   if [ "${1:-}" = --bar ]; then
     if [ "$n" -gt 0 ]; then
-      printf '{"text": "<span alpha=\\"55%%\\" size=\\"small\\" letter_spacing=\\"2048\\">UPD</span> %s", "class": "pending", "tooltip": "%s repo + %s AUR updates: click to update"}\n' "$n" "$repo" "$aur"
+      printf '{"text": "<span alpha=\\"70%%\\">%s</span> %s", "class": "pending", "tooltip": "%s repo + %s AUR updates: click to update"}\n' "${I_updates-}" "$n" "$repo" "$aur"
     else
       echo '{"text": ""}'
     fi
@@ -926,12 +978,20 @@ cmd_update() {
 # ── doctor ──────────────────────────────────────────────────────────────
 D_OK=0; D_WARN=0; D_FAIL=0
 FIXES=()
-ok()   { D_OK=$((D_OK + 1));     printf '  [ OK ] %s\n' "$*"; }
-warn() { D_WARN=$((D_WARN + 1)); printf '  [WARN] %s\n' "$*"; }
-bad()  { D_FAIL=$((D_FAIL + 1)); printf '  [FAIL] %s\n' "$*"; }
-info() { printf '         %s\n' "$*"; }
+ok()   { D_OK=$((D_OK + 1));     printf '  %s [ OK ] %s\n' "${I_ok-}" "$*"; }
+warn() { D_WARN=$((D_WARN + 1)); printf '  %s [WARN] %s\n' "${I_warn-}" "$*"; }
+bad()  { D_FAIL=$((D_FAIL + 1)); printf '  %s [FAIL] %s\n' "${I_fail-}" "$*"; }
+info() { printf '    %s      %s\n' "${I_info-}" "$*"; }
 fix()  { FIXES+=("$1|$2"); printf '         fix: %s\n' "$2"; }   # <function> <description>
-section() { printf '\n%s\n' "$(upper "$1")"; }
+section() {   # a heading with its icon
+  local i=""
+  case "$1" in
+    session) i="${I_desktop-}" ;; graphics) i="${I_gpu-}" ;; audio) i="${I_audio-}" ;; network) i="${I_network-}" ;;
+    packages) i="${I_packages-}" ;; dotfiles) i="${I_dotfiles-}" ;; look) i="${I_look-}" ;; wallpaper) i="${I_backdrop-}" ;;
+    disk) i="${I_storage-}" ;;
+  esac
+  printf '\n%s  %s\n' "$i" "$(upper "$1")"
+}
 
 stow_packages() { sed -e 's/#.*//' -e 's/[[:space:]]//g' "$DOTS/stow.txt" 2>/dev/null | grep -v '^$'; }
 
@@ -1200,7 +1260,7 @@ confirm() {   # confirm "question": yes when --yes was given or the answer is y
 }
 
 setup_gpu() {
-  echo "■ graphics driver"
+  echo "${I_gpu-■} graphics driver"
   local ids found=0
   ids=$(lspci -nn 2>/dev/null | grep -E 'VGA|3D controller|Display controller' | grep -oE '\[[0-9a-f]{4}:[0-9a-f]{4}\]' | cut -c2-5)
   if echo "$ids" | grep -q 10de; then
@@ -1231,7 +1291,7 @@ setup_gpu() {
 }
 
 setup_audio() {
-  echo "■ audio output"
+  echo "${I_audio-■} audio output"
   have pactl && pactl info >/dev/null 2>&1 || { echo "  audio server not reachable (run this inside the desktop)"; return 0; }
   local sink alt
   sink=$(pactl get-default-sink 2>/dev/null)
@@ -1252,7 +1312,7 @@ setup_audio() {
 }
 
 setup_bluetooth() {
-  echo "■ Bluetooth"
+  echo "${I_bluetooth-■} Bluetooth"
   if [ -z "$(ls /sys/class/bluetooth 2>/dev/null)" ]; then
     echo "  no Bluetooth adapter: nothing to do"; return 0
   fi
@@ -1261,14 +1321,14 @@ setup_bluetooth() {
 }
 
 setup_firmware() {
-  echo "■ firmware updates"
+  echo "${I_tools-■} firmware updates"
   sudo pacman -S --needed --noconfirm fwupd
   echo "  check for BIOS / device firmware: fwupdmgr refresh && fwupdmgr get-updates"
 }
 
 
 setup_system() {
-  echo "■ system services"
+  echo "${I_packages-■} system services"
   # passwords for browsers and apps: the secret service starts on demand (no PAM changes)
   sudo pacman -S --needed --noconfirm gnome-keyring libsecret >/dev/null && echo "  keyring: gnome-keyring (unlocks on first use)"
   # firewall: keep firewalld if it is already running, otherwise ufw denying incoming connections
@@ -1286,7 +1346,7 @@ setup_system() {
 }
 
 setup_firefox() {
-  echo "■ Firefox"
+  echo "${I_browser-■} Firefox"
   have firefox || { echo "  Firefox is not installed"; return 0; }
   local profs
   profs=$(firefox_profiles)
@@ -1311,7 +1371,7 @@ setup_firefox() {
 }
 
 setup_boot() {
-  echo "■ boot splash and console"
+  echo "${I_session-■} boot splash and console"
   have python3 || { echo "  python3 is needed"; return 1; }
   sudo pacman -S --needed --noconfirm plymouth terminus-font >/dev/null || return 1
   local tmp; tmp=$(mktemp -d)

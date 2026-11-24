@@ -91,9 +91,116 @@ Colours 0–15; light editions keep a dark console.
 | crt: labels on glass over the floor | 7 | 8.4 | 8.4 | 8.4 | 8.3 | 8.4 | 8.3 | 7.7 | 7.8 |
 | crt: microtext on a panel | 4.5 | 4.5 | 4.5 | 4.6 | 4.5 | 4.5 | 4.5 | 4.5 | 4.6 |
 
+## Icons
+One family: Material Design outline glyphs from the Nerd Font. `tests/run.sh` checks the
+installed font carries every one.
+
+| Name | Icon | Code point |
+|---|---|---|
+| `apps` | 󰀻 | `U+F003B` |
+| `windows` | 󰖲 | `U+F05B2` |
+| `run` | 󰆍 | `U+F018D` |
+| `edition` | 󰸌 | `U+F0E0C` |
+| `next` | 󰼧 | `U+F0F27` |
+| `display` | 󱎴 | `U+F13B4` |
+| `backdrop` | 󰸉 | `U+F0E09` |
+| `finish` | 󰂵 | `U+F00B5` |
+| `sounds` | 󰎇 | `U+F0387` |
+| `sounds_off` | 󰎊 | `U+F038A` |
+| `alert` | 󰳦 | `U+F0CE6` |
+| `alert_clear` | 󱇮 | `U+F11EE` |
+| `region` | 󰩭 | `U+F0A6D` |
+| `screen` | 󰹑 | `U+F0E51` |
+| `annotate` | 󰲶 | `U+F0CB6` |
+| `record` | 󰻃 | `U+F0EC3` |
+| `clipboard` | 󰨸 | `U+F0A38` |
+| `emoji` | 󰇲 | `U+F01F2` |
+| `calculator` | 󰃬 | `U+F00EC` |
+| `files` | 󰉖 | `U+F0256` |
+| `network` | 󰌗 | `U+F0317` |
+| `audio` | 󰕾 | `U+F057E` |
+| `monitor` | 󰄧 | `U+F0127` |
+| `notices` | 󰂜 | `U+F009C` |
+| `keys` | 󰥻 | `U+F097B` |
+| `update` | 󰚰 | `U+F06B0` |
+| `doctor` | 󰓙 | `U+F04D9` |
+| `session` | 󰐥 | `U+F0425` |
+| `lock` | 󰍁 | `U+F0341` |
+| `logout` | 󰍃 | `U+F0343` |
+| `suspend` | 󰒲 | `U+F04B2` |
+| `reboot` | 󰜉 | `U+F0709` |
+| `shutdown` | 󰤆 | `U+F0906` |
+| `confirm` | 󰗡 | `U+F05E1` |
+| `cancel` | 󰅚 | `U+F015A` |
+| `auto` | 󱎴 | `U+F13B4` |
+| `crt` | 󰟴 | `U+F07F4` |
+| `lcd` | 󰍹 | `U+F0379` |
+| `deep` | 󰵽 | `U+F0D7D` |
+| `cpu` | 󰻠 | `U+F0EE0` |
+| `mem` | 󰍛 | `U+F035B` |
+| `eth` | 󰈀 | `U+F0200` |
+| `wifi` | 󰤨 | `U+F0928` |
+| `offline` | 󰖪 | `U+F05AA` |
+| `vol` | 󰕾 | `U+F057E` |
+| `mute` | 󰖁 | `U+F0581` |
+| `bat` | 󰁹 | `U+F0079` |
+| `charging` | 󰂄 | `U+F0084` |
+| `kbd` | 󰥻 | `U+F097B` |
+| `play` | 󰐊 | `U+F040A` |
+| `pause` | 󰏤 | `U+F03E4` |
+| `updates` | 󰏕 | `U+F03D5` |
+| `rec` | 󰑋 | `U+F044B` |
+| `clock` | 󰅐 | `U+F0150` |
+| `calendar` | 󰭧 | `U+F0B67` |
+| `auth` | 󰳌 | `U+F0CCC` |
+| `operator` | 󰀓 | `U+F0013` |
+| `kernel` | 󰘚 | `U+F061A` |
+| `passphrase` | 󰷖 | `U+F0DD6` |
+| `node` | 󰌗 | `U+F0317` |
+| `timer` | 󰔛 | `U+F051B` |
+| `shift` | 󰖔 | `U+F0594` |
+| `console` | 󰨝 | `U+F0A1D` |
+| `dnd` | 󰪓 | `U+F0A93` |
+| `search` | 󰍉 | `U+F0349` |
+| `directory` | 󰃃 | `U+F00C3` |
+| `portfolio` | 󰭕 | `U+F0B55` |
+| `github` | 󰊤 | `U+F02A4` |
+| `reference` | 󰣇 | `U+F08C7` |
+| `support` | 󰡾 | `U+F087E` |
+| `media` | 󰗃 | `U+F05C3` |
+| `mail` | 󰇰 | `U+F01F0` |
+| `system` | 󰋽 | `U+F02FD` |
+| `shell` | 󰆍 | `U+F018D` |
+| `terminal` | 󰞷 | `U+F07B7` |
+| `gpu` | 󰍹 | `U+F0379` |
+| `storage` | 󰋊 | `U+F02CA` |
+| `desktop` | 󰨝 | `U+F0A1D` |
+| `folder` | 󰉖 | `U+F0256` |
+| `branch` | 󰘬 | `U+F062C` |
+| `python` | 󰌠 | `U+F0320` |
+| `node_js` | 󰎙 | `U+F0399` |
+| `rust` | 󱘗 | `U+F1617` |
+| `go` | 󰟓 | `U+F07D3` |
+| `browser` | 󰖟 | `U+F059F` |
+| `tab` | 󰓩 | `U+F04E9` |
+| `window` | 󰖯 | `U+F05AF` |
+| `move` | 󰆿 | `U+F01BF` |
+| `workspace` | 󰨝 | `U+F0A1D` |
+| `media_keys` | 󰐍 | `U+F040D` |
+| `brightness` | 󰃟 | `U+F00DF` |
+| `ok` | 󰗡 | `U+F05E1` |
+| `warn` | 󰀪 | `U+F002A` |
+| `fail` | 󰅚 | `U+F015A` |
+| `info` | 󰋽 | `U+F02FD` |
+| `packages` | 󰏖 | `U+F03D6` |
+| `dotfiles` | 󰧮 | `U+F09EE` |
+| `look` | 󰸌 | `U+F0E0C` |
+| `bluetooth` | 󰂯 | `U+F00AF` |
+| `tools` | 󱁤 | `U+F1064` |
+
 ## Type
 | Voice | Face |
 |---|---|
-| brand: the institution, the clock, display numerals | Michroma |
+| brand: the host name, the clock, display numerals | Michroma |
 | interface: controls and prose | Inter |
 | data: values, codes, labels, terminals | JetBrainsMono Nerd Font |

@@ -81,7 +81,7 @@ t "every edition has every per-edition file" bash -c '
              kitty/.config/kitty/console-$e.conf gtk/.config/gtk-3.0/fui-$e.css gtk/.config/gtk-4.0/fui-$e.css \
              qt/.config/qt6ct/colors/fui-$e.conf theme/templates/fui-$e.qss.in fui/.config/fui/firefox/colors-$e.css \
              btop/.config/btop/themes/fui-$e.theme mpv/.config/mpv/colors-$e.conf zathura/.config/zathura/colors-$e \
-             imv/.config/imv/config-$e satty/.config/satty/config-$e.toml fui/.local/share/fui/brand/mark-$e.png; do
+             imv/.config/imv/config-$e satty/.config/satty/config-$e.toml; do
       [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
     done
   done' _ "$DOTS" "$EDITIONS"
@@ -117,8 +117,10 @@ t "every package exists in the official repos" bash -c '
 
 wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the install provides
   python3 -c "import PIL" 2>/dev/null || { echo "  [skip] wallpaper renders (no Pillow)"; return; }
-  t "still wallpaper renders (cyan lcd, amber deep, paper crt)" bash -c '
+  t "still wallpaper renders (cyan lcd, amber deep, paper crt), a different survey per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" /tmp/fui-test.png 320 180 &&
+    python3 "$1/theme/make-wallpaper.py" --edition amber /tmp/fui-test-amber.png 320 180 &&
+    ! cmp -s /tmp/fui-test.png /tmp/fui-test-amber.png &&
     python3 "$1/theme/make-wallpaper.py" --edition amber --tier deep /tmp/fui-test-deep.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition concrete --tier crt /tmp/fui-test-crt.png 320 180' _ "$DOTS"
   if command -v ffmpeg >/dev/null; then
@@ -187,12 +189,16 @@ t "idle steps do nothing on lcd" bash -c 'f="$HOME/.local/bin/fui"; "$f" display
 t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
 t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/stereo/desktop-login.oga"
 t "fonts: Michroma, Inter, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "Inter" && fc-list | grep -q "JetBrainsMono Nerd"'
+t "the data face carries every icon in tokens.toml [icons]" bash -c '
+  for cp in $(python3 -c "import tomllib,sys; print(\" \".join(tomllib.load(open(sys.argv[1],\"rb\"))[\"icons\"].values()))" "$1/theme/tokens.toml"); do
+    fc-list ":family=JetBrainsMono Nerd Font:charset=$cp" | grep -q . || { echo "JetBrainsMono Nerd Font lacks U+$cp"; exit 1; }
+  done' _ "$DOTS"
 t "the data face carries every glyph the bar and shell use (█ ░ ■ ▌ ⏻ ·)" bash -c '
   for cp in 2588 2591 25a0 258c 23fb b7; do
     fc-list ":family=JetBrainsMono Nerd Font:charset=$cp" | grep -q . || { echo "JetBrainsMono Nerd Font lacks U+$cp"; exit 1; }
   done'
-t "the brand mark follows the edition" bash -c '[ -e "$HOME/.local/share/fui/brand/mark.png" ] && [ "$(readlink "$HOME/.local/share/fui/brand/mark.png")" = "mark-$("$HOME/.local/bin/fui" mode status).png" ]'
-t "fui brand reads the tokens" bash -c '[ "$("$HOME/.local/bin/fui" brand --bar)" = FUI ]'
+t "no institution's name anywhere the operator looks" bash -c '! grep -rIl "FUI SYSTEMS\|WORKSTATION DIVISION" "$1" --exclude-dir=.git --exclude-dir=tests --exclude=CYBERCORE.md' _ "$DOTS"
+t "fui brand names the machine (host · OS · operator)" bash -c '"$HOME/.local/bin/fui" brand | grep -q "$(cat /etc/hostname 2>/dev/null || uname -n)"'
 t "the bar badge shows the distribution logo and the operator" bash -c '"$HOME/.local/bin/fui" brand --badge | grep -q "Nerd Font.*  $(id -un)$"'
 t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
 if command -v nvim >/dev/null; then

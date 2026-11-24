@@ -1,12 +1,13 @@
 <!doctype html>
 <!--BANNER-->
-<!-- fui // the browser start page: the institution's intranet. One file for every edition and
-     display tier; fui renders it with data-theme and data-display set (fui setup firefox). -->
+<!-- fui // the browser start page: the workstation's own page. One file for every edition and
+     display tier; fui renders it with the machine's names, data-theme and data-display set
+     (fui setup firefox). -->
 <html lang="en" data-theme="__EDITION__" data-display="__DISPLAY__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{brand_name}}</title>
+<title>__HOST__</title>
 <style>
   {{palettes}}
   :root {
@@ -26,13 +27,14 @@
             mask: linear-gradient(#000 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,.15) 100%); }
   .backdrop svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .backdrop .l { color: var(--arc); } .backdrop .b { color: var(--bead); }
+  .map { display: none; } .map[data-for="{{default}}"] { display: block; }
+  html[data-theme] .map { display: none; }
+  {{maps_css}}
 
-  /* the masthead: mark, institution, division; true readouts on the right */
+  /* the masthead: the distribution's logo, the host, the OS; true readouts on the right */
   header { display: flex; align-items: center; gap: 16px; padding: 16px 32px;
     border-bottom: var(--hair) solid var(--rule); background: var(--glass); backdrop-filter: blur(10px); }
-  .mark { display: none; line-height: 0; }
-  .mark[data-for="{{default}}"] { display: inline-block; }
-  {{marks_css}}
+  .logo { font: 400 34px/1 "{{font_mono}}", monospace; color: var(--signal); }
   .name { font: 400 18px/1 var(--brand); letter-spacing: .18em; }
   .division { margin-top: 6px; font: 600 10px/1 var(--mono); letter-spacing: .16em; color: var(--muted); }
   .status { margin-left: auto; display: flex; gap: 8px; }
@@ -41,6 +43,13 @@
   .ro { font: 500 11px/1 var(--mono); letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
   .ro::before { content: "[ "; color: var(--faint); } .ro::after { content: " ]"; color: var(--faint); }
   .ro b { margin-left: 6px; color: var(--ink); font-weight: 600; letter-spacing: 0; }
+  /* icons: one family (Material Design outline, Nerd Font), in the data face's size */
+  .ic { font: normal 400 1.15em/1 "{{font_mono}}", monospace; font-style: normal; vertical-align: -0.1em; margin-right: 6px; }
+  .plate .ic { color: var(--signal); }
+  .ro .ic { color: var(--muted); margin-right: 4px; }
+  .rows .ic { width: 1.4em; color: var(--muted); }
+  .rows a:hover .ic, .rows a:focus-visible .ic { color: var(--signal); }
+  button .ic { margin-right: 8px; }
 
   main { max-width: 1040px; margin: 0 auto; padding: 40px 32px 32px; display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
 
@@ -112,50 +121,50 @@
 </style>
 </head>
 <body>
-<div class="backdrop" aria-hidden="true"><span class="l">{{lines}}</span><span class="b">{{beads}}</span></div>
+<div class="backdrop" aria-hidden="true">{{maps}}</div>
 <header>
-  {{marks}}
-  <div><div class="name">{{brand_name}}</div><div class="division">{{brand_division}}</div></div>
+  <span class="logo" aria-hidden="true">__LOGO__</span>
+  <div><div class="name">__HOST__</div><div class="division">__OS__</div></div>
   <div class="status">
-    <span class="ro">EDITION<b>__EDITION__</b></span><span class="ro">DISPLAY<b>__DISPLAY__</b></span>
-    <span class="ro">OPERATOR<b>__USER__</b></span><span class="ro">NODE<b>__HOST__</b></span>
+    <span class="ro">{{i_edition}}EDITION<b>__EDITION__</b></span><span class="ro">{{i_lcd}}DISPLAY<b>__DISPLAY__</b></span>
+    <span class="ro">{{i_operator}}OPERATOR<b>__USER__</b></span><span class="ro">{{i_node}}NODE<b>__HOST__</b></span>
   </div>
 </header>
 <main>
   <section class="panel search">
-    <div class="plate"><h2>Search</h2><span class="code">SRCH-01</span></div>
+    <div class="plate"><h2>{{i_search}}Search</h2><span class="code">SRCH-01</span></div>
     <div class="body">
       <label class="lbl" for="q">Query the network</label>
       <form action="https://duckduckgo.com/" method="get">
         <input id="q" name="q" autofocus autocomplete="off" placeholder="Search">
-        <button type="submit">Query</button>
+        <button type="submit">{{i_search}}Query</button>
       </form>
     </div>
   </section>
   <section class="panel">
-    <div class="plate"><h2>Directory</h2><span class="code">DIR-02</span></div>
+    <div class="plate"><h2>{{i_directory}}Directory</h2><span class="code">DIR-02</span></div>
     <div class="body rows">
-      <a href="https://aljulandani.dev"><span class="t">Portfolio</span><span class="u">aljulandani.dev</span><span class="i">01</span></a>
-      <a href="https://github.com"><span class="t">Repositories</span><span class="u">github.com</span><span class="i">02</span></a>
-      <a href="https://wiki.archlinux.org"><span class="t">Reference</span><span class="u">wiki.archlinux.org</span><span class="i">03</span></a>
-      <a href="https://forum.endeavouros.com"><span class="t">Support</span><span class="u">endeavouros.com</span><span class="i">04</span></a>
-      <a href="https://www.youtube.com"><span class="t">Media</span><span class="u">youtube.com</span><span class="i">05</span></a>
-      <a href="https://mail.google.com"><span class="t">Mail</span><span class="u">mail.google.com</span><span class="i">06</span></a>
+      <a href="https://aljulandani.dev">{{i_portfolio}}<span class="t">Portfolio</span><span class="u">aljulandani.dev</span><span class="i">01</span></a>
+      <a href="https://github.com">{{i_github}}<span class="t">Repositories</span><span class="u">github.com</span><span class="i">02</span></a>
+      <a href="https://wiki.archlinux.org">{{i_reference}}<span class="t">Reference</span><span class="u">wiki.archlinux.org</span><span class="i">03</span></a>
+      <a href="https://forum.endeavouros.com">{{i_support}}<span class="t">Support</span><span class="u">endeavouros.com</span><span class="i">04</span></a>
+      <a href="https://www.youtube.com">{{i_media}}<span class="t">Media</span><span class="u">youtube.com</span><span class="i">05</span></a>
+      <a href="https://mail.google.com">{{i_mail}}<span class="t">Mail</span><span class="u">mail.google.com</span><span class="i">06</span></a>
     </div>
   </section>
   <section class="panel">
-    <div class="plate"><h2>Local time</h2><span class="code">CLK-03</span></div>
+    <div class="plate"><h2>{{i_clock}}Local time</h2><span class="code">CLK-03</span></div>
     <div class="body">
       <div class="frame">
         <div class="clock" id="clock" aria-live="off">00:00<small>:00</small></div>
         <div class="date" id="date"></div>
       </div>
-      <div class="meter" aria-label="share of the day elapsed">DAY <span class="seg" id="seg"></span> <b id="pct">0%</b></div>
-      <div class="meta"><span class="ro">ISO<b id="iso"></b></span><span class="ro">SHIFT<b id="shift"></b></span></div>
+      <div class="meter" aria-label="share of the day elapsed">{{i_timer}}DAY <span class="seg" id="seg"></span> <b id="pct">0%</b></div>
+      <div class="meta"><span class="ro">{{i_calendar}}ISO<b id="iso"></b></span><span class="ro">{{i_shift}}SHIFT<b id="shift"></b></span></div>
     </div>
   </section>
 </main>
-<footer><span>{{brand_notice}}</span><span>{{brand_motto}}</span></footer>
+<footer><span>{{i_info}}{{notice}}</span><span>{{i_kernel}}KERNEL __KERNEL__</span></footer>
 <script>
   (function () {
     var N = 12, pad = function (n) { return (n < 10 ? "0" : "") + n; };

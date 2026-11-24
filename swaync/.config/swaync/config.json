@@ -25,7 +25,7 @@
   "transition-time": 220,
   "hide-on-clear": false,
   "hide-on-action": true,
-  "text-empty": "NO NOTICES",
+  "text-empty": "󰂜  NO NOTICES",
   "script-fail-notify": false,
   "scripts": {
     "alert": {
@@ -47,60 +47,60 @@
   ],
   "widget-config": {
     "title": {
-      "text": "SYSTEM CONSOLE",
+      "text": "󰨝  SYSTEM CONSOLE",
       "clear-all-button": true,
-      "button-text": "Clear"
+      "button-text": "󰅚  Clear"
     },
     "dnd": {
-      "text": "DO NOT DISTURB"
+      "text": "󰪓  DO NOT DISTURB"
     },
     "buttons-grid": {
       "buttons-per-row": 5,
       "actions": [
         {
-          "label": "EDITION",
+          "label": "󰸌  EDITION",
           "command": "sh -c '$HOME/.local/bin/fui mode pick'"
         },
         {
-          "label": "DISPLAY",
+          "label": "󱎴  DISPLAY",
           "command": "sh -c '$HOME/.local/bin/fui display pick'"
         },
         {
-          "label": "WALLPAPER",
+          "label": "󰸉  WALLPAPER",
           "command": "sh -c '$HOME/.local/bin/fui wallpaper toggle'"
         },
         {
-          "label": "SCREEN",
+          "label": "󰂵  SCREEN",
           "command": "sh -c '$HOME/.local/bin/fui screen toggle'"
         },
         {
-          "label": "SOUND",
+          "label": "󰎇  SOUND",
           "command": "sh -c '$HOME/.local/bin/fui sound toggle'"
         },
         {
-          "label": "CAPTURE",
+          "label": "󰩭  CAPTURE",
           "command": "sh -c '$HOME/.local/bin/fui shot region'"
         },
         {
-          "label": "RECORD",
+          "label": "󰻃  RECORD",
           "command": "sh -c '$HOME/.local/bin/fui record toggle'"
         },
         {
-          "label": "NETWORK",
+          "label": "󰌗  NETWORK",
           "command": "sh -c '$HOME/.local/bin/fui tui nmtui'"
         },
         {
-          "label": "LOCK",
+          "label": "󰍁  LOCK",
           "command": "hyprlock"
         },
         {
-          "label": "POWER",
+          "label": "󰐥  POWER",
           "command": "sh -c '$HOME/.local/bin/fui power'"
         }
       ]
     },
     "volume": {
-      "label": "VOL"
+      "label": "󰕾"
     },
     "mpris": {
       "show-album-art": "when-available",

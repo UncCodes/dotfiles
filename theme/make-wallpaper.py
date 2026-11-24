@@ -19,7 +19,6 @@ Usage:
 The live loop is seamless at its default length (56 s, every bead speed divides it).
 Needs Pillow (and ffmpeg for --live).
 """
-import math
 import subprocess
 import sys
 from pathlib import Path
@@ -28,11 +27,12 @@ from PIL import Image, ImageChops, ImageDraw
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from survey import OPACITY, WIDTH, survey, walk  # noqa: E402
+from survey import OPACITY, WIDTH, length, survey, walk  # noqa: E402
 from palette import EDS, E, T, edition, is_dark  # noqa: E402
 
 HYPR = HERE.parent / "hypr/.config/hypr"
 
+TRACE = 90.0                                           # view-box units of lit contour behind a head
 LOOP = 56.0                                            # seconds: every speed below divides it
 SPEEDS = [LOOP / k for k in (8, 7, 6, 5, 4, 3, 2, 1)]  # v0..v7: 7 s .. 56 s (the site: 7 .. 28 s)
 
@@ -62,7 +62,7 @@ class Scene:
         self.W, self.H = W, H
         self.ground = rgba(ground(mode, tier))[:3]
         self.arc, self.bead, self.packet = rgba(c["arc"]), rgba(c["bead"]), rgba(c["packet"])
-        self.art = survey()
+        self.art = survey(mode)
         vw, vh = self.art["view"]
         self.s = max(W / vw, H / vh) * 1.1            # cover, centred, enlarged 1.1x
         self.ox, self.oy = (W - vw * self.s) / 2, (H - vh * self.s) / 2
@@ -94,43 +94,54 @@ class Scene:
         return base.resize((self.W, self.H), Image.LANCZOS)
 
     def packets(self):
-        """(screen points, closed, size px, duration s, phase) for every travelling packet."""
-        return [([self.xy(x, y) for x, y in pts], closed, 5 * self.s, SPEEDS[v], p / 10)
-                for pts, closed, v, p in self.art["packets"]]
+        """(view points, closed, duration s, phase) for every trace."""
+        return [(pts, closed, SPEEDS[v], p / 10) for pts, closed, v, p in self.art["packets"]]
 
-    @staticmethod
-    def at(route, t):
-        """Where a packet is at time t, and how visible (open contours fade at their ends)."""
-        pts, closed, size, dur, ph = route
-        u = (t / dur + ph) % 1.0
-        x, y = walk(pts, u)
-        vis = 1.0 if closed else max(0.0, min(1.0, u / 0.08, (1 - u) / 0.08))
-        return x, y, size, vis
-
-
-def sprite(colour, alpha, size, S=4):
-    """A soft-edged dot (antialiased by supersampling)."""
-    n = max(2, math.ceil(size)) + 2
-    big = Image.new("RGBA", (n * S, n * S), (*colour, 0))
-    r = size * S / 2
-    c = n * S / 2
-    ImageDraw.Draw(big).ellipse((c - r, c - r, c + r, c + r), fill=(*colour, round(255 * alpha)))
-    return big.resize((n, n), Image.LANCZOS)
+    def trace(self, img, route, t):
+        """Draw one trace at time t: a lit stretch of contour, brightest at its head."""
+        pts, closed, dur, ph = route
+        L = length(pts)
+        head = ((t / dur + ph) % 1.0) * L
+        n, samples = 14, []
+        for i in range(n + 1):
+            s = head - TRACE * (1 - i / n)
+            if closed:
+                s %= L
+            elif s < 0:
+                continue
+            samples.append((i / n, self.xy(*walk(pts, s / L))))
+        if len(samples) < 2:
+            return
+        vis = 1.0 if closed else max(0.0, min(1.0, head / L / 0.08, (1 - head / L) / 0.08))
+        hx_, hy_ = samples[-1][1]
+        vis *= fade(hy_, self.H)
+        if vis <= 0.02:
+            return
+        xs = [p[0] for _, p in samples]
+        ys = [p[1] for _, p in samples]
+        pad = 4
+        x0, y0 = int(min(xs)) - pad, int(min(ys)) - pad
+        x1, y1 = int(max(xs)) + pad + 1, int(max(ys)) + pad + 1
+        if x1 <= 0 or y1 <= 0 or x0 >= self.W or y0 >= self.H:
+            return
+        S = 3                                         # supersampled tile, so the line is smooth
+        tile = Image.new("RGBA", ((x1 - x0) * S, (y1 - y0) * S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(tile)
+        r, g, b, a = self.packet
+        for (f0, p0), (f1, p1) in zip(samples, samples[1:]):
+            k = f1 ** 1.6                              # fades away behind the head
+            d.line([((p0[0] - x0) * S, (p0[1] - y0) * S), ((p1[0] - x0) * S, (p1[1] - y0) * S)],
+                   fill=(r, g, b, round(255 * a * vis * k)), width=max(1, round((0.8 + 1.4 * k) * S)))
+        tile = tile.resize((x1 - x0, y1 - y0), Image.LANCZOS)
+        img.alpha_composite(tile, (x0, y0)) if x0 >= 0 and y0 >= 0 else img.alpha_composite(
+            tile.crop((max(0, -x0), max(0, -y0), tile.width, tile.height)), (max(0, x0), max(0, y0)))
 
 
 def render_still(mode, out, W, H, tier="lcd"):
     scene = Scene(mode, W, H, tier)
     img = scene.still()
-    # the data packets where they stand at t = 0
-    br, bg, bb, ba = scene.packet
-    for route in scene.packets():
-        x, y, size, vis = Scene.at(route, 0.0)
-        if vis <= 0:
-            continue
-        sp = sprite((br, bg, bb), ba * vis * fade(y, H), size)
-        px, py = round(x - sp.width / 2), round(y - sp.height / 2)
-        if 0 <= px <= W - sp.width and 0 <= py <= H - sp.height:
-            img.alpha_composite(sp, (px, py))
+    for route in scene.packets():                   # the traces where they stand at t = 0
+        scene.trace(img, route, 0.0)
     out.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out, optimize=True)
     print(f"wrote {out} ({W}x{H}, {mode}, {tier})")
@@ -140,17 +151,7 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd"):
     W, H = W // 2 * 2, H // 2 * 2
     scene = Scene(mode, W, H, tier)
     base = scene.still()
-    br, bg, bb, ba = scene.packet
-    LEVELS = 24                                     # fade quantised: sprites made once
-    cache = {}
-
-    def get(size, level):
-        key = (round(size * 4), level)
-        if key not in cache:
-            cache[key] = sprite((br, bg, bb), ba * level / LEVELS, size)
-        return cache[key]
-
-    packets = scene.packets()
+    routes = scene.packets()
     ff = subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
          "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "animation",
@@ -159,15 +160,8 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd"):
     for n in range(int(seconds * fps)):
         t = n / fps
         frame = base.copy()
-        for route in packets:
-            x, y, size, vis = Scene.at(route, t)
-            level = round(fade(y, H) * vis * LEVELS)
-            if level < 1:
-                continue
-            sp = get(size, level)
-            px, py = round(x - sp.width / 2), round(y - sp.height / 2)
-            if 0 <= px <= W - sp.width and 0 <= py <= H - sp.height:
-                frame.alpha_composite(sp, (px, py))
+        for route in routes:
+            scene.trace(frame, route, t)
         ff.stdin.write(frame.convert("RGB").tobytes())
     ff.stdin.close()
     return ff.wait()

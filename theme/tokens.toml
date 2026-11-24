@@ -1,5 +1,5 @@
 # ┌─ fui // DESIGN TOKENS ── the single source of truth ──────────────────┐
-# │ An instrument issued by an institution to a trained operator: dark,   │
+# │ An instrument for a trained operator, named by its own machine: dark, │
 # │ quiet fields, one signal colour, hairline structure, labels and codes │
 # │ everywhere, numbers shown large and honestly, ornament that measures, │
 # │ frames or indexes something. Drawn for the display it runs on.        │
@@ -19,12 +19,10 @@ editions = ["cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab
 renamed  = { night = "cyan", concrete = "paper" }
 tiers    = ["crt", "lcd", "deep"]
 
-# ── the institution: present at the thresholds (sign-in, boot, the start page) ──
-[brand]
-name     = "FUI SYSTEMS"
-division = "WORKSTATION DIVISION"
-short    = "FUI"                # the bar's badge
-motto    = "Precision at every layer."
+# ── the workstation names itself by its machine: the distribution's logo, the host, the
+#    operating system and the operator (read on the machine). The notice appears at the
+#    thresholds: sign-in, the lock screen, boot, the start page.
+[workstation]
 notice   = "Authorized personnel only. Activity on this workstation is logged."
 
 # ── editions ────────────────────────────────────────────────────────────
@@ -391,7 +389,7 @@ on         = false
 
 # ── type: four voices, at most three on one screen ──────────────────────
 [font]
-brand    = "Michroma"                 # the institution, the clock, display numerals
+brand    = "Michroma"                 # the host name, the clock, display numerals
 ui       = "Inter"                    # controls and prose
 mono     = "JetBrainsMono Nerd Font"  # data, codes, labels, terminals
 size     = 10
@@ -432,3 +430,112 @@ scheme     = "prefer-dark"
 gtk_base   = "adw-gtk3"
 icon_theme = "Papirus-Light"
 scheme     = "prefer-light"
+
+# ── icons: one family (Material Design outline, from the Nerd Font), codepoints in hex ──
+# Every icon on the desktop comes from here; tests check the installed font has each one.
+[icons]
+# launcher and palette
+apps         = "f003b"   # md-apps
+windows      = "f05b2"   # md-window_restore
+run          = "f018d"   # md-console
+edition      = "f0e0c"   # md-palette_outline
+next         = "f0f27"   # md-skip_next_outline
+display      = "f13b4"   # md-monitor_eye
+backdrop     = "f0e09"   # md-wallpaper
+finish       = "f00b5"   # md-blur
+sounds       = "f0387"   # md-music_note
+sounds_off   = "f038a"   # md-music_note_off
+alert        = "f0ce6"   # md-alert_octagon_outline
+alert_clear  = "f11ee"   # md-alert_circle_check_outline
+region       = "f0a6d"   # md-selection_drag
+screen       = "f0e51"   # md-monitor_screenshot
+annotate     = "f0cb6"   # md-pencil_outline
+record       = "f0ec3"   # md-record_circle_outline
+clipboard    = "f0a38"   # md-clipboard_text_outline
+emoji        = "f01f2"   # md-emoticon_outline
+calculator   = "f00ec"   # md-calculator
+files        = "f0256"   # md-folder_outline
+network      = "f0317"   # md-lan
+audio        = "f057e"   # md-volume_high
+monitor      = "f0127"   # md-chart_areaspline
+notices      = "f009c"   # md-bell_outline
+keys         = "f097b"   # md-keyboard_outline
+update       = "f06b0"   # md-update
+doctor       = "f04d9"   # md-stethoscope
+session      = "f0425"   # md-power
+# session
+lock         = "f0341"   # md-lock_outline
+logout       = "f0343"   # md-logout
+suspend      = "f04b2"   # md-sleep
+reboot       = "f0709"   # md-restart
+shutdown     = "f0906"   # md-power_standby
+confirm      = "f05e1"   # md-check_circle_outline
+cancel       = "f015a"   # md-close_circle_outline
+# display tiers
+auto         = "f13b4"   # md-monitor_eye
+crt          = "f07f4"   # md-television_classic
+lcd          = "f0379"   # md-monitor
+deep         = "f0d7d"   # md-hdr
+# bar readouts
+cpu          = "f0ee0"   # md-cpu_64_bit
+mem          = "f035b"   # md-memory
+eth          = "f0200"   # md-ethernet
+wifi         = "f0928"   # md-wifi_strength_4
+offline      = "f05aa"   # md-wifi_off
+vol          = "f057e"   # md-volume_high
+mute         = "f0581"   # md-volume_off
+bat          = "f0079"   # md-battery
+charging     = "f0084"   # md-battery_charging
+kbd          = "f097b"   # md-keyboard_outline
+play         = "f040a"   # md-play
+pause        = "f03e4"   # md-pause
+updates      = "f03d5"   # md-package_up
+rec          = "f044b"   # md-record_rec
+clock        = "f0150"   # md-clock_outline
+calendar     = "f0b67"   # md-calendar_outline
+# identity and readouts
+auth         = "f0ccc"   # md-shield_lock_outline
+operator     = "f0013"   # md-account_outline
+kernel       = "f061a"   # md-chip
+passphrase   = "f0dd6"   # md-key_outline
+node         = "f0317"   # md-lan
+timer        = "f051b"   # md-timer_outline
+shift        = "f0594"   # md-weather_night
+console      = "f0a1d"   # md-view_dashboard_outline
+dnd          = "f0a93"   # md-bell_sleep_outline
+search       = "f0349"   # md-magnify
+directory    = "f00c3"   # md-bookmark_outline
+portfolio    = "f0b55"   # md-account_circle_outline
+github       = "f02a4"   # md-github
+reference    = "f08c7"   # md-arch
+support      = "f087e"   # md-lifebuoy
+media        = "f05c3"   # md-youtube
+mail         = "f01f0"   # md-email_outline
+system       = "f02fd"   # md-information_outline
+shell        = "f018d"   # md-console
+terminal     = "f07b7"   # md-console_line
+gpu          = "f0379"   # md-monitor
+storage      = "f02ca"   # md-harddisk
+desktop      = "f0a1d"   # md-view_dashboard_outline
+folder       = "f0256"   # md-folder_outline
+branch       = "f062c"   # md-source_branch
+python       = "f0320"   # md-language_python
+node_js      = "f0399"   # md-nodejs
+rust         = "f1617"   # md-language_rust
+go           = "f07d3"   # md-language_go
+browser      = "f059f"   # md-web
+tab          = "f04e9"   # md-tab
+window       = "f05af"   # md-window_maximize
+move         = "f01bf"   # md-cursor_default_outline
+workspace    = "f0a1d"   # md-view_dashboard_outline
+media_keys   = "f040d"   # md-play_circle_outline
+brightness   = "f00df"   # md-brightness_6
+ok           = "f05e1"   # md-check_circle_outline
+warn         = "f002a"   # md-alert_outline
+fail         = "f015a"   # md-close_circle_outline
+info         = "f02fd"   # md-information_outline
+packages     = "f03d6"   # md-package_variant
+dotfiles     = "f09ee"   # md-file_document_outline
+look         = "f0e0c"   # md-palette_outline
+bluetooth    = "f00af"   # md-bluetooth
+tools        = "f1064"   # md-tools

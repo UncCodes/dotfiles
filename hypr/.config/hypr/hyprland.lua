@@ -1,5 +1,5 @@
 -- ┌─ fui // HYPRLAND (Lua config, Hyprland 0.57+) ─────────────────────────┐
--- │ An instrument issued by an institution. Windows are flat panels with a   │
+-- │ An instrument for a trained operator. Windows are flat panels with a     │
 -- │ hairline edge (the focused one in the edition's signal), no drop shadow, │
 -- │ glass on every tier, the survey field (a live topographic map) behind    │
 -- │ everything. Colours come in editions (fui mode), drawn for the display   │

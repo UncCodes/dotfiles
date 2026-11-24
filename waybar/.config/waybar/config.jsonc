@@ -1,8 +1,9 @@
 // fui // WAYBAR: the status rail
-// The institution's badge, index segments for the workspaces (the current one underlined in
+// The badge (the distribution's logo and the operator), index segments for the workspaces (the current one underlined in
 // the signal), the focused window, labelled readouts with segment meters, and the clock.
-// Colours come from style.css (roles, one file per edition); labels only dim with alpha, so
-// they suit every edition. `fui bar` starts this file, or config-compact.jsonc on screens
+// Every readout leads with its icon (tokens.toml [icons]; a status word joins it over a
+// threshold). Colours come from style.css (roles, one file per edition); icons and labels
+// only dim with alpha, so they suit every edition. `fui bar` starts this file, or config-compact.jsonc on screens
 // narrower than 1400 px, through a small file that sets the margins for the display tier.
 {
   "include": ["~/.config/waybar/meters.jsonc"],
@@ -38,7 +39,7 @@
 
   // the focused window: its app in tracked capitals, then its title
   "hyprland/window": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>{class}</span>  {title}",
+    "format": "<span alpha='70%'>󰖯</span> <span alpha='60%' size='small' letter_spacing='1600'>{class}</span>  {title}",
     "max-length": 70,
     "separate-outputs": true
   },
@@ -51,8 +52,8 @@
   },
 
   "mpris": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>PLAY</span> {title}",
-    "format-paused": "<span alpha='60%' size='small' letter_spacing='1600'>PAUSE</span> {title}",
+    "format": "<span alpha='70%'>󰐊</span> {title}",
+    "format-paused": "<span alpha='70%'>󰏤</span> {title}",
     "max-length": 32,
     "on-click": "playerctl play-pause"
   },
@@ -65,28 +66,28 @@
   },
 
   "cpu": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>CPU</span> {usage:02}%",
+    "format": "<span alpha='70%'>󰻠</span> {usage:02}%",
     "interval": 2,
     "states": { "warning": 70, "critical": 90 },
-    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>CPU WARN</span> {usage:02}%",
-    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>CPU HIGH</span> {usage:02}%",
+    "format-warning": "<span alpha='70%'>󰻠</span> <span alpha='60%' size='small' letter_spacing='1600'>WARN</span> {usage:02}%",
+    "format-critical": "<span alpha='70%'>󰻠</span> <span alpha='60%' size='small' letter_spacing='1600'>HIGH</span> {usage:02}%",
     "on-click": "~/.local/bin/fui tui btop"
   },
 
   "memory": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>MEM</span> {percentage:02}%",
+    "format": "<span alpha='70%'>󰍛</span> {percentage:02}%",
     "interval": 4,
     "states": { "warning": 75, "critical": 90 },
-    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>MEM WARN</span> {percentage:02}%",
-    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>MEM HIGH</span> {percentage:02}%",
+    "format-warning": "<span alpha='70%'>󰍛</span> <span alpha='60%' size='small' letter_spacing='1600'>WARN</span> {percentage:02}%",
+    "format-critical": "<span alpha='70%'>󰍛</span> <span alpha='60%' size='small' letter_spacing='1600'>HIGH</span> {percentage:02}%",
     "tooltip-format": "{used:0.1f} / {total:0.1f} GiB",
     "on-click": "~/.local/bin/fui tui btop"
   },
 
   "network": {
-    "format-ethernet": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> ETH",
-    "format-wifi": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> {signalStrength:02}%",
-    "format-disconnected": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> OFFLINE",
+    "format-ethernet": "<span alpha='70%'>󰈀</span> ETH",
+    "format-wifi": "<span alpha='70%'>󰤨</span> {signalStrength:02}%",
+    "format-disconnected": "<span alpha='70%'>󰖪</span> OFFLINE",
     "tooltip-format": "{essid} {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
     "interval": 5,
     "on-click": "~/.local/bin/fui tui nmtui",
@@ -95,8 +96,8 @@
 
   // a segment meter (meters.jsonc: rounded down, never more than the true value) and the number
   "pulseaudio": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> {icon} {volume:02}%",
-    "format-muted": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> ░░░░░ MUTE",
+    "format": "<span alpha='70%'>󰕾</span> {icon} {volume:02}%",
+    "format-muted": "<span alpha='70%'>󰖁</span> ░░░░░ MUTE",
     "on-click": "~/.local/bin/fui tui wiremix",
     "on-click-middle": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
@@ -105,17 +106,17 @@
 
   // shown only where there is a battery; WARN and LOW are words, not just a colour
   "battery": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>BAT</span> {icon} {capacity:02}%",
-    "format-charging": "<span alpha='60%' size='small' letter_spacing='1600'>BAT</span> {icon} {capacity:02}% CHG",
-    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>BAT WARN</span> {icon} {capacity:02}%",
-    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>BAT LOW</span> {icon} {capacity:02}%",
+    "format": "<span alpha='70%'>󰁹</span> {icon} {capacity:02}%",
+    "format-charging": "<span alpha='70%'>󰂄</span> {icon} {capacity:02}% CHG",
+    "format-warning": "<span alpha='70%'>󰁹</span> <span alpha='60%' size='small' letter_spacing='1600'>WARN</span> {icon} {capacity:02}%",
+    "format-critical": "<span alpha='70%'>󰁹</span> <span alpha='60%' size='small' letter_spacing='1600'>LOW</span> {icon} {capacity:02}%",
     "states": { "warning": 20, "critical": 10 },
     "tooltip-format": "{timeTo} · {power:.1f} W",
     "interval": 30
   },
 
   "hyprland/language": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>KBD</span> {short}"
+    "format": "<span alpha='70%'>󰥻</span> {short}"
   },
 
   // interface sounds on / off
@@ -140,7 +141,7 @@
   "custom/notify": {
     "exec": "swaync-client -swb",
     "return-type": "json",
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>MSG</span> {}",
+    "format": "{icon} {}",
     "format-icons": { "notification": "󰂚", "none": "󰂜", "dnd-notification": "󰂛", "dnd-none": "󰂛",
                       "inhibited-notification": "󰂚", "inhibited-none": "󰂜", "dnd-inhibited-notification": "󰂛", "dnd-inhibited-none": "󰂛" },
     "on-click": "swaync-client -t -sw",
@@ -155,8 +156,8 @@
 
   // the clock in the brand voice, the date small beside it (24-hour; ISO in the alternate view)
   "clock": {
-    "format": "{:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
-    "format-alt": "{:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",
+    "format": "<span alpha='70%%'>󰅐</span> {:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
+    "format-alt": "<span alpha='70%%'>󰭧</span> {:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",
     "interval": 1,
     "tooltip-format": "<tt>{calendar}</tt>",
     "calendar": {
@@ -170,7 +171,7 @@
   },
 
   "custom/power": {
-    "format": "⏻",
+    "format": "󰐥",
     "tooltip": false,
     "on-click": "~/.local/bin/fui power"
   }

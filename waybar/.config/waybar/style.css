@@ -80,7 +80,7 @@ window#waybar.empty #window { color: @muted; }
 
 /* the clock in the brand voice */
 #clock {
-  font-family: "Michroma", "Inter";
+  font-family: "Michroma", "JetBrainsMono Nerd Font", "Inter";
   font-size: 12px;
   letter-spacing: 1px;
   color: @ink;
