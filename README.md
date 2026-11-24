@@ -2,8 +2,8 @@
 
 Hyprland on EndeavourOS as **an instrument issued by an institution**: dark quiet fields,
 one signal colour, hairline structure, header plates with a signal stripe, tracked capital
-labels and codes, segment meters, numbers shown large and honestly, the institution's
-network behind everything. Eight colour **editions** (cyan, amber, phosphor, acid, hazard,
+labels and codes, segment meters, numbers shown large and honestly, glass panels over a
+live survey field (a topographic map with data packets riding its contours). Eight colour **editions** (cyan, amber, phosphor, acid, hazard,
 mono, paper, lab), each drawn for three display **tiers**: a tube (`crt`), a backlit panel
 (`lcd`) and a deep-black OLED / HDR panel (`deep`).
 
@@ -52,7 +52,7 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui mode toggle` / `pick` / `<edition>` | the next edition (`SUPER+SHIFT+T`, or click it in the bar) · pick one from a list (`SUPER+ALT+T`) · set one |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the network backdrop live (data packets travelling) or still (`SUPER+SHIFT+W`) |
+| `fui wallpaper toggle` | the survey backdrop live (data packets travelling the contours) or still (`SUPER+SHIFT+W`) |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
 | `fui brand` | the institution: name, division, motto (`[brand]` in `tokens.toml`) |
@@ -85,7 +85,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
 | Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
 | Sound | crisp synthetic cues as a sound theme: the sign-in arpeggio, notice tones, ticks, alerts |
-| Boot | a Plymouth splash (the masthead over the network, a 4 px progress line), the console palette and a sign-in banner |
+| Boot | a Plymouth splash (the masthead over the survey field, a 4 px progress line), the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
 
@@ -124,8 +124,8 @@ Hyprland token table, Neovim's colours, the start page, the shell colours, fonts
 meters, the screen finish and the docs. `fui mode` points each app's `fui-colors.*` link (and
 the mark) at an edition, `fui display` points the `fui-tier.*` links at a tier, and both
 reload what's running. The palette model is shared by every script
-([`theme/palette.py`](theme/palette.py)); the network is a seeded 3D lattice
-([`theme/lattice.py`](theme/lattice.py)), rendered per edition, tier and screen size into
+([`theme/palette.py`](theme/palette.py)); the backdrop is a seeded survey field
+([`theme/survey.py`](theme/survey.py)), rendered per edition, tier and screen size into
 `~/.cache/fui` by `fui wallpaper`.
 
 Not reachable by a theme: apps that draw their own UI (Blender, games). They still get the

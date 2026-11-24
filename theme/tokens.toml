@@ -317,13 +317,13 @@ signal_p3  = "color(display-p3 0.124 0.251 0.938)"
 # ── display tiers ───────────────────────────────────────────────────────
 # `fui display auto` picks one from the connected screen (an analog input is a crt; a
 # 10-bit or HDR output is deep; anything else is lcd). `fui display crt|lcd|deep` pins it.
-[tier.crt]                    # phosphor glass: 2 px structure, a 3% safe inset, no effects
+[tier.crt]                    # phosphor glass: 2 px structure, a 3% safe inset, no emulated effects
 hair      = 2                 # rules and panel edges
 edge      = 2                 # control boundaries
 stripe    = 4                 # the header plate's signal stripe
 border    = 2                 # window edges
 inset     = 0.03              # share of the screen kept clear at every edge
-glass     = false             # solid panels: rules carry the separation, not translucency
+glass     = true              # glass on every tier: the identity's material (rules still separate)
 finish    = false             # never emulate a tube on a tube
 glow      = false
 protect   = true              # static-content protection: idle dim, drift, early blanking
@@ -365,17 +365,18 @@ meter     = 5         # segments in the bar's meters
 [space]
 scale = [4, 8, 12, 16, 24, 32, 48, 64]
 
-# glass: panels at this opacity where the compositor blurs behind them (opaque on crt)
+# glass: panels at this opacity, the compositor blurring what is behind them. Every tier has
+# it; text on glass is checked against the panel over the darkest backdrop.
 [glass]
-panel = 0.88
-well  = 0.70
+panel = 0.72
+well  = 0.60
 
 [opacity]
-window_active   = 0.98
-window_inactive = 0.94
+window_active   = 0.92
+window_inactive = 0.86
 
 [blur]
-size       = 6
+size       = 7
 passes     = 3
 noise      = 0.015
 contrast   = 1.0

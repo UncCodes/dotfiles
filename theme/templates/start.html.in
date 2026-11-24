@@ -20,7 +20,7 @@
   html[data-display="deep"] body { background: var(--void); }   /* true black outside the panels */
   ::selection { background: var(--signal); color: var(--on-signal); }
 
-  /* the institution's network behind everything, fading towards the bottom; no text */
+  /* the survey field behind everything, fading towards the bottom; no text */
   .backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; transform: scale(1.1);
     -webkit-mask: linear-gradient(#000 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,.15) 100%);
             mask: linear-gradient(#000 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,.15) 100%); }

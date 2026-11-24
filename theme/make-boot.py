@@ -3,7 +3,7 @@
 
   python3 theme/make-boot.py OUTDIR
 writes
-  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the institution's network on the
+  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the institution's survey field on the
                      first edition's floor, the mark and name, a 4 px signal progress line that
                      fills as the system starts, a status line, and a passphrase field when asked
   OUTDIR/console/    issue (the sign-in banner), vtrgb (the console palette for setvtrgb) and
@@ -66,7 +66,7 @@ def track(width=360, height=4):
     return t, f
 
 
-SCRIPT = r"""// fui // Plymouth: the institution's masthead over the network (made by theme/make-boot.py)
+SCRIPT = r"""// fui // Plymouth: the institution's masthead over the survey field (made by theme/make-boot.py)
 Window.SetBackgroundTopColor(%(bg)s);
 Window.SetBackgroundBottomColor(%(bg)s);
 sw = Window.GetWidth(); sh = Window.GetHeight();
@@ -128,7 +128,7 @@ def main(out):
     ply.mkdir(parents=True, exist_ok=True)
     con.mkdir(parents=True, exist_ok=True)
 
-    # the background: the fallback backdrop (the network, first edition), for a 1920x1080 splash
+    # the background: the fallback backdrop (the survey field, first edition), for a 1920x1080 splash
     wall = HERE.parent / "hypr/.config/hypr/wallpaper.png"
     if wall.exists():
         Image.open(wall).convert("RGB").resize((1920, 1080), Image.LANCZOS).save(ply / "background.png")
@@ -143,7 +143,7 @@ def main(out):
     field.save(ply / "field.png")
     (ply / "fui.script").write_text(SCRIPT % {"bg": plyrgb(C["floor"]), "muted": plyrgb(C["muted"]), "text": plyrgb(C["ink"])})
     (ply / "fui.plymouth").write_text(
-        "[Plymouth Theme]\nName=fui\nDescription=The fui masthead over the network\nModuleName=script\n\n"
+        "[Plymouth Theme]\nName=fui\nDescription=The fui masthead over the survey field\nModuleName=script\n\n"
         "[script]\nImageDir=/usr/share/plymouth/themes/fui\nScriptFile=/usr/share/plymouth/themes/fui/fui.script\n")
 
     # consoles: the console palette, a sign-in banner

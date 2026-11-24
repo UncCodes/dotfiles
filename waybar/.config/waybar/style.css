@@ -1,6 +1,6 @@
 /* fui // WAYBAR: the status rail
- * One flat panel along the top edge with a hairline and the signal stripe at its left: the
- * institution's badge, index segments for the workspaces (the current one underlined in
+ * One flat glass panel along the top edge with a hairline and the signal stripe at its left:
+ * a badge (the distribution's logo and the operator), index segments for the workspaces (the current one underlined in
  * the signal), the focused window, labelled readouts with segment meters, and the clock in
  * the brand voice. Colours are roles:
  *   fui-colors.css  the edition (colors-<edition>.css)          fui mode
@@ -27,11 +27,11 @@ window#waybar {
   color: @ink;
 }
 
-/* the badge: the institution in the brand voice; click for the command palette */
+/* the badge: the distribution's logo and the operator; click for the command palette */
 #custom-brand {
-  font-family: "Michroma", "Inter";
+  font-family: "JetBrainsMono Nerd Font", monospace;
   font-size: 12px;
-  letter-spacing: 3px;
+  letter-spacing: 1px;
   color: @ink;
   padding: 0 16px 0 18px;
   border-right: 1px solid @rule;

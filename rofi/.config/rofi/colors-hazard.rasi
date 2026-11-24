@@ -21,9 +21,9 @@
   warn: #FF8A3DFF;
   bad: #FF5C6CFF;
   info: #7AA7FFFF;
-  glass: #141414E0;
-  glass-well: #060606B2;
-  arc: #9E9E9E26;
+  glass: #141414B8;
+  glass-well: #06060699;
+  arc: #9E9E9E33;
   bead: #9E9E9E47;
   packet: #F2C230CC;
   bad-dim: #3B1A1EFF;
@@ -36,8 +36,8 @@
   edge-crt: #6B6B6BFF;
   muted-crt: #ABABABFF;
   faint-crt: #7E7E7EFF;
-  glass-crt: #141414FF;
-  glass-well-crt: #060606FF;
+  glass-crt: #141414B8;
+  glass-well-crt: #06060699;
   void-deep: #000000FF;
   font-ui: "Inter 11";
   font-mono: "JetBrainsMono Nerd Font 10";

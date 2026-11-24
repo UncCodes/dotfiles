@@ -35,7 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "theme"))
-from lattice import lattice, svg_beads, svg_lines  # noqa: E402
+from survey import survey, svg_beads, svg_lines  # noqa: E402
 from palette import (CRT_SWAP, DEEP_SWAP, EDS, ROLES, TIERS, TOK, E, T, alpha, console, contrast,  # noqa: E402
                      css, full, hx, hx8, is_dark, mix, over, parse)
 
@@ -98,8 +98,11 @@ PAIRS = [   # (name, fg, bg, minimum)
     ("bad on a panel", "bad", "panel", 4.5),
     ("info on a panel", "info", "panel", 4.5),
     ("text on the alert fill", "on_bad", "bad", 4.5),
+    ("ink on glass over the floor", "ink", "glass_floor", 7.0),
+    ("labels on glass over the floor", "muted", "glass_floor", 4.5),
 ]
 CRT_PAIRS = [("crt: ink on a panel", "ink", "panel", 7.0), ("crt: labels on a panel", "muted", "panel", 7.0),
+             ("crt: labels on glass over the floor", "muted", "glass_floor", 7.0),
              ("crt: microtext on a panel", "faint", "panel", 4.5)]
 
 
@@ -110,6 +113,7 @@ def contrast_rows():
             cells = []
             for ed in EDS:
                 p = T(ed, tier)
+                p["glass_floor"] = over(p["glass"], p["floor"])
                 ratio = contrast(over(p[fg], p[bg]), p[bg])
                 ok = ratio >= need
                 cells.append(f"{ratio:.1f}{'' if ok else ' ✗'}")
@@ -165,7 +169,7 @@ def gtk_strokes(v, tier):
 def overlay_css(prefix, tier, strokes=""):
     swap = {"crt": CRT_SWAP, "deep": DEEP_SWAP}.get(tier, [])
     lines = "".join(f"@define-color {prefix}{r} @{prefix}{r}_{tier};\n" for r in swap)
-    note = {"crt": "a tube: solid panels on black, lifted labels, 2 px structure",
+    note = {"crt": "a tube: black floor, lifted labels, 2 px structure",
             "lcd": "a backlit panel: the editions as they are",
             "deep": "OLED / HDR: true black outside the panels"}[tier]
     body = lines + (strokes.format(**{k: px(k, tier) for k in ("hair", "edge", "stripe")}) if tier == "crt" else "")
@@ -815,7 +819,7 @@ void main() {{
 # ── 6. the start page: the intranet portal, one file for every edition ──
 def startpage():
     tpl = (ROOT / "theme/templates/start.html.in").read_text()
-    art = lattice()
+    art = survey()
     keys = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint", "signal",
             "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info", "glass", "arc", "bead"]
     d0 = E(EDS[0])

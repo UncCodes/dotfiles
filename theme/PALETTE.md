@@ -45,7 +45,7 @@ On deep, dark editions use true black (`void`) outside the panels.
 
 | Tier | hair | edge | stripe | border | inset | glass | finish | glow | protect |
 |---|---|---|---|---|---|---|---|---|---|
-| crt | 2 | 2 | 4 | 2 | 0.03 | false | false | false | true |
+| crt | 2 | 2 | 4 | 2 | 0.03 | true | false | false | true |
 | lcd | 1 | 1 | 3 | 1 | 0.0 | true | true | false | false |
 | deep | 1 | 1 | 3 | 1 | 0.0 | true | true | true | true |
 
@@ -84,8 +84,11 @@ Colours 0–15; light editions keep a dark console.
 | bad on a panel | 4.5 | 6.3 | 6.3 | 6.2 | 6.3 | 6.1 | 6.2 | 6.0 | 6.5 |
 | info on a panel | 4.5 | 7.9 | 7.9 | 7.8 | 7.9 | 7.7 | 7.9 | 5.9 | 5.9 |
 | text on the alert fill | 4.5 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 6.5 | 6.5 |
+| ink on glass over the floor | 7 | 16.0 | 15.8 | 16.6 | 16.5 | 16.1 | 16.5 | 16.7 | 18.1 |
+| labels on glass over the floor | 4.5 | 6.4 | 6.7 | 7.3 | 7.1 | 7.0 | 7.1 | 7.9 | 6.2 |
 | crt: ink on a panel | 7 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 13.1 | 14.0 |
 | crt: labels on a panel | 7 | 8.1 | 8.1 | 8.0 | 8.0 | 8.0 | 8.0 | 8.1 | 8.1 |
+| crt: labels on glass over the floor | 7 | 8.4 | 8.4 | 8.4 | 8.3 | 8.4 | 8.3 | 7.7 | 7.8 |
 | crt: microtext on a panel | 4.5 | 4.5 | 4.5 | 4.6 | 4.5 | 4.5 | 4.5 | 4.5 | 4.6 |
 
 ## Type

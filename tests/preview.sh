@@ -51,6 +51,7 @@ for tier in crt deep; do   # the start page on the other two tiers
     >/dev/null 2>&1 && echo "  shot cyan-start-$tier" || echo "  no shot: cyan-start-$tier"
 done
 T 30 "$FUI" display lcd
+shot_x "palette" 4 "$FUI" palette      # a rofi window with its own title and code
 shot_x "kitty" 6 kitty --hold sh -c 'fastfetch; echo; ls -la --color=always ~ | head -12; echo; printf "\033[1;36moperator@fui\033[0m  \033[1;94m~\033[0m\n\033[1;36m>\033[0m "'
 kill "$XVFB" 2>/dev/null
 

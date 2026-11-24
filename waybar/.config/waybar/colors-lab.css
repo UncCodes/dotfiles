@@ -21,9 +21,9 @@
 @define-color warn #8A5200;
 @define-color bad #B3261E;
 @define-color info #0E6E84;
-@define-color glass rgba(255, 255, 255, 0.878);
-@define-color glass_well rgba(250, 251, 252, 0.698);
-@define-color arc rgba(86, 97, 109, 0.200);
+@define-color glass rgba(255, 255, 255, 0.722);
+@define-color glass_well rgba(250, 251, 252, 0.600);
+@define-color arc rgba(86, 97, 109, 0.239);
 @define-color bead rgba(86, 97, 109, 0.349);
 @define-color packet rgba(31, 79, 224, 0.800);
 @define-color bad_dim #E7CCCC;
@@ -36,6 +36,6 @@
 @define-color edge_crt #76808C;
 @define-color muted_crt #363F48;
 @define-color faint_crt #5A646E;
-@define-color glass_crt #E0E0E0;
-@define-color glass_well_crt #FAFBFC;
+@define-color glass_crt rgba(224, 224, 224, 0.722);
+@define-color glass_well_crt rgba(250, 251, 252, 0.600);
 @define-color void_deep #FFFFFF;

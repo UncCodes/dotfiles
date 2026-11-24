@@ -19,9 +19,9 @@
   "modules-right":  ["custom/rec", "mpris", "custom/updates", "cpu", "memory", "network", "pulseaudio", "battery",
                      "hyprland/language", "custom/sound", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 
-  // the badge: the institution in the brand voice; click for the command palette
+  // the badge: the distribution's logo and the operator's name; click for the command palette
   "custom/brand": {
-    "exec": "~/.local/bin/fui brand --bar",
+    "exec": "~/.local/bin/fui brand --badge",
     "interval": "once",
     "tooltip": false,
     "on-click": "~/.local/bin/fui palette"

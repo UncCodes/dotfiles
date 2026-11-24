@@ -193,6 +193,7 @@ t "the data face carries every glyph the bar and shell use (█ ░ ■ ▌ ⏻ 
   done'
 t "the brand mark follows the edition" bash -c '[ -e "$HOME/.local/share/fui/brand/mark.png" ] && [ "$(readlink "$HOME/.local/share/fui/brand/mark.png")" = "mark-$("$HOME/.local/bin/fui" mode status).png" ]'
 t "fui brand reads the tokens" bash -c '[ "$("$HOME/.local/bin/fui" brand --bar)" = FUI ]'
+t "the bar badge shows the distribution logo and the operator" bash -c '"$HOME/.local/bin/fui" brand --badge | grep -q "Nerd Font.*  $(id -un)$"'
 t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
 if command -v nvim >/dev/null; then
   t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'

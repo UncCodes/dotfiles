@@ -31,7 +31,8 @@ keys: [`../docs/KEYS.md`](../docs/KEYS.md).
 7. **Precision.** A 4 px unit, integer strokes, three corner kinds (square, a small radius
    where the toolkit expects one, chamfer), tabular figures with a slashed zero.
 8. **Legible before cool.** Contrast floors, flash limits and reduced motion come first;
-   atmosphere (glass, the finish, glow) is the first thing cut.
+   the finish and the glow are the first things cut. Glass is the material and stays on
+   every tier, so text on it is checked against the glass over the darkest backdrop.
 
 ## Colour: roles and editions
 
@@ -71,8 +72,8 @@ ink at 7:1 on every surface, labels and status at 4.5:1, control edges and the s
 
 | Tier | Screens | What changes |
 |---|---|---|
-| `crt` | tubes (an analog input) | black floor, solid panels (no glass), labels lifted to 7:1 or more, every stroke 2 px, a 3% safe inset at the screen edges, no screen finish ever, static-content protection |
-| `lcd` | backlit panels | the editions as they are: 1 px hairlines on the pixel grid, glass, the optional finish |
+| `crt` | tubes (an analog input) | black floor, labels lifted to 7:1 or more, every stroke 2 px, a 3% safe inset at the screen edges, no screen finish ever, static-content protection |
+| `lcd` | backlit panels | the editions as they are: 1 px hairlines on the pixel grid, the optional finish |
 | `deep` | OLED, HDR, wide gamut (a 10-bit or HDR output) | true black outside the panels (wallpaper, gaps), one soft halo in the signal on the focused window, a Display P3 signal on the start page, static-content protection |
 
 **Static-content protection** (crt and deep): after 2 minutes idle the screen dims and the
@@ -98,7 +99,7 @@ are sentence case. Numbers keep their units, times are 24-hour, dates ISO in dat
 
 | Part | Built as |
 |---|---|
-| **Panel** | flat, a hairline, 4 px corners; glass (88% opaque, blurred by Hyprland) where the tier allows it |
+| **Panel** | glass: the panel colour at 72% with Hyprland blurring what is behind it (every tier), a hairline, 4 px corners; text is checked against the glass over the darkest backdrop |
 | **Header plate** | 34 px, the panel colour, the signal stripe at the left (3 px; 4 px on crt), a tracked capital title, a code at the right in `faint` |
 | **Field** | set in: the well colour, an `edge` boundary, 2 px corners; focus draws the signal; the caret is the signal, blinking at 1 Hz at most |
 | **Row** | flat; the selected one takes `signal_dim` and the stripe |
@@ -135,8 +136,8 @@ Every code names a real panel and stays stable:
 | Terminal (kitty) and console tools | the edition's console: 16 colours mapped from the roles (light editions keep a dark console); shell colours are ANSI numbers so everything follows it |
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
 | Start page | masthead, bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
-| Boot (Plymouth), consoles | the masthead over the network with a 4 px progress line; the console palette and a sign-in banner with the notice |
-| Backdrop | the institution's network: hairline lattice and nodes, data packets in the signal when live; floor on lcd, true black on deep and crt. No text |
+| Boot (Plymouth), consoles | the masthead over the survey field with a 4 px progress line; the console palette and a sign-in banner with the notice |
+| Backdrop | the survey field: a topographic map of a seeded terrain, contour hairlines with every fifth an index contour strung with survey stations, data packets in the signal riding the contours when live; floor on lcd, true black on deep and crt. No text |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
 ## Motion

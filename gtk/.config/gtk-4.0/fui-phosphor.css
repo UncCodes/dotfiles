@@ -23,9 +23,9 @@
 @define-color fui_warn #F2A93B;
 @define-color fui_bad #FF5C6C;
 @define-color fui_info #7AA7FF;
-@define-color fui_glass rgba(11, 20, 15, 0.878);
-@define-color fui_glass_well rgba(3, 6, 5, 0.698);
-@define-color fui_arc rgba(134, 168, 147, 0.149);
+@define-color fui_glass rgba(11, 20, 15, 0.722);
+@define-color fui_glass_well rgba(3, 6, 5, 0.600);
+@define-color fui_arc rgba(134, 168, 147, 0.200);
 @define-color fui_bead rgba(134, 168, 147, 0.278);
 @define-color fui_packet rgba(61, 245, 138, 0.800);
 @define-color fui_bad_dim #371A1B;
@@ -38,8 +38,8 @@
 @define-color fui_edge_crt #56705F;
 @define-color fui_muted_crt #92B19E;
 @define-color fui_faint_crt #6C8374;
-@define-color fui_glass_crt #0B140F;
-@define-color fui_glass_well_crt #030605;
+@define-color fui_glass_crt rgba(11, 20, 15, 0.722);
+@define-color fui_glass_well_crt rgba(3, 6, 5, 0.600);
 @define-color fui_void_deep #000000;
 
 /* ── the base theme's named colours ── */

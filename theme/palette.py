@@ -105,8 +105,8 @@ def E(ed):
     dark = is_dark(ed)
     p["glass"] = alpha(p["panel"], GL["panel"])
     p["glass_well"] = alpha(p["well"], GL["well"])
-    p["arc"] = alpha(p["muted"], 0.15 if dark else 0.20)     # the backdrop's lattice lines
-    p["bead"] = alpha(p["muted"], 0.28 if dark else 0.35)    # ...and its nodes
+    p["arc"] = alpha(p["muted"], 0.20 if dark else 0.24)     # the backdrop's contour lines
+    p["bead"] = alpha(p["muted"], 0.28 if dark else 0.35)    # ...and its survey stations
     p["packet"] = alpha(p["signal"], 0.80)                   # live data travelling it
     p["bad_dim"] = mix(p["bad"], p["floor"], 0.80)
     p["on_bad"] = best_on(p["bad"])
@@ -119,7 +119,8 @@ def T(ed, tier):
     p = E(ed)
     if tier == "crt":
         p.update(TOK["edition"][ed]["crt"])
-        p["glass"], p["glass_well"] = p["panel"], p["well"]   # solid panels on a tube
+        p["glass"] = alpha(p["panel"], GL["panel"])           # glass on a tube too, over its darker panel
+        p["glass_well"] = alpha(p["well"], GL["well"])
     elif tier == "deep":
         p["void"] = TOK["edition"][ed]["deep"].get("void", p["void"])
     return p

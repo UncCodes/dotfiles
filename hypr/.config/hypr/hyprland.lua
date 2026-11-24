@@ -1,7 +1,7 @@
 -- ┌─ fui // HYPRLAND (Lua config, Hyprland 0.57+) ─────────────────────────┐
 -- │ An instrument issued by an institution. Windows are flat panels with a   │
 -- │ hairline edge (the focused one in the edition's signal), no drop shadow, │
--- │ glass where the display allows it, the institution's network behind      │
+-- │ glass on every tier, the survey field (a live topographic map) behind    │
 -- │ everything. Colours come in editions (fui mode), drawn for the display   │
 -- │ tier (fui display: crt, lcd or deep). Tokens: ~/.config/hypr/fui.lua.    │
 -- │ Keys: SUPER+/ shows them all (fui keys reads the comments below).        │
@@ -49,7 +49,7 @@ local TI = T.tiers[tier]
 
 local C = {}
 for k, v in pairs(T.editions[edition]) do C[k] = v end
-for k, v in pairs(T.editions[edition][tier] or {}) do C[k] = v end     -- crt: black floor, solid panels
+for k, v in pairs(T.editions[edition][tier] or {}) do C[k] = v end     -- crt: black floor, lifted labels
 if state("alert", "off") == "on" then C.signal = C.bad end              -- the alert takeover (fui alert)
 local DESK = T.desktop[C.scheme] or T.desktop.dark
 local inset = tonumber(state("inset", "0")) or 0                         -- crt: the safe inset in px
@@ -84,7 +84,7 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.on("hyprland.start", function()
     -- each falls back to the plain program if the fui command is missing
     hl.exec_cmd(fui .. "mode apply --quiet; " .. fui .. "display start")                       -- the edition; the tier of this screen
-    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")      -- the network, live or still
+    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")      -- the survey field, live or still
     hl.exec_cmd(fui .. "bar || waybar")                                                           -- compact on small screens
     hl.exec_cmd("swaync")                                                                         -- notifications + control centre
     hl.exec_cmd("swayosd-server")                                                                 -- volume / brightness on screen
@@ -125,7 +125,7 @@ hl.config({
         layout = "dwindle",
     },
 
-    -- Flat panels: glass where the display allows it, no drop shadows. On deep screens the
+    -- Flat panels of glass (blurred behind), no drop shadows. On deep screens the
     -- focused window carries one soft halo in the signal (luminance, not blur soup).
     decoration = {
         rounding = T.geometry.radius,

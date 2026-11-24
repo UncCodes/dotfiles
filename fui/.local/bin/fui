@@ -4,7 +4,7 @@
 #   fui mode [toggle|pick|<edition>|apply|status]    the edition: cyan amber phosphor acid hazard mono paper lab
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
 #   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
-#   fui wallpaper [start|toggle|live|still]          the network backdrop, live or still (SUPER+SHIFT+W)
+#   fui wallpaper [start|toggle|live|still]          the survey backdrop, live or still (SUPER+SHIFT+W)
 #   fui screen [toggle|on|off]                       the screen finish, a faint vignette (SUPER+SHIFT+C)
 #   fui sound <event>|on|off|toggle|status           interface sounds
 #   fui palette | power | keys | clipboard           launcher windows (SUPER+Space, SUPER+X, SUPER+/, SUPER+SHIFT+V)
@@ -47,9 +47,12 @@ print(" ".join(v) if isinstance(v, list) else v)
 
 # rofi in the fui panel, with its own plate title and asset code
 rofi_window() {   # rofi_window "<TITLE>" "<CODE>" [rofi args...]
+  # One -theme-str per element: some rofi builds read a string with two quoted values as one
+  # value, and the title showed the raw theme text.
   local title="$1" code="$2"; shift 2
   rofi -config "$CFG/rofi/config.rasi" \
-    -theme-str "textbox-title { content: \"$title\"; } textbox-code { content: \"$code\"; }" "$@"
+    -theme-str "textbox-title { content: \"$title\"; }" \
+    -theme-str "textbox-code { content: \"$code\"; }" "$@"
 }
 
 
@@ -418,7 +421,7 @@ cmd_lockclock() {
 }
 
 
-# ── wallpaper: the network lattice ──────────────────────────────────────
+# ── wallpaper: the survey field ─────────────────────────────────────────
 # Rendered for the edition, the display tier (the ground: floor, or true black on deep and
 # crt) and the screen's size by theme/make-wallpaper.py into ~/.cache/fui/. Live: data
 # packets travel the lines, played by mpvpaper. Still: swaybg with the PNG (also shown while
@@ -447,7 +450,7 @@ except Exception:
     print(1920, 1080)
 ' 2>/dev/null)
   w=${w:-1920}; h=${h:-1080}
-  key=$(cat "$maker" "$DOTS/theme/lattice.py" "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
+  key=$(cat "$maker" "$DOTS/theme/survey.py" "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
   still="$CACHE/still-$mode-$tier-${w}x$h-$key.png"
   video="$CACHE/live-$mode-$tier-${w}x$h-$key.mp4"
   png="$CFG/hypr/wallpaper.png"
@@ -822,9 +825,25 @@ cmd_record() {
 
 
 # ── brand ───────────────────────────────────────────────────────────────
+os_logo() {   # the distribution's logo glyph (Nerd Font)
+  local id=""
+  [ -r /etc/os-release ] && id=$(. /etc/os-release && echo "${ID:-}")
+  case "$id" in
+    endeavouros) printf '\uf322' ;;
+    arch) printf '\uf303' ;;
+    manjaro) printf '\uf312' ;;
+    fedora) printf '\uf30a' ;;
+    debian) printf '\uf306' ;;
+    ubuntu) printf '\uf31b' ;;
+    *) printf '\uf17c' ;;
+  esac
+}
+
 cmd_brand() {
   case "${1:-}" in
     --bar) tok brand.short ;;
+    --badge)   # the bar's badge: the distribution's logo and the operator
+      printf "<span font_family='JetBrainsMono Nerd Font' size='large'>%s</span>  %s\n" "$(os_logo)" "${USER:-$(id -un)}" ;;
     *) printf '%s · %s\n%s\n' "$(tok brand.name)" "$(tok brand.division)" "$(tok brand.motto)" ;;
   esac
 }
