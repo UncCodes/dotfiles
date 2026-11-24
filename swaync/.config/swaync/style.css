@@ -1,9 +1,12 @@
 /* fui // SWAYNC: notifications and the system console
- * A notification is a memo card: a flat glass panel, a hairline edge, a stripe at the left
- * in the accent (bad for critical), the summary in bold, the body below. The control
- * centre is the "system console": a panel with a header plate, flat toggles and slim
- * sliders. Colours: fui-colors.css, a link to colors-<theme>.css. */
+ * A notification is a memo: a flat panel, a hairline, a stripe at the left by urgency (the
+ * signal, rule_hi for low, bad for critical), the summary in ink, the body in muted, the
+ * time small in the data voice. A critical memo's summary is a solid plate in bad. The
+ * control centre is the system console: a header plate, flat toggles, square sliders.
+ * Colours: fui-colors.css (the edition), fui-tier.css (the display tier), fui-alert.css. */
 @import url("fui-colors.css");
+@import url("fui-tier.css");
+@import url("fui-alert.css");
 
 * {
   font-family: "Inter", sans-serif;
@@ -22,91 +25,92 @@ notificationwindow, blankwindow, .blank-window { background: transparent; }
   margin: 6px 12px;
   padding: 0;
   background-color: @glass;
-  border: 1px solid @line_hi;
-  border-radius: 6px;
-  box-shadow: inset 3px 0 @accent;
+  border: 1px solid @rule_hi;
+  border-radius: 4px;
+  box-shadow: inset 3px 0 @signal;
 }
-.notification.low { box-shadow: inset 3px 0 @line_hi; }
+.notification.low { box-shadow: inset 3px 0 @rule_hi; }
 .notification.critical { box-shadow: inset 3px 0 @bad; border-color: @bad; }
-.notification-row:hover .notification, .notification-row:focus .notification { border-color: @accent; }
+.notification-row:hover .notification, .notification-row:focus .notification { border-color: @signal; }
 .notification-default-action, .notification-default-action:hover { background: transparent; border: none; box-shadow: none; padding: 0; margin: 0; }
 .notification-content { padding: 12px 14px 12px 16px; }
-.summary { font-weight: 700; font-size: 13px; color: @text; }
-.notification.critical .summary { color: @bad; }
-.time { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 10px; color: @faint; margin-right: 28px; }
+.summary { font-weight: 700; font-size: 13px; color: @ink; }
+.notification.critical .summary { color: @on_bad; background: @bad; padding: 1px 6px; }
+.time { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px; color: @muted; margin-right: 28px; }
 .body { font-size: 12px; color: @muted; }
 .image, .app-icon { margin-right: 10px; border-radius: 4px; }
 .body-image { margin-top: 8px; border-radius: 4px; }
-progressbar trough { min-height: 4px; background-color: @line; border-radius: 2px; }
-progressbar progress { min-height: 4px; background-color: @accent; border-radius: 2px; }
+progressbar trough { min-height: 4px; background-color: @rule; border-radius: 0; }
+progressbar progress { min-height: 4px; background-color: @signal; border-radius: 0; }
 
 .close-button {
   min-width: 20px; min-height: 20px; margin: 10px 12px 0 0; padding: 0;
-  color: @muted; background: transparent; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
+  color: @muted; background: transparent; border: 1px solid @rule_hi; border-radius: 2px; box-shadow: none;
 }
-.close-button:hover { color: @white; background: @bad; border-color: @bad; }
+.close-button:hover { color: @on_bad; background: @bad; border-color: @bad; }
 
 .notification-action > button, .notification-alt-actions button {
   margin: 0 4px 8px; padding: 4px 12px; font-weight: 600; font-size: 11px;
-  color: @text; background: @raised; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
+  color: @ink; background: transparent; border: 1px solid @edge; border-radius: 2px; box-shadow: none;
 }
-.notification-action:first-child > button { background: @accent; color: @on_accent; border-color: @accent; }
-.notification-action > button:hover, .notification-alt-actions button:hover { border-color: @accent; }
-.inline-reply-entry { background: @well; color: @text; border: 1px solid @line_hi; border-radius: 4px; padding: 4px 10px; }
-.notification-group-header { font-weight: 700; color: @text; }
+.notification-action:first-child > button { background: @signal; color: @on_signal; border-color: @signal; }
+.notification-action > button:hover, .notification-alt-actions button:hover { border-color: @signal; }
+.inline-reply-entry { background: @well; color: @ink; border: 1px solid @edge; border-radius: 2px; padding: 4px 10px; }
+.notification-group-header { font-weight: 700; color: @ink; }
 .notification-group-headers, .notification-group-buttons { margin: 4px 14px; color: @muted; }
 
 /* ── the system console ── */
 .control-center {
   padding: 0;
   background-color: @glass;
-  border: 1px solid @line_hi;
-  border-radius: 6px;
+  border: 1px solid @rule_hi;
+  border-radius: 4px;
 }
 .control-center-list { background: transparent; }
 .control-center-list .notification { margin: 6px 10px; }
-.control-center-list-placeholder { color: @faint; font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px; }
+.control-center-list-placeholder { color: @muted; font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px; }
 .widget { margin: 0; }
 
 /* the header plate */
 .widget-title {
   padding: 8px 10px 8px 14px;
   background-color: @panel;
-  border-bottom: 1px solid @line;
-  box-shadow: inset 3px 0 @accent;
-  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid @rule;
+  box-shadow: inset 3px 0 @signal;
+  border-radius: 4px 4px 0 0;
 }
-.widget-title > label { font-weight: 700; font-size: 11px; letter-spacing: 3px; color: @text; }
+.widget-title > label { font-family: "JetBrainsMono Nerd Font", monospace; font-weight: 700; font-size: 11px; letter-spacing: 2px; color: @ink; }
 .widget-title > button {
   padding: 2px 12px; font-size: 11px; font-weight: 600;
-  color: @text; background: @raised; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
+  color: @ink; background: @raised; border: 1px solid @rule_hi; border-radius: 2px; box-shadow: none;
 }
-.widget-title > button:hover { border-color: @accent; }
+.widget-title > button:hover { border-color: @signal; }
 
-.widget-dnd { padding: 8px 14px; border-bottom: 1px solid @line; }
-.widget-dnd > label { color: @muted; font-size: 11px; font-weight: 600; letter-spacing: 2px; }
-.widget-dnd switch { background-color: @line; border: 1px solid @line_hi; border-radius: 4px; }
-.widget-dnd switch:checked { background-color: @accent; border-color: @accent; }
-.widget-dnd switch slider { background-color: @white; border-radius: 3px; }
+.widget-dnd { padding: 8px 14px; border-bottom: 1px solid @rule; }
+.widget-dnd > label { color: @muted; font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px; font-weight: 600; letter-spacing: 2px; }
+.widget-dnd switch { background-color: @well; border: 1px solid @edge; border-radius: 2px; }
+.widget-dnd switch:checked { background-color: @signal; border-color: @signal; }
+.widget-dnd switch slider { background-color: @ink; border-radius: 2px; }
+.widget-dnd switch:checked slider { background-color: @on_signal; }
 
-/* toggles: flat tiles; on = the accent tint and stripe */
-.widget-buttons-grid { padding: 8px 10px; border-bottom: 1px solid @line; }
+/* toggles: flat tiles; on = the signal tint and stripe */
+.widget-buttons-grid { padding: 8px 10px; border-bottom: 1px solid @rule; }
 .widget-buttons-grid flowboxchild > button {
   margin: 3px; padding: 8px 6px;
   font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px;
-  color: @text; background: @raised; border: 1px solid @line; border-radius: 4px; box-shadow: none;
+  color: @ink; background: @raised; border: 1px solid @rule; border-radius: 2px; box-shadow: none;
 }
-.widget-buttons-grid flowboxchild > button:hover { border-color: @accent; }
-.widget-buttons-grid flowboxchild > button.toggle:checked { background: @accent_dim; border-color: @accent; }
+.widget-buttons-grid flowboxchild > button:hover { border-color: @signal; }
+.widget-buttons-grid flowboxchild > button.toggle:checked { background: @signal_dim; border-color: @signal; box-shadow: inset 3px 0 @signal; }
 
-/* sliders: a hairline track, the accent fill, a square knob */
-.widget-volume, .widget-backlight { padding: 8px 14px; color: @muted; border-bottom: 1px solid @line; }
-scale trough { min-height: 4px; background-color: @line; border-radius: 2px; }
-scale highlight { background-color: @accent; border-radius: 2px; }
-scale slider { min-width: 12px; min-height: 12px; background-color: @panel; border: 2px solid @accent; border-radius: 3px; }
+/* sliders: a hairline track, the signal fill, a square knob */
+.widget-volume, .widget-backlight { padding: 8px 14px; color: @muted; border-bottom: 1px solid @rule; }
+scale trough { min-height: 4px; background-color: @rule; border-radius: 0; }
+scale highlight { background-color: @signal; border-radius: 0; }
+scale slider { min-width: 12px; min-height: 12px; background-color: @panel; border: 2px solid @signal; border-radius: 0; }
 
-.widget-mpris { padding: 8px 10px; border-bottom: 1px solid @line; }
-.widget-mpris-player { padding: 8px; background-color: @raised; border: 1px solid @line; border-radius: 4px; }
-.widget-mpris-title { font-weight: 700; color: @text; }
+.widget-mpris { padding: 8px 10px; border-bottom: 1px solid @rule; }
+.widget-mpris-player { padding: 8px; background-color: @raised; border: 1px solid @rule; border-radius: 4px; }
+.widget-mpris-title { font-weight: 700; color: @ink; }
 .widget-mpris-subtitle { color: @muted; }
 .widget-mpris-album-art { border-radius: 4px; }

@@ -1,39 +1,41 @@
-/* fui // FIREFOX: the browser as a company application
- * The tab strip is a header plate: flat panel, the current tab underlined in the accent;
- * the toolbar is a panel with a hairline; the address field is set into it; menus and panels
- * carry the accent rule along their top. Colours: fui-colors.css, linked by fui mode to the
- * current theme. Installed by `fui setup firefox`; restart Firefox after a theme change. */
+/* fui // FIREFOX: the browser as an issued application
+ * The tab strip is a header plate: the floor, the signal stripe at the left, the current
+ * tab a panel underlined in the signal; the toolbar is a panel with a hairline; the address
+ * field is set into it; menus carry the signal rule along their top. Colours and strokes:
+ * fui-colors.css (the edition) and fui-tier.css (the display tier), linked by fui.
+ * Installed by `fui setup firefox`; restart Firefox after an edition change. */
 @import url("fui-colors.css");
+@import url("fui-tier.css");
 
 :root {
   --toolbar-bgcolor: var(--fui-panel) !important;
-  --toolbar-color: var(--fui-text) !important;
-  --lwt-accent-color: var(--fui-bg) !important;
-  --lwt-text-color: var(--fui-text) !important;
+  --toolbar-color: var(--fui-ink) !important;
+  --lwt-accent-color: var(--fui-floor) !important;
+  --lwt-text-color: var(--fui-ink) !important;
   --toolbar-field-background-color: var(--fui-well) !important;
   --toolbar-field-focus-background-color: var(--fui-well) !important;
-  --toolbar-field-color: var(--fui-text) !important;
-  --toolbar-field-focus-color: var(--fui-text) !important;
-  --toolbar-field-border-color: var(--fui-line-hi) !important;
-  --toolbar-field-focus-border-color: var(--fui-accent) !important;
+  --toolbar-field-color: var(--fui-ink) !important;
+  --toolbar-field-focus-color: var(--fui-ink) !important;
+  --toolbar-field-border-color: var(--fui-edge) !important;
+  --toolbar-field-focus-border-color: var(--fui-signal) !important;
   --arrowpanel-background: var(--fui-panel) !important;
-  --arrowpanel-color: var(--fui-text) !important;
-  --arrowpanel-border-color: var(--fui-line-hi) !important;
+  --arrowpanel-color: var(--fui-ink) !important;
+  --arrowpanel-border-color: var(--fui-rule-hi) !important;
   --arrowpanel-border-radius: var(--fui-radius) !important;
-  --focus-outline-color: var(--fui-accent) !important;
+  --focus-outline-color: var(--fui-signal) !important;
   --sidebar-background-color: var(--fui-panel) !important;
-  --sidebar-text-color: var(--fui-text) !important;
-  --tab-selected-textcolor: var(--fui-text) !important;
+  --sidebar-text-color: var(--fui-ink) !important;
+  --tab-selected-textcolor: var(--fui-ink) !important;
   --toolbarbutton-border-radius: var(--fui-control) !important;
 }
 
-/* the tab strip: the floor, an accent stripe at the left */
+/* the tab strip: the floor, the signal stripe at the left */
 #titlebar, #TabsToolbar {
-  background: var(--fui-bg) !important;
-  box-shadow: inset 3px 0 0 var(--fui-accent) !important;
+  background: var(--fui-floor) !important;
+  box-shadow: inset var(--fui-stripe) 0 0 var(--fui-signal) !important;
 }
 
-/* tabs: flat labels; the current one is a panel underlined in the accent */
+/* tabs: flat labels; the current one is a panel underlined in the signal */
 .tab-background {
   margin-block: 4px 0 !important;
   border-radius: var(--fui-control) var(--fui-control) 0 0 !important;
@@ -44,7 +46,7 @@
 .tabbrowser-tab:hover > .tab-stack > .tab-background:not([selected]) { background: var(--fui-raised) !important; }
 .tab-background[selected] {
   background: var(--fui-panel) !important;
-  box-shadow: inset 0 -2px 0 var(--fui-accent), 0 0 0 1px var(--fui-line) !important;
+  box-shadow: inset 0 -2px 0 var(--fui-signal), 0 0 0 var(--fui-hair) var(--fui-rule) !important;
 }
 .tab-label { font-family: "Inter", sans-serif !important; font-size: 12px !important; }
 .tabbrowser-tab:not([selected]) .tab-label { color: var(--fui-muted) !important; }
@@ -53,35 +55,35 @@
 #nav-bar {
   background: var(--fui-panel) !important;
   border-top: none !important;
-  box-shadow: inset 0 -1px 0 var(--fui-line) !important;
+  box-shadow: inset 0 calc(-1 * var(--fui-hair)) 0 var(--fui-rule) !important;
 }
 
 /* the address field: set into the panel */
 #urlbar-background {
   border-radius: var(--fui-control) !important;
-  border: 1px solid var(--fui-line-hi) !important;
+  border: var(--fui-edge-w) solid var(--fui-edge) !important;
   box-shadow: none !important;
 }
-#urlbar[focused] > #urlbar-background { border-color: var(--fui-accent) !important; box-shadow: inset 0 0 0 1px var(--fui-accent) !important; }
+#urlbar[focused] > #urlbar-background { border-color: var(--fui-signal) !important; box-shadow: inset 0 0 0 1px var(--fui-signal) !important; }
 #urlbar-input { font-family: "Inter", sans-serif !important; }
-.urlbarView-row[selected] { background-color: var(--fui-accent-dim) !important; color: var(--fui-text) !important; box-shadow: inset 3px 0 0 var(--fui-accent) !important; }
+.urlbarView-row[selected] { background-color: var(--fui-signal-dim) !important; color: var(--fui-ink) !important; box-shadow: inset 3px 0 0 var(--fui-signal) !important; }
 
-/* menus and panels: a hairline and the accent rule along the top */
+/* menus and panels: a hairline and the signal rule along the top */
 menupopup, panel {
   --panel-border-radius: var(--fui-radius) !important;
   --panel-background: var(--fui-panel) !important;
-  --panel-color: var(--fui-text) !important;
-  --panel-border-color: var(--fui-line-hi) !important;
+  --panel-color: var(--fui-ink) !important;
+  --panel-border-color: var(--fui-rule-hi) !important;
 }
 menupopup menuitem[_moz-menuactive], menupopup menu[_moz-menuactive] {
-  background-color: var(--fui-accent-dim) !important; color: var(--fui-text) !important; border-radius: var(--fui-control) !important;
+  background-color: var(--fui-signal-dim) !important; color: var(--fui-ink) !important; border-radius: var(--fui-control) !important;
 }
 
-/* tooltips: a small dark plate */
+/* tooltips: a raised plate with a hairline */
 tooltip {
   appearance: none !important;
-  background: var(--fui-term-bg) !important;
-  color: var(--fui-term-fg) !important;
-  border: 1px solid var(--fui-line-hi) !important;
+  background: var(--fui-raised) !important;
+  color: var(--fui-ink) !important;
+  border: var(--fui-hair) solid var(--fui-rule-hi) !important;
   border-radius: var(--fui-control) !important;
 }

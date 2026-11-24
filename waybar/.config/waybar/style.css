@@ -1,13 +1,19 @@
 /* fui // WAYBAR: the status rail
- * One flat glass panel with a hairline edge and the accent stripe at its left: the brand
- * badge, workspace segments (the current one underlined), the focused window, labelled
- * telemetry and the clock. Colours: fui-colors.css, a link to colors-<theme>.css. */
+ * One flat panel along the top edge with a hairline and the signal stripe at its left: the
+ * institution's badge, index segments for the workspaces (the current one underlined in
+ * the signal), the focused window, labelled readouts with segment meters, and the clock in
+ * the brand voice. Colours are roles:
+ *   fui-colors.css  the edition (colors-<edition>.css)          fui mode
+ *   fui-tier.css    the display tier (tier-<crt|lcd|deep>.css)  fui display
+ *   fui-alert.css   the alert takeover (alert-on/off.css)        fui alert */
 @import url("fui-colors.css");
+@import url("fui-tier.css");
+@import url("fui-alert.css");
 
 * {
   font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
   font-size: 12px;
-  font-feature-settings: "tnum";
+  font-feature-settings: "tnum", "zero";
   min-height: 0;
   border: none;
   border-radius: 0;
@@ -15,26 +21,26 @@
 
 window#waybar {
   background-color: @glass;
-  border: 1px solid @line;
-  border-radius: 6px;
-  box-shadow: inset 3px 0 @accent, inset 0 1px @hi;
-  color: @text;
+  border: 1px solid @rule;
+  border-radius: 4px;
+  box-shadow: inset 3px 0 @signal;
+  color: @ink;
 }
 
-/* the brand badge */
+/* the badge: the institution in the brand voice; click for the command palette */
 #custom-brand {
   font-family: "Michroma", "Inter";
   font-size: 12px;
   letter-spacing: 3px;
-  color: @text;
+  color: @ink;
   padding: 0 16px 0 18px;
-  border-right: 1px solid @line;
+  border-right: 1px solid @rule;
 }
 
-/* workspace segments */
+/* workspace index segments: 01 02 03 */
 #workspaces { padding: 0 6px; }
 #workspaces button {
-  min-width: 34px;
+  min-width: 32px;
   margin: 0 1px;
   padding: 0 8px;
   font-family: "JetBrainsMono Nerd Font", monospace;
@@ -43,44 +49,46 @@ window#waybar {
   background: transparent;
   box-shadow: none;
   text-shadow: none;
-  transition: all 0.2s ease-out;
+  transition: background-color 60ms ease-out, color 60ms ease-out;
 }
-#workspaces button:hover { color: @text; background: @raised; }
-#workspaces button.active, #workspaces button.focused { color: @text; background: @accent_dim; box-shadow: inset 0 -2px @accent; }
+#workspaces button:hover { color: @ink; background: @raised; }
+#workspaces button.active, #workspaces button.focused { color: @ink; background: @signal_dim; box-shadow: inset 0 -2px @signal; }
 #workspaces button.urgent { color: @bad; box-shadow: inset 0 -2px @bad; }
 
 /* the focused window */
-#window { color: @text; padding: 0 14px; }
+#window { color: @ink; padding: 0 14px; }
 window#waybar.empty #window { color: @muted; }
 
-/* telemetry: a tracked label, then the value in mono */
-#mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #language,
+/* readouts: a tracked label (dimmed by the markup), then the value in the data voice */
+#mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #battery, #language,
 #custom-sound, #custom-mode, #custom-notify, #tray, #custom-power, #custom-rec {
-  color: @text;
+  color: @ink;
   padding: 0 9px;
   font-family: "JetBrainsMono Nerd Font", monospace;
   font-size: 11px;
 }
-#cpu.warning, #memory.warning { color: @warn; }
-#cpu.critical, #memory.critical { color: @bad; }
-#custom-updates.pending { color: @accent; }
-#custom-rec { color: @bad; }
+/* over a threshold the whole readout takes the status colour; the word is in the label */
+#cpu.warning, #memory.warning, #battery.warning { color: @warn; }
+#cpu.critical, #memory.critical, #battery.critical { color: @bad; }
+#pulseaudio.muted { color: @muted; }
+#custom-updates.pending { color: @signal; }
+#custom-rec { color: @on_bad; background: @bad; margin: 6px 4px; padding: 0 8px; }
 #custom-power { padding: 0 14px 0 10px; font-size: 13px; }
-#custom-power:hover, #custom-mode:hover, #custom-sound:hover, #custom-notify:hover,
-#cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #custom-brand:hover { color: @accent; }
+#custom-power:hover, #custom-mode:hover, #custom-sound:hover, #custom-notify:hover, #battery:hover,
+#cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #custom-brand:hover { color: @signal; }
 #tray > .needs-attention { background: @bad; }
 
-/* the clock in the brand face */
+/* the clock in the brand voice */
 #clock {
   font-family: "Michroma", "Inter";
   font-size: 12px;
   letter-spacing: 1px;
-  color: @text;
+  color: @ink;
   padding: 0 14px;
-  border-left: 1px solid @line;
-  border-right: 1px solid @line;
+  border-left: 1px solid @rule;
+  border-right: 1px solid @rule;
 }
 
-/* tooltips: a small dark plate */
-tooltip { background-color: @term_bg; border: 1px solid @line_hi; border-radius: 4px; }
-tooltip label { color: @term_fg; font-family: "JetBrainsMono Nerd Font", monospace; }
+/* tooltips: a raised plate with a hairline */
+tooltip { background-color: @raised; border: 1px solid @rule_hi; border-radius: 2px; }
+tooltip label { color: @ink; font-family: "JetBrainsMono Nerd Font", monospace; }

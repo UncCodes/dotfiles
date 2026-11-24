@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # fui // one command for the desktop.
 #
-#   fui mode [toggle|night|concrete|lab|apply|status]  the theme (SUPER+SHIFT+T cycles them)
+#   fui mode [toggle|pick|<edition>|apply|status]    the edition: cyan amber phosphor acid hazard mono paper lab
+#   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
+#   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
 #   fui wallpaper [start|toggle|live|still]          the network backdrop, live or still (SUPER+SHIFT+W)
 #   fui screen [toggle|on|off]                       the screen finish, a faint vignette (SUPER+SHIFT+C)
 #   fui sound <event>|on|off|toggle|status           interface sounds
@@ -9,7 +11,7 @@
 #   fui shot [region|screen|edit|tour]               screenshots (Print, SHIFT+Print, SUPER+Print)
 #   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
 #   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
-#   fui updates | brand                              count pending package updates · the company name
+#   fui updates | brand                              count pending package updates · the institution's name
 #   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
 #   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
@@ -29,7 +31,7 @@ detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/
 die()    { echo "fui: $*" >&2; exit 1; }
 t3()     { if have timeout; then timeout 3 "$@"; else "$@"; fi; }   # calls to services that may not be running
 note()   { have notify-send && t3 notify-send -t 2200 -a fui "$1" "${2:-}"; return 0; }
-usage()  { sed -n '3,17p' "$SELF" | sed 's/^# \{0,1\}//'; }
+usage()  { sed -n '3,19p' "$SELF" | sed 's/^# \{0,1\}//'; }
 
 # token lookups from ~/.config/fui/tokens.json (generated from tokens.toml)
 tok() {
@@ -51,14 +53,15 @@ rofi_window() {   # rofi_window "<TITLE>" "<CODE>" [rofi args...]
 }
 
 
-# ── mode: night, concrete, lab ────────────────────────────────────────────
-# theme/build.py writes every themed file once per theme. Each app reads a fui-colors.*
-# (or fui-mode.css) link next to them; this points the links at one theme.
-modes() { local m; m=$(tok meta.modes); echo "${m:-night concrete lab}"; }
+# ── mode: the edition ───────────────────────────────────────────────────
+# theme/build.py writes every themed file once per edition. Each app reads a fui-colors.*
+# (or fui-mode.css) link next to them; this points the links at one edition.
+modes() { local m; m=$(tok meta.editions); echo "${m:-cyan amber phosphor acid hazard mono paper lab}"; }
 
 current_mode() {
-  local m all
+  local m all new
   m=$(cat "$STATE/mode" 2>/dev/null)
+  new=$(tok "meta.renamed.$m"); [ -n "$new" ] && m="$new"     # night -> cyan, concrete -> paper
   all=" $(modes) "
   if [ -n "$m" ] && [[ "$all" == *" $m "* ]]; then echo "$m"; else set -- $all; echo "$1"; fi
 }
@@ -69,11 +72,12 @@ mode_link() {   # <dir> <target> <link name>
   [ "$(readlink "$dir/$link" 2>/dev/null)" = "$target" ] || ln -sfn "$target" "$dir/$link"
 }
 
-render_startpage() {   # the browser home page for this user, in the current theme
-  local m="$1" src="$CFG/fui/start/start-$1.html"
+render_startpage() {   # the browser home page for this user, in the current edition and tier
+  local src="$CFG/fui/start/start.html"
   [ -f "$src" ] || return 0
   mkdir -p "$SHARE"
-  sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(cat /etc/hostname 2>/dev/null || hostname)|g" "$src" > "$SHARE/start.html.tmp" &&
+  sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(cat /etc/hostname 2>/dev/null || hostname)|g" \
+      -e "s|__EDITION__|$(current_mode)|g" -e "s|__DISPLAY__|$(current_tier)|g" "$src" > "$SHARE/start.html.tmp" &&
     mv "$SHARE/start.html.tmp" "$SHARE/start.html"
 }
 
@@ -88,6 +92,29 @@ firefox_profiles() {   # every Firefox profile folder
   done
 }
 
+edition_blurb() {   # one line per edition for the picker
+  case "$1" in
+    cyan) echo "obsidian and signal cyan: night operations" ;;
+    amber) echo "warm black and amber: an amber terminal" ;;
+    phosphor) echo "green-black and phosphor green: a green screen" ;;
+    acid) echo "black and acid lime" ;;
+    hazard) echo "black and signal yellow: industrial plates" ;;
+    mono) echo "black, white and one red: focus by inversion" ;;
+    paper) echo "warm paper and oxide red: technical print (light)" ;;
+    lab) echo "clinical white and cobalt (light)" ;;
+    *) echo "" ;;
+  esac
+}
+
+restart_services() {   # tell running apps about a new edition, tier or alert
+  pkill -USR1 -x kitty 2>/dev/null                 # kitty re-reads kitty.conf
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || return 0
+  t3 hyprctl reload >/dev/null 2>&1                # window edges, glass, background
+  bar_start
+  have swaync-client && pgrep -x swaync >/dev/null && t3 swaync-client -rs >/dev/null 2>&1
+  if pgrep -x swayosd-server >/dev/null; then pkill -x swayosd-server; detach swayosd-server; fi
+}
+
 cmd_mode() {
   local cmd="${1:-status}" quiet=0 cur a new
   for a in "$@"; do [ "$a" = --quiet ] && quiet=1; done
@@ -95,12 +122,12 @@ cmd_mode() {
   case "$cmd" in
     status)
       if [ "${2:-}" = --bar ]; then
-        echo "<span alpha='60%' size='small' letter_spacing='1600'>THEME</span> $cur"
+        echo "<span alpha='60%' size='small' letter_spacing='1600'>THEME</span> $cur · $(current_tier)"
       else
         echo "$cur"
       fi
       return 0 ;;
-    toggle)   # the next theme in the cycle
+    toggle)   # the next edition in the cycle
       local first="" take=0 m
       new=""
       for m in $(modes); do
@@ -109,23 +136,35 @@ cmd_mode() {
         [ "$m" = "$cur" ] && take=1
       done
       new="${new:-$first}" ;;
+    pick)
+      local m rows="" pick
+      for m in $(modes); do rows="$rows$(printf '%-9s %s' "$m" "$(edition_blurb "$m")")"$'\n'; done
+      pick=$(printf '%s' "$rows" | rofi_window "EDITION" "ED-06" -dmenu -i -p "SET" -no-custom -lines 8) || return 0
+      new="${pick%% *}" ;;
     apply) new="$cur" ;;
     *)
-      [[ " $(modes) " == *" $cmd "* ]] || die "usage: fui mode [toggle|$(modes | tr ' ' '|')|apply|status]"
+      local alias; alias=$(tok "meta.renamed.$cmd"); [ -n "$alias" ] && cmd="$alias"
+      [[ " $(modes) " == *" $cmd "* ]] || die "usage: fui mode [toggle|pick|$(modes | tr ' ' '|')|apply|status]"
       new="$cmd" ;;
   esac
 
   mkdir -p "$STATE"
-  [ "$new" = "$cur" ] && [ -e "$STATE/mode" ] || echo "$new" > "$STATE/mode"
+  [ "$new" = "$cur" ] && [ "$(cat "$STATE/mode" 2>/dev/null)" = "$new" ] || echo "$new" > "$STATE/mode"
 
   local app
   for app in waybar swaync swayosd; do mode_link "$CFG/$app" "colors-$new.css" fui-colors.css; done
-  mode_link "$CFG/rofi"    "colors-$new.rasi" fui-colors.rasi
-  mode_link "$CFG/hypr"    "colors-$new.conf" fui-colors.conf
-  mode_link "$CFG/kitty"   "colors-$new.conf" fui-colors.conf
-  mode_link "$CFG/gtk-3.0" "fui-$new.css"     fui-mode.css
-  mode_link "$CFG/gtk-4.0" "fui-$new.css"     fui-mode.css
-  mode_link "$SHARE/brand" "mark-$new.png"    mark.png
+  mode_link "$CFG/rofi"    "colors-$new.rasi"  fui-colors.rasi
+  mode_link "$CFG/hypr"    "colors-$new.conf"  fui-colors.conf
+  mode_link "$CFG/kitty"   "colors-$new.conf"  fui-colors.conf
+  mode_link "$CFG/kitty"   "console-$new.conf" fui-console.conf
+  mode_link "$CFG/gtk-3.0" "fui-$new.css"      fui-mode.css
+  mode_link "$CFG/gtk-4.0" "fui-$new.css"      fui-mode.css
+  mode_link "$CFG/btop/themes" "fui-$new.theme" fui.theme
+  mode_link "$CFG/mpv"     "colors-$new.conf"  fui-colors.conf
+  mode_link "$CFG/zathura" "colors-$new"       fui-colors
+  mode_link "$CFG/imv"     "config-$new"       config
+  mode_link "$CFG/satty"   "config-$new.toml"  config.toml
+  mode_link "$SHARE/brand" "mark-$new.png"     mark.png
   if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
     sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$CFG/qt6ct/qt6ct.conf"
   fi
@@ -133,39 +172,257 @@ cmd_mode() {
   while IFS= read -r prof; do
     [ -L "$prof/chrome/fui-colors.css" ] && ln -sfn "$CFG/fui/firefox/colors-$new.css" "$prof/chrome/fui-colors.css"
   done < <(firefox_profiles)
-  render_startpage "$new"
-  # links from the earlier look, which no longer exist in the repo
+  tier_links "$(current_tier)"
+  alert_links "$(cat "$STATE/alert" 2>/dev/null || echo off)"
+  render_startpage
+  # links from earlier looks, which no longer exist in the repo
   rm -f "$CFG/kitty/fui-mode.conf" "$CFG/waybar/fui-mode.css" "$CFG/rofi/fui-mode.rasi" "$CFG/mako/fui-mode" \
-        "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" 2>/dev/null
+        "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" \
+        "$CFG/kitty/console.conf" 2>/dev/null
 
   [ "$cmd" = apply ] && return 0
 
-  # tell running apps
-  local gtk icons scheme
-  gtk=$(tok "desktop.$new.gtk_base"); icons=$(tok "desktop.$new.icon_theme"); scheme=$(tok "desktop.$new.scheme")
+  # the desktop's dark / light preference
+  local scheme gtk icons
+  scheme=$(tok "edition.$new.scheme"); scheme="${scheme:-dark}"
+  gtk=$(tok "desktop.$scheme.gtk_base"); icons=$(tok "desktop.$scheme.icon_theme")
   if have gsettings; then
-    [ -n "$scheme" ] && t3 gsettings set org.gnome.desktop.interface color-scheme "$scheme"
+    t3 gsettings set org.gnome.desktop.interface color-scheme "$(tok "desktop.$scheme.scheme")"
     [ -n "$gtk" ] && t3 gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
     [ -n "$icons" ] && t3 gsettings set org.gnome.desktop.interface icon-theme "$icons"
   fi
-  pkill -USR1 -x kitty 2>/dev/null               # kitty re-reads kitty.conf (the tab bar)
-  pkill -USR2 -x waybar 2>/dev/null              # waybar re-reads its style
-  have swaync-client && pgrep -x swaync >/dev/null && t3 swaync-client -rs >/dev/null 2>&1
-  if pgrep -x swayosd-server >/dev/null; then pkill -x swayosd-server; detach swayosd-server; fi
-  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1   # window edges, background
+  restart_services
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     detach "$SELF" wallpaper start
     cmd_sound move
   fi
-  [ "$quiet" = 1 ] || note "theme" "$new"
+  [ "$quiet" = 1 ] || note "edition" "$new"
   return 0
 }
 
 
+# ── display: the tier (crt, lcd, deep) ──────────────────────────────────
+# A tube, a backlit panel, or an OLED / HDR / wide-gamut panel. `auto` reads the connected
+# screens: an analog input is a tube (crt), a 10-bit or HDR output is deep, anything else is
+# lcd. An LCD on a VGA cable also reports analog: pin `fui display lcd` for that.
+detect_tier() {   # prints "<tier>|<reason>"
+  local c name st byte
+  for c in /sys/class/drm/card*-*; do
+    [ -r "$c/status" ] || continue
+    st=$(cat "$c/status" 2>/dev/null); [ "$st" = connected ] || continue
+    name="${c##*/}"; name="${name#card*-}"
+    case "$name" in
+      VGA-*|DVI-A-*) echo "crt|$name is an analog output"; return 0 ;;
+    esac
+    if [ -s "$c/edid" ]; then
+      byte=$(od -An -t u1 -j 20 -N 1 "$c/edid" 2>/dev/null | tr -d ' ')
+      if [ -n "$byte" ] && [ $((byte & 128)) = 0 ]; then echo "crt|$name reports an analog input"; return 0; fi
+    fi
+  done
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    local deep
+    deep=$(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    for m in json.load(sys.stdin):
+        fmt = str(m.get("currentFormat", ""))
+        cm = str(m.get("colorManagementPreset", m.get("cm", "")))
+        if "2101010" in fmt or "16161616" in fmt or "hdr" in cm.lower():
+            print(m["name"] + (" runs HDR" if "hdr" in cm.lower() else " runs 10-bit"))
+            break
+except Exception:
+    pass
+' 2>/dev/null)
+    [ -n "$deep" ] && { echo "deep|$deep"; return 0; }
+  fi
+  echo "lcd|a standard panel"
+}
+
+current_tier() {   # the tier in use (resolved by fui display)
+  local t
+  t=$(cat "$STATE/tier" 2>/dev/null)
+  case "$t" in crt|lcd|deep) echo "$t" ;; *) echo lcd ;; esac
+}
+
+tier_links() {   # point every app's fui-tier link at one tier
+  local t="$1" app prof
+  for app in waybar swaync swayosd; do mode_link "$CFG/$app" "tier-$t.css" fui-tier.css; done
+  mode_link "$CFG/rofi"    "tier-$t.rasi"    fui-tier.rasi
+  mode_link "$CFG/hypr"    "tier-$t.conf"    fui-tier.conf
+  mode_link "$CFG/kitty"   "tier-$t.conf"    fui-tier.conf
+  mode_link "$CFG/gtk-3.0" "fui-tier-$t.css" fui-tier.css
+  mode_link "$CFG/gtk-4.0" "fui-tier-$t.css" fui-tier.css
+  while IFS= read -r prof; do
+    [ -d "$prof/chrome" ] && ln -sfn "$CFG/fui/firefox/tier-$t.css" "$prof/chrome/fui-tier.css"
+  done < <(firefox_profiles)
+}
+
+screen_size() {   # "<width> <height>" of the largest screen, in logical pixels
+  hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
+    print(int(m["width"] / m["scale"]), int(m["height"] / m["scale"]))
+except Exception:
+    print(1920, 1080)
+' 2>/dev/null || echo "1920 1080"
+}
+
+cmd_display() {
+  mkdir -p "$STATE"
+  local pref t reason found
+  pref=$(cat "$STATE/display" 2>/dev/null); case "$pref" in crt|lcd|deep) ;; *) pref=auto ;; esac
+  case "${1:-status}" in
+    status)
+      found=$(detect_tier)
+      if [ "$pref" = auto ]; then echo "$(current_tier) (auto: ${found#*|})"; else echo "$(current_tier) (pinned; auto would pick ${found%%|*}: ${found#*|})"; fi
+      return 0 ;;
+    pick)
+      local pick
+      pick=$(printf 'auto      read the screen\ncrt       a tube: 2 px lines, black floor, safe inset, no effects\nlcd       a backlit panel: 1 px hairlines\ndeep      OLED / HDR: true black, a soft halo on the focused window\n' |
+        rofi_window "DISPLAY TIER" "DSP-07" -dmenu -i -p "SET" -no-custom -lines 4) || return 0
+      pref="${pick%% *}" ;;
+    toggle) case "$pref" in auto) pref=crt ;; crt) pref=lcd ;; lcd) pref=deep ;; *) pref=auto ;; esac ;;
+    auto|crt|lcd|deep) pref="$1" ;;
+    apply|start) ;;
+    *) die "usage: fui display [auto|crt|lcd|deep|toggle|pick|apply|status]" ;;
+  esac
+  echo "$pref" > "$STATE/display"
+  if [ "$pref" = auto ]; then found=$(detect_tier); t="${found%%|*}"; reason="${found#*|}"; else t="$pref"; reason="pinned"; fi
+  local before; before=$(current_tier)
+  echo "$t" > "$STATE/tier"
+  # the crt safe inset: 3% of the screen kept clear at every edge
+  local inset w h
+  inset=$(tok "tier.$t.inset"); inset="${inset:-0}"
+  read -r w h < <(screen_size)
+  python3 -c "import sys; print(round(float(sys.argv[1]) * min(int(sys.argv[2]), int(sys.argv[3]))))" "$inset" "${w:-1920}" "${h:-1080}" \
+    > "$STATE/inset" 2>/dev/null || echo 0 > "$STATE/inset"
+  tier_links "$t"
+  render_startpage
+  [ "${1:-}" = apply ] && return 0
+  # at sign-in: reload only if the screen changed since the last session
+  [ "${1:-}" = start ] && [ "$t" = "$before" ] && return 0
+  restart_services
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && detach "$SELF" wallpaper start
+  [ "${1:-}" = start ] || note "display tier" "$t ($reason)"
+  return 0
+}
+
+
+# ── alert: the takeover ─────────────────────────────────────────────────
+# When something needs the operator now (battery nearly empty, overheating), the chrome's
+# signal becomes the bad colour: the window edge, the bar, the memos. One transition in, then
+# steady: nothing flashes. It reverts when the condition clears.
+alert_links() {
+  local s="$1" app
+  for app in waybar swaync; do mode_link "$CFG/$app" "alert-$s.css" fui-alert.css; done
+}
+
+cmd_alert() {
+  mkdir -p "$STATE"
+  local cur; cur=$(cat "$STATE/alert" 2>/dev/null); [ "$cur" = on ] || cur=off
+  case "${1:-status}" in
+    status) echo "$cur"; return 0 ;;
+    on)
+      local word="${2:-FAULT}" msg="${3:-}"
+      echo "${4:-manual}" > "$STATE/alert-source"
+      [ "$cur" = on ] && return 0
+      echo on > "$STATE/alert"; alert_links on
+      have notify-send && t3 notify-send -u critical -a fui "$word" "$msg"
+      cmd_sound alert ;;
+    off)
+      rm -f "$STATE/alert-source"
+      [ "$cur" = off ] && return 0
+      echo off > "$STATE/alert"; alert_links off ;;
+    *) die "usage: fui alert [on [WORD] [message]|off|status]" ;;
+  esac
+  restart_services
+  return 0
+}
+
+# the watch: battery and heat, once a minute, for the session (started by hyprland.lua)
+cmd_watch() {
+  mkdir -p "$CACHE"
+  exec 7>"$CACHE/.watch.lock"
+  if have flock; then flock -n 7 || return 0; fi            # already watching
+  local low hot b cap st t max reason
+  low=$(tok safety.battery_alert); low="${low:-5}"
+  hot=$(tok safety.heat_alert); hot="${hot:-95}"
+  while :; do
+    reason=""
+    for b in /sys/class/power_supply/BAT*; do
+      [ -r "$b/capacity" ] || continue
+      cap=$(cat "$b/capacity" 2>/dev/null); st=$(cat "$b/status" 2>/dev/null)
+      [ "$st" = Discharging ] && [ "${cap:-100}" -le "$low" ] && reason="FAULT|BATTERY ${cap}% · CONNECT POWER NOW"
+    done
+    max=0
+    for t in /sys/class/thermal/thermal_zone*/temp; do
+      [ -r "$t" ] || continue
+      t=$(( $(cat "$t" 2>/dev/null || echo 0) / 1000 ))
+      [ "$t" -gt "$max" ] && [ "$t" -lt 150 ] && max=$t
+    done
+    [ "$max" -ge "$hot" ] && reason="WARNING|HEAT ${max} °C · CLOSE HEAVY WORK"
+    if [ -n "$reason" ]; then
+      [ "$(cat "$STATE/alert" 2>/dev/null)" = on ] || cmd_alert on "${reason%%|*}" "${reason#*|}" watch
+    elif [ "$(cat "$STATE/alert-source" 2>/dev/null)" = watch ]; then
+      cmd_alert off
+    fi
+    sleep 60
+  done
+}
+
+
+# ── idle: static-content protection on crt and deep ─────────────────────
+# hypridle calls these. On a tube or an OLED panel the screen dims after 2 minutes, the bar
+# moves by a pixel within its box (burn-in drift) and the screen blanks after 5 minutes. On
+# lcd nothing happens here.
+protected() { [ "$(tok "tier.$(current_tier).protect")" = True ]; }
+
+cmd_idle() {
+  mkdir -p "$STATE"
+  case "${1:-}" in
+    dim)
+      protected || return 0
+      if have brightnessctl && brightnessctl -l -c backlight 2>/dev/null | grep -q backlight; then
+        local share cur
+        share=$(tok safety.dim_to); share="${share:-0.6}"
+        cur=$(brightnessctl -c backlight get 2>/dev/null)
+        brightnessctl -c backlight -s >/dev/null 2>&1
+        [ -n "$cur" ] && brightnessctl -c backlight set "$(python3 -c "print(max(1, round($cur * $share)))")" >/dev/null 2>&1
+        touch "$STATE/dimmed"
+      fi
+      echo $(( ( $(cat "$STATE/drift" 2>/dev/null || echo 0) + 1 ) % 4 )) > "$STATE/drift"
+      [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && bar_start ;;
+    blank)
+      protected || return 0
+      hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })' >/dev/null 2>&1 ;;
+    wake)
+      if [ -e "$STATE/dimmed" ]; then brightnessctl -c backlight -r >/dev/null 2>&1; rm -f "$STATE/dimmed"; fi
+      hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })' >/dev/null 2>&1 ;;
+    *) die "usage: fui idle dim|blank|wake" ;;
+  esac
+  return 0
+}
+
+# the lock screen's clock: on crt and deep it moves a few pixels every minute
+cmd_lockclock() {
+  local now n pad="" i
+  now=$(date +%H:%M)
+  if protected; then
+    n=$(( 10#$(date +%M) % 5 - 2 ))
+    for ((i = 0; i < ${n#-}; i++)); do pad="$pad "; done
+    if [ "$n" -gt 0 ]; then echo "$pad$now"; else echo "$now$pad"; fi
+  else
+    echo "$now"
+  fi
+}
+
+
 # ── wallpaper: the network lattice ──────────────────────────────────────
-# Live: the lattice with beads travelling its lines (the portfolio's backdrop), rendered
-# once per theme and screen size by theme/make-wallpaper.py into ~/.cache/fui/, played by
-# mpvpaper. Still: swaybg with the PNG (also shown while the loop renders, and the fallback).
+# Rendered for the edition, the display tier (the ground: floor, or true black on deep and
+# crt) and the screen's size by theme/make-wallpaper.py into ~/.cache/fui/. Live: data
+# packets travel the lines, played by mpvpaper. Still: swaybg with the PNG (also shown while
+# the loop renders). The repo's wallpaper.png is the fallback.
 cmd_wallpaper() {
   mkdir -p "$STATE" "$CACHE"
   local pref
@@ -179,24 +436,8 @@ cmd_wallpaper() {
     *) die "usage: fui wallpaper [start|toggle|live|still|status]" ;;
   esac
 
-  local mode png
-  mode=$(current_mode)
-  png="$CFG/hypr/wallpaper-$mode.png"
-  [ -e "$png" ] || png="$CFG/hypr/wallpaper-night.png"
-
-  # one instance at a time: a newer call (a theme change) takes over from an older one
-  exec 9>"$CACHE/.wallpaper.lock"
-  pkill -f "make-wallpaper.py --live" 2>/dev/null
-  have flock && flock 9
-
-  pkill -x mpvpaper 2>/dev/null
-  pkill -x swaybg 2>/dev/null
-  detach swaybg -i "$png" -m fill
-
-  [ "$pref" = live ] || return 0
-  have mpvpaper && have ffmpeg && [ -f "$DOTS/theme/make-wallpaper.py" ] || return 0
-
-  local w h key video tmp
+  local mode tier w h key png still video tmp maker="$DOTS/theme/make-wallpaper.py"
+  mode=$(current_mode); tier=$(current_tier)
   read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
 import json, sys
 try:
@@ -206,13 +447,38 @@ except Exception:
     print(1920, 1080)
 ' 2>/dev/null)
   w=${w:-1920}; h=${h:-1080}
-  key=$(cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/lattice.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
-  video="$CACHE/live-$mode-${w}x$h-$key.mp4"
+  key=$(cat "$maker" "$DOTS/theme/lattice.py" "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
+  still="$CACHE/still-$mode-$tier-${w}x$h-$key.png"
+  video="$CACHE/live-$mode-$tier-${w}x$h-$key.mp4"
+  png="$CFG/hypr/wallpaper.png"
+  [ -s "$still" ] && png="$still"
 
+  # one instance at a time: a newer call (an edition change) takes over from an older one
+  exec 9>"$CACHE/.wallpaper.lock"
+  pkill -f "make-wallpaper.py" 2>/dev/null
+  have flock && flock 9
+
+  pkill -x mpvpaper 2>/dev/null
+  pkill -x swaybg 2>/dev/null
+  detach swaybg -i "$png" -m fill
+
+  [ -f "$maker" ] || return 0
+  if [ ! -s "$still" ]; then
+    rm -f "$CACHE/still-$mode-$tier-${w}x$h-"*.png
+    if python3 "$maker" --edition "$mode" --tier "$tier" "$still.part.png" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
+      mv "$still.part.png" "$still"
+      pkill -x swaybg 2>/dev/null; detach swaybg -i "$still" -m fill
+    else
+      rm -f "$still.part.png"
+    fi
+  fi
+
+  [ "$pref" = live ] || return 0
+  have mpvpaper && have ffmpeg || return 0
   if [ ! -s "$video" ]; then
-    rm -f "$CACHE/live-$mode-${w}x$h-"*.mp4
+    rm -f "$CACHE/live-$mode-$tier-${w}x$h-"*.mp4
     tmp="$video.part.mp4"
-    if ! python3 "$DOTS/theme/make-wallpaper.py" --live --mode "$mode" "$tmp" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
+    if ! python3 "$maker" --live --edition "$mode" --tier "$tier" "$tmp" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
       rm -f "$tmp"
       return 0                        # keep the still image; see ~/.cache/fui/render.log
     fi
@@ -231,7 +497,7 @@ except Exception:
 }
 
 
-# ── screen: the old-screen glass shader ─────────────────────────────────
+# ── screen: the optional finish (lcd and deep only) ─────────────────────
 cmd_screen() {
   mkdir -p "$STATE"
   local cur
@@ -244,7 +510,7 @@ cmd_screen() {
   esac
   echo "$cur" > "$STATE/screen"
   [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1
-  note "screen finish" "$cur"
+  if [ "$(current_tier)" = crt ]; then note "screen finish" "$cur (not drawn on a tube)"; else note "screen finish" "$cur"; fi
 }
 
 
@@ -315,21 +581,40 @@ cmd_sound() {
 
 
 # ── bar / tabs / layout / tui ───────────────────────────────────────────
+# The bar starts from a small file in ~/.cache/fui that includes the real config and sets
+# its margins: the crt safe inset, plus the burn-in drift step on crt and deep. Every
+# start goes through one lock and waits for the old bar to exit, so two can never run.
+bar_start() {
+  local dir="$CFG/waybar" w h config inset drift dx=0 dy=0 cfg="$CACHE/bar.jsonc"
+  mkdir -p "$CACHE"
+  (
+    if have flock; then flock 8; fi
+    read -r w h < <(screen_size)
+    config="$dir/config.jsonc"
+    [ "${w:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
+    inset=$(cat "$STATE/inset" 2>/dev/null); inset="${inset:-0}"
+    if protected; then
+      drift=$(cat "$STATE/drift" 2>/dev/null || echo 0)
+      case "$drift" in 1) dx=1 ;; 2) dx=1; dy=1 ;; 3) dy=1 ;; esac
+    fi
+    local mt=$(( (inset > 8 ? inset : 8) + dy )) ms=$(( (inset > 12 ? inset : 12) ))
+    [ "$config" = "$dir/config-compact.jsonc" ] && [ "$inset" -lt 8 ] && ms=8
+    printf '{\n  "include": ["%s"],\n  "margin-top": %d,\n  "margin-left": %d,\n  "margin-right": %d\n}\n' \
+      "$config" "$mt" "$(( ms + dx ))" "$(( ms - dx ))" > "$cfg"
+    pkill -x waybar 2>/dev/null
+    for _ in $(seq 40); do pgrep -x waybar >/dev/null || break; sleep 0.05; done
+    pkill -9 -x waybar 2>/dev/null
+    if have setsid; then
+      setsid -f waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 8>&-
+    else
+      waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 8>&- &
+    fi
+  ) 8>"$CACHE/.bar.lock"
+}
+
 cmd_bar() {
-  local dir="$CFG/waybar" width config
   cmd_mode apply --quiet
-  width=$(hyprctl -j monitors 2>/dev/null | python3 -c '
-import json, sys
-try:
-    m = json.load(sys.stdin)
-    print(min(int(x["width"] / x["scale"]) for x in m) if m else 1920)
-except Exception:
-    print(1920)
-' 2>/dev/null)
-  config="$dir/config.jsonc"
-  [ "${width:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
-  pkill -x waybar 2>/dev/null
-  exec waybar -c "$config" -s "$dir/style.css"
+  bar_start
 }
 
 cmd_tabs() {
@@ -369,9 +654,12 @@ cmd_palette() {
     "Applications|rofi -config $CFG/rofi/config.rasi -show drun"
     "Windows|rofi -config $CFG/rofi/config.rasi -show window"
     "Run a command|rofi -config $CFG/rofi/config.rasi -show run"
-    "Theme: night, concrete, lab|$SELF mode toggle"
+    "Edition: pick one|$SELF mode pick"
+    "Edition: the next one|$SELF mode toggle"
+    "Display tier: auto, crt, lcd, deep|$SELF display pick"
     "Backdrop: live or still|$SELF wallpaper toggle"
-    "Screen finish|$SELF screen toggle"
+    "Screen finish (lcd, deep)|$SELF screen toggle"
+    "Clear the alert|$SELF alert off"
     "Interface sounds|$SELF sound toggle"
     "Capture a region|$SELF shot region"
     "Capture the screen|$SELF shot screen"
@@ -480,7 +768,7 @@ cmd_shot() {
   note "screenshot" "saved and copied: ${f/#$HOME/\~}"
 }
 
-shot_tour() {   # a fixed set of screenshots for design reviews, in every theme
+shot_tour() {   # a fixed set of screenshots for design reviews, in every edition
   [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || die "run the tour inside Hyprland"
   local dir ws start m i=1
   dir="$HOME/Pictures/fui/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dir"
@@ -493,7 +781,7 @@ shot_tour() {   # a fixed set of screenshots for design reviews, in every theme
     dispatch "hl.dsp.focus({ workspace = '$ws' })"; snap "$m-desktop" 1
     dispatch "hl.dsp.focus({ workspace = 'empty' })"; snap "$m-empty" 1.5
     detach rofi -config "$CFG/rofi/config.rasi" -show drun; snap "$m-launcher" 1.2; pkill -x rofi
-    notify-send -a fui "Scheduled maintenance" "A sample notice for the screenshot tour."; snap "$m-notification" 1
+    notify-send -a fui "NOTE · Scheduled maintenance" "A sample notice for the screenshot tour."; snap "$m-notification" 1
     swaync-client -op >/dev/null 2>&1; snap "$m-control-centre" 1.2; swaync-client -cp >/dev/null 2>&1
   done
   cmd_mode "$start" --quiet >/dev/null
@@ -608,7 +896,7 @@ cmd_update() {
   local rc=$?
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     hyprctl reload >/dev/null 2>&1
-    detach "$SELF" bar
+    bar_start
     have swaync-client && swaync-client -R >/dev/null 2>&1 && swaync-client -rs >/dev/null 2>&1
     echo "Reloaded. Log out and back in (SUPER+SHIFT+E) for anything that still looks old."
   fi
@@ -652,9 +940,10 @@ fix_audio_output() { cmd_setup audio --yes; }
 fix_audio_services() { systemctl --user enable --now pipewire pipewire-pulse wireplumber; }
 fix_sound_on() { cmd_sound on; }
 fix_links() { bash "$DOTS/install.sh" --no-packages --no-hardware --no-chsh; }
-fix_mode_links() { cmd_mode apply --quiet; }
+fix_mode_links() { cmd_display apply; cmd_mode apply --quiet; }
 fix_packages() { bash "$DOTS/install.sh" --no-hardware --no-chsh; }
 fix_gpu() { cmd_setup gpu; }
+fix_bar() { bar_start; }
 fix_mako() { pkill -x mako; sudo pacman -Rns --noconfirm mako; pgrep -x swaync >/dev/null || detach swaync; }
 stale_links() {   # links into the dotfiles whose target no longer exists
   local l repo
@@ -798,10 +1087,14 @@ for m in json.load(sys.stdin):
     broken=$(stale_links | wc -l | tr -d ' ')
     [ "$broken" = 0 ] && ok "no broken links" || { warn "$broken links point at files that no longer exist"; fix fix_broken_links "remove them"; }
     local l nml=0
-    for l in waybar/fui-colors.css rofi/fui-colors.rasi swaync/fui-colors.css hypr/fui-colors.conf kitty/fui-colors.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css; do
+    for l in waybar/fui-colors.css waybar/fui-tier.css waybar/fui-alert.css rofi/fui-colors.rasi rofi/fui-tier.rasi \
+             swaync/fui-colors.css swaync/fui-tier.css swayosd/fui-colors.css hypr/fui-colors.conf hypr/fui-tier.conf \
+             kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css \
+             gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors \
+             imv/config satty/config.toml; do
       [ -e "$CFG/$l" ] || nml=$((nml + 1))
     done
-    [ "$nml" = 0 ] && ok "$(current_mode) theme links in place" || { bad "$nml theme links missing"; fix fix_mode_links "fui mode apply"; }
+    [ "$nml" = 0 ] && ok "$(current_mode) edition and $(current_tier) tier links in place" || { bad "$nml theme links missing"; fix fix_mode_links "fui mode apply"; }
     if [ -d "$DOTS/.git" ]; then
       local dirty behind
       dirty=$(git -C "$DOTS" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
@@ -822,7 +1115,13 @@ for m in json.load(sys.stdin):
   done
 
   section "look"
-  info "theme: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
+  info "edition: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
+  info "display tier: $(cmd_display status) (SUPER+SHIFT+D)"
+  [ "$(cmd_alert status)" = on ] && warn "the alert takeover is on ($(cat "$STATE/alert-source" 2>/dev/null || echo manual)): fui alert off clears it"
+  local nbar; nbar=$(pgrep -cx waybar 2>/dev/null || echo 0)
+  if [ "${nbar:-0}" -gt 1 ]; then warn "$nbar bars are running"; fix fix_bar "restart the bar (fui bar)"
+  elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && [ "${nbar:-0}" = 0 ]; then warn "the bar is not running"; fix fix_bar "start it (fui bar)"
+  elif [ "${nbar:-0}" = 1 ]; then ok "one bar running"; fi
   if have plymouth-set-default-theme; then
     [ "$(plymouth-set-default-theme 2>/dev/null)" = fui ] && ok "boot splash: fui" || info "boot splash not set up: fui setup boot"
   else
@@ -978,7 +1277,7 @@ setup_firefox() {
     profs=$(firefox_profiles)
   fi
   [ -n "$profs" ] || { echo "  no profile yet: open Firefox once, then run fui setup firefox"; return 0; }
-  render_startpage "$(current_mode)"
+  render_startpage
   local prof src="$CFG/fui/firefox"
   while IFS= read -r prof; do
     [ -d "$prof" ] || continue
@@ -986,6 +1285,7 @@ setup_firefox() {
     ln -sfn "$src/userChrome.css" "$prof/chrome/userChrome.css"
     ln -sfn "$src/userContent.css" "$prof/chrome/userContent.css"
     ln -sfn "$src/colors-$(current_mode).css" "$prof/chrome/fui-colors.css"
+    ln -sfn "$src/tier-$(current_tier).css" "$prof/chrome/fui-tier.css"
     sed "s|@START@|file://$SHARE/start.html|g" "$src/user.js.in" > "$prof/user.js"
     echo "  themed: ${prof/#$HOME/\~} (restart Firefox to see it)"
   done <<< "$profs"
@@ -1054,6 +1354,11 @@ sub="${1:-help}"
 [ $# -gt 0 ] && shift
 case "$sub" in
   mode)      cmd_mode "$@" ;;
+  display)   cmd_display "$@" ;;
+  alert)     cmd_alert "$@" ;;
+  watch)     cmd_watch "$@" ;;
+  idle)      cmd_idle "$@" ;;
+  lockclock) cmd_lockclock "$@" ;;
   wallpaper) cmd_wallpaper "$@" ;;
   screen)    cmd_screen "$@" ;;
   sound)     cmd_sound "$@" ;;

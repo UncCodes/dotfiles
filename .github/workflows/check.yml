@@ -1,5 +1,5 @@
 # fui // checks: every push installs the dotfiles in a fresh Arch Linux container and
-# verifies the result (tests/run.sh), then screenshots the real apps in every theme
+# verifies the result (tests/run.sh), then screenshots the real apps in every edition
 # (tests/preview.sh; the shots are attached to the run as "preview").
 # A red X on GitHub means: don't pull this yet.
 name: check
@@ -13,7 +13,7 @@ jobs:
   arch:
     runs-on: ubuntu-latest
     container: archlinux:latest
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - name: Prepare Arch
         run: |
@@ -33,7 +33,7 @@ jobs:
       - name: Screenshots of the real apps
         if: always()
         continue-on-error: true
-        timeout-minutes: 12
+        timeout-minutes: 25
         run: |
           pacman -S --noconfirm --needed xorg-server-xvfb imagemagick gtk3-demos gtk4-demos sway
           sudo -u tester -H env DOTFILES_DIR=/home/tester/.dotfiles \

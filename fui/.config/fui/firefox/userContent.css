@@ -1,8 +1,9 @@
-/* fui // FIREFOX pages: the new-tab page takes the desk colour and the browser's
- * scrollbars follow the theme. Installed by `fui setup firefox`. */
+/* fui // FIREFOX pages: the new-tab page takes the floor colour and the browser's
+ * scrollbars follow the edition. Installed by `fui setup firefox`. */
 @import url("fui-colors.css");
+@import url("fui-tier.css");
 
 @-moz-document url("about:newtab"), url("about:home"), url("about:blank") {
-  body { background-color: var(--fui-bg) !important; color: var(--fui-text) !important; }
+  body { background-color: var(--fui-floor) !important; color: var(--fui-ink) !important; }
 }
 :root { scrollbar-color: var(--fui-muted) var(--fui-well); }

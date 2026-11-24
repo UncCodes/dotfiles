@@ -30,9 +30,10 @@ vim.opt.rtp:prepend(lazypath)
 local ok, lazy = pcall(require, "lazy")
 if not ok then return end
 
-local con = { bg = "#07090C", fg = "#D7DEE5", dim = "#7D8894", green = "#00C2D1", blue = "#5B8CFF",
-              yellow = "#F2A93B", red = "#FF5C6C", magenta = "#B78CFF", panel = "#151A21" }
-local function section(b) return { a = { fg = con.bg, bg = b, gui = "bold" }, b = { fg = con.fg, bg = con.panel }, c = { fg = con.dim, bg = con.bg } } end
+-- the edition's console palette, from colors/fui.lua (a cyan fallback if it didn't load)
+local con = vim.g.fui_palette or { bg = "#07090C", fg = "#E6EBF0", dim = "#7A8590", signal = "#00C2D1", blue = "#7AA7FF",
+                                   yellow = "#F2A93B", red = "#FF5C6C", magenta = "#B78CFF", raised = "#181C21" }
+local function section(b) return { a = { fg = con.bg, bg = b, gui = "bold" }, b = { fg = con.fg, bg = con.raised }, c = { fg = con.dim, bg = con.bg } } end
 
 lazy.setup({
   { "stevearc/oil.nvim", opts = { view_options = { show_hidden = true } },
@@ -46,21 +47,21 @@ lazy.setup({
     } },
   { "lewis6991/gitsigns.nvim", event = "BufReadPre", opts = {} },
   { "nvim-lualine/lualine.nvim", opts = {
-      options = { theme = { normal = section(con.green), insert = section(con.blue), visual = section(con.magenta),
+      options = { theme = { normal = section(con.signal), insert = section(con.blue), visual = section(con.magenta),
                             replace = section(con.red), command = section(con.yellow), inactive = section(con.dim) },
                   section_separators = "", component_separators = "│", globalstatus = true },
       sections = { lualine_a = { "mode" }, lualine_b = { "branch", "diff" }, lualine_c = { { "filename", path = 1 } },
                    lualine_x = { "diagnostics", "filetype" }, lualine_y = { "progress" }, lualine_z = { "location" } } } },
-  { "folke/which-key.nvim", event = "VeryLazy", opts = { win = { border = "rounded" } } },
+  { "folke/which-key.nvim", event = "VeryLazy", opts = { win = { border = "single" } } },
   { "saghen/blink.cmp", version = "1.*", event = "InsertEnter", opts = { keymap = { preset = "default" },
-      completion = { menu = { border = "rounded" }, documentation = { auto_show = true, window = { border = "rounded" } } } } },
-  { "mason-org/mason.nvim", opts = { ui = { border = "rounded" } } },
+      completion = { menu = { border = "single" }, documentation = { auto_show = true, window = { border = "single" } } } } },
+  { "mason-org/mason.nvim", opts = { ui = { border = "single" } } },
   { "mason-org/mason-lspconfig.nvim", dependencies = { "mason-org/mason.nvim", "neovim/nvim-lspconfig" },
     opts = { automatic_enable = true } },
 }, {
   install = { colorscheme = { "fui" } },
   lockfile = vim.fn.stdpath("data") .. "/lazy-lock.json",   -- not in ~/.config: that folder is the git repo
-  ui = { border = "rounded" },
+  ui = { border = "single" },
   change_detection = { notify = false },
   rocks = { enabled = false },
 })
@@ -74,4 +75,4 @@ vim.api.nvim_create_autocmd("LspAttach", { callback = function(ev)
   map("<leader>a", vim.lsp.buf.code_action, "code action")
   map("<leader>d", vim.diagnostic.open_float, "diagnostic")
 end })
-vim.diagnostic.config({ float = { border = "rounded" }, virtual_text = { prefix = "▪" } })
+vim.diagnostic.config({ float = { border = "single" }, virtual_text = { prefix = "▪" } })

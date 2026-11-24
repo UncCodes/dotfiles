@@ -1,9 +1,0 @@
-# fui // IMV: images on the console
-[options]
-background = 07090c
-overlay = false
-overlay_font = JetBrainsMono Nerd Font:11
-overlay_text_color = d7dee5
-overlay_background_color = 151a21
-overlay_background_alpha = cc
-title_text = imv · $imv_current_file ($imv_current_index/$imv_file_count)

@@ -4,68 +4,50 @@
   python3 theme/build.py            # regenerate everything
   python3 theme/build.py --check    # exit 1 if anything is stale or a contrast pair fails
 
-The look is corporate sci-fi: a company workstation a few decades out. Flat engineered
-panels with hairline rules, header plates with an accent stripe, crisp controls, a brand
-mark, one signature colour per theme (night, concrete, lab); only the colour changes.
+The workstation is an instrument issued by an institution: dark quiet fields, one signal
+colour, hairline structure, labels and codes, honest numbers. Colours come in EDITIONS
+(cyan, amber, phosphor, acid, hazard, mono, paper, lab), each drawn for three display
+TIERS (crt, lcd, deep). Components use roles (floor, panel, ink, signal ...), never hex.
 
-Per theme (fui mode links each app to one of them):
-  waybar, swaync, swayosd   colors-<mode>.css     @define-color tokens their style.css imports
-  rofi                      colors-<mode>.rasi
-  hypr (hyprlock)           colors-<mode>.conf    $variables
-  kitty                     colors-<mode>.conf    the tab bar (the screen itself is a fixed console)
-  gtk-3.0, gtk-4.0          fui-<mode>.css        the whole GTK / libadwaita theme
-  qt6ct                     colors/fui-<mode>.conf + theme/templates/fui-<mode>.qss.in
-  firefox                   fui/.config/fui/firefox/colors-<mode>.css, start page start-<mode>.html
-Fixed: the console palette (kitty, shell colours, git, btop, Neovim), fonts, the Hyprland
-token table, the screen finish, the brand mark.
-Docs: theme/PALETTE.md (with a WCAG contrast table), theme/web/fui-tokens.css, docs/KEYS.md.
+Per edition (fui mode links each app to one):
+  waybar, swaync, swayosd   colors-<edition>.css   @define-color roles, plus <role>_crt variants
+  rofi                      colors-<edition>.rasi
+  hypr (hyprlock)           colors-<edition>.conf  $variables
+  kitty                     colors-<edition>.conf  the tab bar · console-<edition>.conf the screen
+  gtk-3.0, gtk-4.0          fui-<edition>.css      the whole GTK / libadwaita theme
+  qt6ct                     colors/fui-<edition>.conf + theme/templates/fui-<edition>.qss.in
+  firefox                   fui/.config/fui/firefox/colors-<edition>.css
+  btop                      themes/fui-<edition>.theme
+Per tier (fui display links them; the same for every edition):
+  tier-<tier>.css / .rasi / .conf, gtk fui-tier-<tier>.css, firefox tier-<tier>.css:
+  crt switches to the <role>_crt colours and doubles the strokes; deep uses true black outside
+  panels; lcd changes nothing.
+Alert takeover (fui alert): alert-on.css / alert-off.css for waybar and swaync.
+One file for every edition: the Hyprland token table (fui.lua), Neovim's colours, the start
+page, the shell colours (ANSI numbers, so they follow the console), fonts, the screen finish.
+Docs: theme/PALETTE.md (with the contrast table), theme/web/fui-tokens.css, docs/KEYS.md.
 Every generated file starts with a GENERATED banner: edit tokens.toml, not the file.
 """
 import json
 import re
 import sys
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "theme"))
 from lattice import lattice, svg_beads, svg_lines  # noqa: E402
+from palette import (CRT_SWAP, DEEP_SWAP, EDS, ROLES, TIERS, TOK, E, T, alpha, console, contrast,  # noqa: E402
+                     css, full, hx, hx8, is_dark, mix, over, parse)
 
-TOK = tomllib.loads((ROOT / "theme/tokens.toml").read_text())
-MODES = TOK["meta"]["modes"]
-FX, TERM, G, O, BL, SCR, F, MO, D, BR = (TOK[k] for k in ("fixed", "terminal", "geometry", "opacity", "blur",
-                                                             "screen", "font", "motion", "desktop", "brand"))
+TIER, G, GL, O, BL, SCR, F, MO, D, BR, SAFE = (TOK[k] for k in ("tier", "geometry", "glass", "opacity", "blur", "screen",
+                                                              "font", "motion", "desktop", "brand", "safety"))
 CHECK = "--check" in sys.argv
-changed: list[str] = []
+changed = []
+
+ALERT_SWAP = {"signal": "bad", "signal_hi": "bad", "signal_dim": "bad_dim", "on_signal": "on_bad", "packet": "bad"}
 
 
-def P(mode):
-    """The full palette of one theme: its colours plus the fixed ones."""
-    return {**FX, **TOK["mode"][mode]}
-
-
-# ── helpers ─────────────────────────────────────────────────────────────
-def parse(c):
-    h = c.lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
-    a = int(h[6:8], 16) / 255 if len(h) == 8 else 1.0
-    return r, g, b, a
-
-
-def hx(c):                       # "#RRGGBB" (alpha dropped)
-    return c[:7].upper()
-
-
-def hx8(c):                      # "#RRGGBBAA"
-    r, g, b, a = parse(c)
-    return f"#{r:02X}{g:02X}{b:02X}{round(a * 255):02X}"
-
-
-def css(c):                      # GTK3 has no #RRGGBBAA: alpha colours become rgba()
-    r, g, b, a = parse(c)
-    return f"#{r:02X}{g:02X}{b:02X}" if a >= 0.999 else f"rgba({r}, {g}, {b}, {a:.3f})"
-
-
+# ── build helpers ───────────────────────────────────────────────────────
 def qcss(c):                     # Qt stylesheets: alpha as a percentage (0.4 would read as 0)
     r, g, b, a = parse(c)
     return f"#{r:02x}{g:02x}{b:02x}" if a >= 0.999 else f"rgba({r}, {g}, {b}, {round(a * 100)}%)"
@@ -78,18 +60,6 @@ def hyp(c):                      # Hyprland / hyprlock
 def qargb(c):                    # Qt: #AARRGGBB
     r, g, b, a = parse(c)
     return f"#{round(a * 255):02x}{r:02x}{g:02x}{b:02x}"
-
-
-def mix(c1, c2, t):              # t of c2 into c1
-    a, b = parse(c1), parse(c2)
-    r, g, bl = (round(a[i] + (b[i] - a[i]) * t) for i in range(3))
-    al = a[3] + (b[3] - a[3]) * t
-    return f"#{r:02X}{g:02X}{bl:02X}{round(al * 255):02X}" if al < 0.999 else f"#{r:02X}{g:02X}{bl:02X}"
-
-
-def alpha(c, a):
-    r, g, b, _ = parse(c)
-    return f"#{r:02X}{g:02X}{b:02X}{round(a * 255):02X}"
 
 
 def banner(mark="#"):
@@ -111,179 +81,271 @@ def write(rel, text):
 def ident(k):
     return k.replace("_", "-")
 
-
-# ── contrast (WCAG 2) ───────────────────────────────────────────────────
-def lum(c):
-    def ch(v):
-        v /= 255
-        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
-    r, g, b, _ = parse(c)
-    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
-
-
-def over(fg, bg):               # composite an alpha colour over an opaque one
-    f, b = parse(fg), parse(bg)
-    return "#" + "".join(f"{round(f[i] * f[3] + b[i] * (1 - f[3])):02X}" for i in range(3))
-
-
-def contrast(fg, bg):
-    l1, l2 = sorted((lum(fg), lum(bg)), reverse=True)
-    return (l1 + 0.05) / (l2 + 0.05)
-
-
-
-
+# ── contrast checks ─────────────────────────────────────────────────────
 PAIRS = [   # (name, fg, bg, minimum)
-    ("text on the floor", "text", "bg", 4.5),
-    ("text on a panel", "text", "panel", 4.5),
+    ("ink on the floor", "ink", "floor", 7.0),
+    ("ink on a panel", "ink", "panel", 7.0),
+    ("ink on a raised row", "ink", "raised", 7.0),
+    ("ink in a field", "ink", "well", 7.0),
     ("labels on a panel", "muted", "panel", 4.5),
     ("labels in a field", "muted", "well", 4.5),
-    ("accent on the floor (large text, rules)", "accent", "bg", 3.0),
-    ("accent on a panel (large text, rules)", "accent", "panel", 3.0),
-    ("text on an accent fill", "on_accent", "accent", 4.5),
+    ("control edges on a panel", "edge", "panel", 3.0),
+    ("signal on a panel (focus, rules)", "signal", "panel", 3.0),
+    ("text on a signal fill", "on_signal", "signal", 4.5),
+    ("ink on a selected row", "ink", "signal_dim", 4.5),
+    ("ok on a panel", "ok", "panel", 4.5),
+    ("warn on a panel", "warn", "panel", 4.5),
+    ("bad on a panel", "bad", "panel", 4.5),
     ("info on a panel", "info", "panel", 4.5),
-    ("console text", "term_fg", "term_bg", 7.0),
+    ("text on the alert fill", "on_bad", "bad", 4.5),
 ]
+CRT_PAIRS = [("crt: ink on a panel", "ink", "panel", 7.0), ("crt: labels on a panel", "muted", "panel", 7.0),
+             ("crt: microtext on a panel", "faint", "panel", 4.5)]
 
 
 def contrast_rows():
     rows, failures = [], []
-    for name, fg, bg, need in PAIRS:
-        cells = []
-        for m in MODES:
-            p = P(m)
-            ratio = contrast(over(p[fg], p[bg]), p[bg])
-            ok = ratio >= need
-            cells.append(f"{ratio:.1f}{'' if ok else ' ✗'}")
-            if not ok:
-                failures.append(f"{m}: {name} {ratio:.2f} < {need}")
-        rows.append(f"| {name} | {need:g} | " + " | ".join(cells) + " |")
+    for tier, pairs in (("lcd", PAIRS), ("crt", CRT_PAIRS)):
+        for name, fg, bg, need in pairs:
+            cells = []
+            for ed in EDS:
+                p = T(ed, tier)
+                ratio = contrast(over(p[fg], p[bg]), p[bg])
+                ok = ratio >= need
+                cells.append(f"{ratio:.1f}{'' if ok else ' ✗'}")
+                if not ok:
+                    failures.append(f"{ed}: {name} {ratio:.2f} < {need}")
+            rows.append(f"| {name} | {need:g} | " + " | ".join(cells) + " |")
+    for ed in EDS:
+        c = console(ed)
+        for i, col in enumerate(c["ansi"]):
+            if i in (0,):
+                continue
+            ratio = contrast(col, c["bg"])
+            if ratio < 4.5:
+                failures.append(f"{ed}: console colour {i} {ratio:.2f} < 4.5")
     return rows, failures
 
 
-# ── 1. per-theme colour files for the hand-written configs ──────────────
+# ── stroke overlays: what the crt tier changes in each hand-written style ──
+def px(k, tier):
+    return f"{TIER[tier][k]}px"
+
+
+WAYBAR_STROKES = """window#waybar {{ border-width: {hair}; box-shadow: inset {stripe} 0 @signal; }}
+#custom-brand {{ border-right-width: {hair}; }}
+#clock {{ border-left-width: {hair}; border-right-width: {hair}; }}
+tooltip {{ border-width: {hair}; }}
+"""
+SWAYNC_STROKES = """.notification {{ border-width: {hair}; box-shadow: inset {stripe} 0 @signal; }}
+.notification.low {{ box-shadow: inset {stripe} 0 @rule_hi; }}
+.notification.critical {{ box-shadow: inset {stripe} 0 @bad; }}
+.control-center {{ border-width: {hair}; }}
+.widget-title {{ border-bottom-width: {hair}; box-shadow: inset {stripe} 0 @signal; }}
+.widget-dnd, .widget-buttons-grid, .widget-volume, .widget-backlight, .widget-mpris {{ border-bottom-width: {hair}; }}
+.close-button, .notification-action > button, .widget-title > button, .widget-buttons-grid flowboxchild > button {{ border-width: {edge}; }}
+"""
+SWAYOSD_STROKES = """window#osd {{ border-width: {hair}; box-shadow: inset {stripe} 0 @signal; }}
+"""
+
+
+def gtk_strokes(v, tier):
+    w = {k: px(k, tier) for k in ("hair", "edge", "stripe")}
+    deco = ".csd decoration, decoration" if v == 3 else "window.csd"
+    entry = "entry, spinbutton:not(.vertical), .entry" if v == 3 else "entry, spinbutton:not(.vertical)"
+    return (f"{deco} {{ box-shadow: 0 0 0 {w['hair']} @fui_rule_hi; }}\n"
+            f"headerbar, .titlebar {{ border-bottom-width: {w['hair']};\n"
+            f"  background-image: linear-gradient(to right, @fui_signal 0px, @fui_signal {w['stripe']}, transparent {w['stripe']}); }}\n"
+            f"button, {entry}, switch, check, radio {{ border-width: {w['edge']}; }}\n"
+            f"separator {{ min-height: {w['hair']}; min-width: {w['hair']}; }}\n"
+            f"frame > border, .frame, list.boxed-list, .boxed-list, .card {{ border-width: {w['hair']}; }}\n")
+
+
+# ── 1. per-edition colour files for the hand-written configs ────────────
+def overlay_css(prefix, tier, strokes=""):
+    swap = {"crt": CRT_SWAP, "deep": DEEP_SWAP}.get(tier, [])
+    lines = "".join(f"@define-color {prefix}{r} @{prefix}{r}_{tier};\n" for r in swap)
+    note = {"crt": "a tube: solid panels on black, lifted labels, 2 px structure",
+            "lcd": "a backlit panel: the editions as they are",
+            "deep": "OLED / HDR: true black outside the panels"}[tier]
+    body = lines + (strokes.format(**{k: px(k, tier) for k in ("hair", "edge", "stripe")}) if tier == "crt" else "")
+    return f"{banner('/*')}/* fui // display tier {tier}: {note}. fui display links fui-tier.css here. */\n{body}"
+
+
+def alert_css(on, prefix=""):
+    head = f"{banner('/*')}/* fui // the alert takeover ({'on' if on else 'off'}): fui alert links fui-alert.css here. */\n"
+    if not on:
+        return head
+    return head + "".join(f"@define-color {prefix}{k} @{prefix}{v};\n" for k, v in ALERT_SWAP.items())
+
+
 def colour_includes():
-    for m in MODES:
-        p = P(m)
+    for ed in EDS:
+        p = full(ed)
         defs = "".join(f"@define-color {k} {css(v)};\n" for k, v in p.items())
-        head = (f"{banner('/*')}/* fui // {m} theme. style.css imports this through the fui-colors.css link.\n"
+        head = (f"{banner('/*')}/* fui // edition {ed}. style.css imports this through the fui-colors.css link.\n"
                 f"   fonts: brand {F['brand']}, ui {F['ui']}, mono {F['mono']} */\n")
         for app in ("waybar", "swaync", "swayosd"):
-            write(f"{app}/.config/{app}/colors-{m}.css", head + defs)
+            write(f"{app}/.config/{app}/colors-{ed}.css", head + defs)
         rasi = "".join(f"  {ident(k)}: {hx8(v)};\n" for k, v in p.items())
         rasi += (f'  font-ui: "{F["ui"]} {F["size"] + 1}";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
-                 f'  font-label: "{F["ui"]} SemiBold 8";\n  font-brand: "{F["brand"]} 10";\n')
-        write(f"rofi/.config/rofi/colors-{m}.rasi",
-              f"{banner('/*')}/* fui // {m} theme for rofi. config.rasi imports this through fui-colors.rasi. */\n* {{\n{rasi}}}\n")
+                 f'  font-label: "{F["mono"]} Bold {F["size"] - 1}";\n  font-brand: "{F["brand"]} 10";\n')
+        lt = TIER["lcd"]
+        rasi += (f"  frame: {lt['hair']}px solid;\n  rule-top: {lt['hair']}px 0 0 0;\n"
+                 f"  stripe: 0 0 0 {lt['stripe']}px;\n  field: {lt['edge']}px solid;\n")
+        write(f"rofi/.config/rofi/colors-{ed}.rasi",
+              f"{banner('/*')}/* fui // edition {ed} for rofi. config.rasi imports this through fui-colors.rasi. */\n* {{\n{rasi}}}\n")
         hyprvars = "".join(f"${k} = {hyp(v)}\n${k}_hex = {hx(v)[1:]}\n" for k, v in p.items())
         hyprvars += "".join(f"$font_{k} = {v}\n" for k, v in F.items() if isinstance(v, str))
         hyprvars += "".join(f"$brand_{k} = {v}\n" for k, v in BR.items())
-        write(f"hypr/.config/hypr/colors-{m}.conf",
-              f"{banner()}# fui // {m} theme for hyprlock (sourced through fui-colors.conf)\n{hyprvars}")
-        write(f"kitty/.config/kitty/colors-{m}.conf",
-              f"{banner()}# fui // {m} theme: the tab bar is the window's header plate. kitty.conf includes this\n"
-              f"# through fui-colors.conf; the screen itself is the fixed console (console.conf).\n"
-              f"active_tab_background   {hx(p['accent'])}\nactive_tab_foreground   {hx(p['on_accent'])}\n"
-              f"inactive_tab_background {TERM['normal'][0]}\ninactive_tab_foreground {FX['term_dim']}\n"
-              f"tab_bar_background      {FX['term_bg']}\nactive_border_color     {hx(p['accent'])}\n"
-              f"inactive_border_color   {TERM['normal'][0]}\nbell_border_color       {hx(p['warn'])}\n")
+        hyprvars += f"$hair = {TIER['lcd']['hair']}\n$stripe = {TIER['lcd']['stripe']}\n"
+        write(f"hypr/.config/hypr/colors-{ed}.conf",
+              f"{banner()}# fui // edition {ed} for hyprlock (sourced through fui-colors.conf)\n{hyprvars}")
+        c = console(ed)
+        write(f"kitty/.config/kitty/colors-{ed}.conf",
+              f"{banner()}# fui // edition {ed}: the tab bar is the window's header plate. kitty.conf includes this\n"
+              f"# through fui-colors.conf; the screen's colours are console-{ed}.conf.\n"
+              f"active_tab_background   {hx(p['signal'])}\nactive_tab_foreground   {hx(p['on_signal'])}\n"
+              f"inactive_tab_background {c['raised']}\ninactive_tab_foreground {c['dim']}\n"
+              f"tab_bar_background      {c['bg']}\nactive_border_color     {hx(p['signal'])}\n"
+              f"inactive_border_color   {c['raised']}\nbell_border_color       {hx(p['warn'])}\n")
+        ansi = c["ansi"]
+        write(f"kitty/.config/kitty/console-{ed}.conf",
+              f"{banner()}# fui // edition {ed}: the console (the {c['source']} palette). Every terminal program\n"
+              f"# inherits it through the 16 colours. kitty.conf includes this through fui-console.conf.\n"
+              f"foreground           {c['fg']}\nbackground           {c['bg']}\n"
+              f"selection_foreground {c['on_signal']}\nselection_background {c['signal']}\n"
+              f"cursor               {c['signal']}\ncursor_text_color    {c['bg']}\n"
+              f"url_color            {ansi[12]}\nmark1_background     {ansi[3]}\nmark1_foreground     {c['bg']}\n"
+              + "".join(f"color{i:<3}{x}\n" for i, x in enumerate(ansi)))
         cssvars = "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in p.items())
-        write(f"fui/.config/fui/firefox/colors-{m}.css",
-              f"{banner('/*')}/* fui // {m} theme for Firefox (userChrome.css and userContent.css import it) */\n"
+        write(f"fui/.config/fui/firefox/colors-{ed}.css",
+              f"{banner('/*')}/* fui // edition {ed} for Firefox (userChrome.css and userContent.css import it) */\n"
               f":root {{\n{cssvars}  --fui-radius: {G['radius']}px;\n  --fui-control: {G['control']}px;\n"
-              f"  --fui-scheme: {'dark' if m == 'night' else 'light'};\n}}\n")
+              f"  --fui-hair: {TIER['lcd']['hair']}px;\n  --fui-edge-w: {TIER['lcd']['edge']}px;\n"
+              f"  --fui-stripe: {TIER['lcd']['stripe']}px;\n  --fui-scheme: {TOK['edition'][ed]['scheme']};\n}}\n")
+
+    # the display tiers and the alert takeover: the same files for every edition
+    for tier in TIERS:
+        write(f"waybar/.config/waybar/tier-{tier}.css", overlay_css("", tier, WAYBAR_STROKES))
+        write(f"swaync/.config/swaync/tier-{tier}.css", overlay_css("", tier, SWAYNC_STROKES))
+        write(f"swayosd/.config/swayosd/tier-{tier}.css", overlay_css("", tier, SWAYOSD_STROKES))
+        swap = {"crt": CRT_SWAP, "deep": DEEP_SWAP}.get(tier, [])
+        t = TIER[tier]
+        rasi = "".join(f"  {ident(r)}: @{ident(r)}-{tier};\n" for r in swap)
+        rasi += (f"  frame: {t['hair']}px solid;\n  rule-top: {t['hair']}px 0 0 0;\n"
+                 f"  stripe: 0 0 0 {t['stripe']}px;\n  field: {t['edge']}px solid;\n")
+        write(f"rofi/.config/rofi/tier-{tier}.rasi",
+              f"{banner('/*')}/* fui // display tier {tier} for rofi (fui display links fui-tier.rasi here) */\n* {{\n{rasi}}}\n")
+        hl = "".join(f"${r} = ${r}_{tier}\n" for r in swap if r in ("void", "floor", "panel", "edge", "muted", "faint", "glass"))
+        hl += f"$hair = {t['hair']}\n$stripe = {t['stripe']}\n"
+        write(f"hypr/.config/hypr/tier-{tier}.conf",
+              f"{banner()}# fui // display tier {tier} for hyprlock (sourced through fui-tier.conf)\n{hl}")
+        kt = "background #000000\ntab_bar_background #000000\n" if tier == "crt" else ""
+        write(f"kitty/.config/kitty/tier-{tier}.conf",
+              f"{banner()}# fui // display tier {tier} for kitty (included through fui-tier.conf)\n{kt}")
+        fx = "".join(f"  --fui-{ident(r)}: var(--fui-{ident(r)}-{tier});\n" for r in swap)
+        fx += f"  --fui-hair: {t['hair']}px;\n  --fui-edge-w: {t['edge']}px;\n  --fui-stripe: {t['stripe']}px;\n"
+        write(f"fui/.config/fui/firefox/tier-{tier}.css",
+              f"{banner('/*')}/* fui // display tier {tier} for Firefox (linked as fui-tier.css) */\n:root {{\n{fx}}}\n")
+    for app in ("waybar", "swaync"):
+        write(f"{app}/.config/{app}/alert-on.css", alert_css(True))
+        write(f"{app}/.config/{app}/alert-off.css", alert_css(False))
 
 
 # ── 2. GTK3 + GTK4 / libadwaita ─────────────────────────────────────────
-def gtk_css(v, m):
-    p = P(m)
+def gtk_css(v, ed):
+    p = full(ed)
     c = lambda k: f"@fui_{k}"
     r, cr = G["radius"], G["control"]
     gtk3 = v == 3
-    dark = m == "night"
+    hair, edge, stripe, focus = TIER["lcd"]["hair"], TIER["lcd"]["edge"], TIER["lcd"]["stripe"], G["focus"]
     defs = "".join(f"@define-color fui_{k} {css(val)};\n" for k, val in p.items())
     pop = "popover, menu, .menu, .context-menu" if gtk3 else "popover > contents, popover.menu > contents"
-    focus = "entry:focus, spinbutton:focus" if gtk3 else "entry:focus-within, spinbutton:focus-within"
+    focus_sel = "entry:focus, spinbutton:focus" if gtk3 else "entry:focus-within, spinbutton:focus-within"
     title = "headerbar .title, headerbar label.title" if gtk3 else "headerbar .title, windowtitle .title"
-    lift = mix(p["panel"], "#FFFFFF" if dark else "#000000", 0.04)
+    base = D["dark" if is_dark(ed) else "light"]["gtk_base"]
     return f"""{banner('/*')}
-/* fui // GTK{v} · {m} theme · corporate panels over {D[m]['gtk_base']}{'' if gtk3 else ' and libadwaita'} */
+/* fui // GTK{v} · edition {ed} · issued panels over {base}{'' if gtk3 else ' and libadwaita'}
+   fui-tier.css (imported after this) switches colours and strokes per display tier. */
 
 {defs}
 /* ── the base theme's named colours ── */
-@define-color accent_color {c('accent') if dark else c('accent')};
-@define-color accent_bg_color {c('accent')};
-@define-color accent_fg_color {c('on_accent')};
-@define-color window_bg_color {c('bg')};
-@define-color window_fg_color {c('text')};
+@define-color accent_color {c('signal')};
+@define-color accent_bg_color {c('signal')};
+@define-color accent_fg_color {c('on_signal')};
+@define-color window_bg_color {c('floor')};
+@define-color window_fg_color {c('ink')};
 @define-color view_bg_color {c('well')};
-@define-color view_fg_color {c('text')};
+@define-color view_fg_color {c('ink')};
 @define-color headerbar_bg_color {c('panel')};
-@define-color headerbar_fg_color {c('text')};
-@define-color headerbar_border_color {c('line')};
+@define-color headerbar_fg_color {c('ink')};
+@define-color headerbar_border_color {c('rule')};
 @define-color headerbar_backdrop_color {c('panel')};
 @define-color headerbar_shade_color transparent;
 @define-color sidebar_bg_color {c('panel')};
-@define-color sidebar_fg_color {c('text')};
+@define-color sidebar_fg_color {c('ink')};
 @define-color sidebar_backdrop_color {c('panel')};
 @define-color card_bg_color {c('panel')};
-@define-color card_fg_color {c('text')};
+@define-color card_fg_color {c('ink')};
 @define-color popover_bg_color {c('panel')};
-@define-color popover_fg_color {c('text')};
+@define-color popover_fg_color {c('ink')};
 @define-color dialog_bg_color {c('panel')};
-@define-color dialog_fg_color {c('text')};
+@define-color dialog_fg_color {c('ink')};
 @define-color thumbnail_bg_color {c('panel')};
 @define-color destructive_color {c('bad')};
 @define-color destructive_bg_color {c('bad')};
-@define-color destructive_fg_color {c('white')};
+@define-color destructive_fg_color {c('on_bad')};
 @define-color success_color {c('ok')};
 @define-color success_bg_color {c('ok')};
 @define-color warning_color {c('warn')};
 @define-color warning_bg_color {c('warn')};
 @define-color error_color {c('bad')};
 @define-color error_bg_color {c('bad')};
-@define-color borders {c('line')};
+@define-color borders {c('rule')};
 
-/* ── the floor: windows are flat engineered panels; no drop shadows ── */
-window, window.background {{ background-color: {c('bg')}; color: {c('text')}; }}
-{'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {r}px; box-shadow: 0 0 0 1px {c('line_hi')}; }}
+/* ── the floor: windows are flat panels with a hairline; no drop shadows ── */
+window, window.background {{ background-color: {c('floor')}; color: {c('ink')}; }}
+{'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {r}px; box-shadow: 0 0 0 {hair}px {c('rule_hi')}; }}
 
-/* ── header plates: panel, a hairline below, an accent stripe at the left ── */
+/* ── header plates: panel, a hairline below, the signal stripe at the left ── */
 headerbar, .titlebar {{
   min-height: {G['header']}px;
   background-color: {c('panel')};
-  background-image: linear-gradient(to right, {c('accent')} 0px, {c('accent')} {G['stripe']}px, transparent {G['stripe']}px);
+  background-image: linear-gradient(to right, {c('signal')} 0px, {c('signal')} {stripe}px, transparent {stripe}px);
   border: none;
-  border-bottom: 1px solid {c('line')};
-  box-shadow: inset 0 1px {c('hi')};
-  color: {c('text')};
+  border-bottom: {hair}px solid {c('rule')};
+  box-shadow: none;
+  color: {c('ink')};
 }}
-headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to right, {c('line_hi')} 0px, {c('line_hi')} {G['stripe']}px, transparent {G['stripe']}px); }}
-{title} {{ font-weight: 600; letter-spacing: 1px; color: {c('text')}; }}
+headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to right, {c('rule_hi')} 0px, {c('rule_hi')} {stripe}px, transparent {stripe}px); }}
+{title} {{ font-weight: 600; letter-spacing: 1px; color: {c('ink')}; }}
 headerbar .subtitle {{ color: {c('muted')}; font-family: "{F['mono']}", monospace; font-size: 9pt; }}
 headerbar button {{ background-color: transparent; border-color: transparent; box-shadow: none; }}
-headerbar button:hover {{ background-color: {c('raised')}; border-color: {c('line')}; }}
+headerbar button:hover {{ background-color: {c('raised')}; border-color: {c('edge')}; }}
 
-/* ── buttons: crisp outlined controls; the primary action is the accent ── */
+/* ── buttons: secondary is an outline in the edge colour; the primary action is the signal ── */
 button {{
-  background-color: {c('raised')};
+  background-color: transparent;
   background-image: none;
-  border: 1px solid {c('line_hi')};
+  border: {edge}px solid {c('edge')};
   border-radius: {cr}px;
-  box-shadow: inset 0 1px {c('hi')};
-  color: {c('text')};
+  box-shadow: none;
+  color: {c('ink')};
   text-shadow: none;
   padding: 3px 12px;
   font-weight: 500;
 }}
-button:hover {{ background-color: {lift}; border-color: {c('accent')}; }}
-button:active, button:checked {{ background-color: {c('accent_dim')}; border-color: {c('accent')}; color: {c('text')}; box-shadow: none; }}
-button:disabled {{ opacity: 0.5; }}
+button:hover {{ background-color: {c('raised')}; border-color: {c('signal')}; }}
+button:active, button:checked {{ background-color: {c('signal_dim')}; border-color: {c('signal')}; color: {c('ink')}; box-shadow: inset {stripe}px 0 {c('signal')}; }}
+button:focus-visible {{ outline: {focus}px solid {c('signal')}; outline-offset: 2px; }}
+button:disabled {{ color: {c('faint')}; border-color: {c('rule')}; background-color: transparent; }}
 button.flat {{ background-color: transparent; border-color: transparent; box-shadow: none; }}
-button.flat:hover {{ background-color: {c('raised')}; border-color: {c('line')}; }}
-button.suggested-action {{ background-color: {c('accent')}; border-color: {c('accent')}; color: {c('on_accent')}; font-weight: 600; }}
-button.suggested-action:hover {{ background-color: {c('accent_hi')}; border-color: {c('accent_hi')}; }}
-button.destructive-action {{ background-color: {c('bad')}; border-color: {c('bad')}; color: {c('white')}; font-weight: 600; }}
+button.flat:hover {{ background-color: {c('raised')}; border-color: {c('rule')}; }}
+button.suggested-action {{ background-color: {c('signal')}; border-color: {c('signal')}; color: {c('on_signal')}; font-weight: 600; }}
+button.suggested-action:hover {{ background-color: {c('signal_hi')}; border-color: {c('signal_hi')}; }}
+button.destructive-action {{ background-color: transparent; border-color: {c('bad')}; color: {c('bad')}; font-weight: 600; }}
+button.destructive-action:hover {{ background-color: {c('bad')}; color: {c('on_bad')}; }}
 .linked > button {{ border-radius: 0; }}
 .linked > button:first-child {{ border-top-left-radius: {cr}px; border-bottom-left-radius: {cr}px; }}
 .linked > button:last-child {{ border-top-right-radius: {cr}px; border-bottom-right-radius: {cr}px; }}
@@ -291,106 +353,112 @@ button.destructive-action {{ background-color: {c('bad')}; border-color: {c('bad
 .linked > entry:first-child {{ border-top-left-radius: {cr}px; border-bottom-left-radius: {cr}px; }}
 .linked > entry:last-child {{ border-top-right-radius: {cr}px; border-bottom-right-radius: {cr}px; }}
 
-/* ── fields: set into the panel; focus draws the accent ── */
+/* ── fields: set into the panel; focus draws the signal ── */
 entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{
   background-color: {c('well')};
   background-image: none;
-  border: 1px solid {c('line_hi')};
+  border: {edge}px solid {c('edge')};
   border-radius: {cr}px;
   box-shadow: none;
-  color: {c('text')};
-  caret-color: {c('accent')};
+  color: {c('ink')};
+  caret-color: {c('signal')};
 }}
-{focus} {{ border-color: {c('accent')}; box-shadow: inset 0 0 0 1px {c('accent')}; outline: none; }}
-textview text, textview {{ background-color: {c('well')}; color: {c('text')}; }}
+{focus_sel} {{ border-color: {c('signal')}; box-shadow: inset 0 0 0 1px {c('signal')}; outline: none; }}
+entry.error {{ border-color: {c('bad')}; }}
+textview text, textview {{ background-color: {c('well')}; color: {c('ink')}; }}
 
-/* ── checks and radios ── */
+/* ── checks and radios: squares; state is a fill and a mark, never colour alone ── */
+check, radio {{ border: {edge}px solid {c('edge')}; border-radius: 0; background-color: {c('well')}; background-image: none; box-shadow: none; }}
 check:checked, check:indeterminate, radio:checked {{
-  background-color: {c('accent')}; background-image: none; border-color: {c('accent')}; color: {c('on_accent')};
+  background-color: {c('signal')}; border-color: {c('signal')}; color: {c('on_signal')};
 }}
 
 /* ── views and lists ── */
-.view, iconview, list, listview, treeview.view, columnview, gridview, notebook > stack {{ background-color: {c('well')}; color: {c('text')}; }}
+.view, iconview, list, listview, treeview.view, columnview, gridview, notebook > stack {{ background-color: {c('well')}; color: {c('ink')}; }}
 frame > border, .frame, list.boxed-list, .boxed-list, .card {{
   background-color: {c('panel')};
-  border: 1px solid {c('line')};
+  border: {hair}px solid {c('rule')};
   border-radius: {r}px;
   box-shadow: none;
 }}
-row:selected, list row:selected, treeview.view:selected, *:selected, selection {{ background-color: {c('accent')}; color: {c('on_accent')}; }}
-.navigation-sidebar row:selected, .sidebar row:selected {{
-  background-color: {c('accent_dim')}; color: {c('text')}; box-shadow: inset {G['stripe']}px 0 {c('accent')};
-}}
+row:selected, list row:selected, treeview.view:selected, *:selected, selection {{ background-color: {c('signal_dim')}; color: {c('ink')}; }}
+row:selected, list row:selected {{ box-shadow: inset {stripe}px 0 {c('signal')}; }}
+textview text selection, entry selection, label selection {{ background-color: {c('signal')}; color: {c('on_signal')}; }}
 
-/* ── popovers and menus: a panel with a hairline and a top accent rule ── */
+/* ── popovers and menus: a panel with a hairline and the signal rule along the top ── */
 {pop} {{
   background-color: {c('panel')};
   background-image: none;
-  border: 1px solid {c('line_hi')};
-  border-top: 2px solid {c('accent')};
+  border: {hair}px solid {c('rule_hi')};
+  border-top: 2px solid {c('signal')};
   border-radius: {r}px;
   box-shadow: none;
 }}
 {'popover' if gtk3 else 'popover > arrow'} {{ {'' if gtk3 else 'background: none; border: none; box-shadow: none;'} }}
 menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu row:hover {{
-  background-color: {c('accent_dim')}; color: {c('text')}; border-radius: {cr}px; box-shadow: inset {G['stripe']}px 0 {c('accent')};
+  background-color: {c('signal_dim')}; color: {c('ink')}; border-radius: {cr}px; box-shadow: inset {stripe}px 0 {c('signal')};
 }}
 
-/* ── tooltips: a small dark plate ── */
+/* ── tooltips: a raised plate with a hairline ── */
 tooltip, tooltip.background {{
-  background-color: {c('term_bg')}; background-image: none;
-  border: 1px solid {c('line_hi')}; border-radius: {cr}px; box-shadow: none;
+  background-color: {c('raised')}; background-image: none;
+  border: {hair}px solid {c('rule_hi')}; border-radius: {cr}px; box-shadow: none;
 }}
-tooltip * {{ color: {c('term_fg')}; }}
+tooltip * {{ color: {c('ink')}; }}
 
-/* ── progress and levels: a slim accent line on a hairline track ── */
-progressbar trough, levelbar trough {{ min-height: 4px; background-color: {c('line')}; background-image: none; border: none; border-radius: 2px; }}
+/* ── progress and levels: a 4 px signal line on a hairline track, square ends ── */
+progressbar trough, levelbar trough {{ min-height: 4px; background-color: {c('rule')}; background-image: none; border: none; border-radius: 0; }}
 progressbar progress, levelbar block.filled, levelbar block.low, levelbar block.high, levelbar block.full {{
-  min-height: 4px; background-color: {c('accent')}; background-image: none; border: none; border-radius: 2px;
+  min-height: 4px; background-color: {c('signal')}; background-image: none; border: none; border-radius: 0;
 }}
-levelbar block.empty {{ background-color: {c('line')}; border: none; }}
+levelbar block {{ margin: 0 1px; }}
+levelbar block.empty {{ background-color: {c('rule')}; border: none; }}
 levelbar block.low {{ background-color: {c('warn')}; }}
 
-/* ── scales and switches ── */
-scale trough {{ min-height: 4px; min-width: 4px; background-color: {c('line')}; border: none; border-radius: 2px; }}
-scale highlight {{ background-color: {c('accent')}; border: none; border-radius: 2px; }}
+/* ── scales and switches: a square knob; the switch is a two-cell plate ── */
+scale trough {{ min-height: 4px; min-width: 4px; background-color: {c('rule')}; border: none; border-radius: 0; }}
+scale highlight {{ background-color: {c('signal')}; border: none; border-radius: 0; }}
 scale slider {{ min-width: 14px; min-height: 14px; background-color: {c('panel')}; background-image: none;
-  border: 2px solid {c('accent')}; border-radius: 3px; box-shadow: none; }}
-switch {{ background-color: {c('line')}; background-image: none; border: 1px solid {c('line_hi')}; border-radius: {cr}px; box-shadow: none; }}
-switch:checked {{ background-color: {c('accent')}; border-color: {c('accent')}; }}
-switch slider {{ background-color: {c('white')}; background-image: none; border: 1px solid {c('line_hi')}; border-radius: {max(cr - 1, 2)}px; box-shadow: none; }}
+  border: 2px solid {c('signal')}; border-radius: 0; box-shadow: none; }}
+switch {{ background-color: {c('well')}; background-image: none; border: {edge}px solid {c('edge')}; border-radius: {cr}px; box-shadow: none; }}
+switch:checked {{ background-color: {c('signal')}; border-color: {c('signal')}; }}
+switch slider {{ background-color: {c('ink')}; background-image: none; border: none; border-radius: {cr}px; box-shadow: none; }}
+switch:checked slider {{ background-color: {c('on_signal')}; }}
 
-/* ── scrollbars: slim, squared ── */
+/* ── scrollbars: slim, square ── */
 scrollbar {{ background-color: transparent; border: none; }}
 scrollbar trough {{ background-color: transparent; border: none; }}
-scrollbar slider {{ min-width: 6px; min-height: 6px; margin: 2px; background-color: {c('line_hi')}; border: none; border-radius: 2px; }}
+scrollbar slider {{ min-width: 6px; min-height: 6px; margin: 2px; background-color: {c('rule_hi')}; border: none; border-radius: 0; }}
 scrollbar slider:hover {{ background-color: {c('muted')}; }}
-scrollbar slider:active {{ background-color: {c('accent')}; }}
+scrollbar slider:active {{ background-color: {c('signal')}; }}
 
-/* ── tabs: labels on a rule; the current one underlined in the accent ── */
-notebook > header {{ background-color: {c('panel')}; border: none; box-shadow: inset 0 -1px {c('line')}; }}
+/* ── tabs: labels on a rule; the current one underlined in the signal ── */
+notebook > header {{ background-color: {c('panel')}; border: none; box-shadow: inset 0 -{hair}px {c('rule')}; }}
 notebook > header tab, tabbar tab {{
   background-color: transparent; background-image: none; border: none; border-radius: 0;
   color: {c('muted')}; padding: 4px 14px; font-weight: 500;
 }}
-notebook > header tab:hover, tabbar tab:hover {{ color: {c('text')}; }}
-notebook > header tab:checked, tabbar tab:selected {{ color: {c('text')}; box-shadow: inset 0 -2px {c('accent')}; }}
+notebook > header tab:hover, tabbar tab:hover {{ color: {c('ink')}; }}
+notebook > header tab:checked, tabbar tab:selected {{ color: {c('ink')}; box-shadow: inset 0 -2px {c('signal')}; }}
 
 /* ── separators and links ── */
-separator {{ min-height: 1px; min-width: 1px; background-color: {c('line')}; }}
+separator {{ min-height: {hair}px; min-width: {hair}px; background-color: {c('rule')}; }}
 {'*:link, link' if gtk3 else 'link, label > link'} {{ color: {c('info')}; }}
 """
 
 
 def gtk():
-    for m in MODES:
+    for ed in EDS:
         for v in (3, 4):
-            write(f"gtk/.config/gtk-{v}.0/fui-{m}.css", gtk_css(v, m))
+            write(f"gtk/.config/gtk-{v}.0/fui-{ed}.css", gtk_css(v, ed))
     for v in (3, 4):
+        for tier in TIERS:
+            write(f"gtk/.config/gtk-{v}.0/fui-tier-{tier}.css",
+                  overlay_css("fui_", tier).rstrip("\n") + "\n" + (gtk_strokes(v, tier) if tier == "crt" else ""))
         write(f"gtk/.config/gtk-{v}.0/gtk.css",
-              f"{banner('/*')}/* fui // GTK{v}: follows the desktop theme. fui-mode.css links to "
-              f"{', '.join(f'fui-{m}.css' for m in MODES)}. */\n@import url(\"fui-mode.css\");\n")
-        d = D[MODES[0]]
+              f"{banner('/*')}/* fui // GTK{v}: fui-mode.css links to the edition (fui-<edition>.css), fui-tier.css to\n"
+              f"   the display tier (fui-tier-<tier>.css). */\n@import url(\"fui-mode.css\");\n@import url(\"fui-tier.css\");\n")
+        d = D["dark"]
         write(f"gtk/.config/gtk-{v}.0/settings.ini",
               f"{banner()}[Settings]\n"
               + (f"gtk-theme-name={d['gtk_base']}\n" if v == 3 else "")
@@ -400,7 +468,8 @@ def gtk():
                 f"gtk-cursor-theme-size={D['cursor_size']}\n"
                 f"gtk-sound-theme-name={D['sound_theme']}\n"
                 f"gtk-enable-event-sounds=1\n"
-                f"gtk-enable-input-feedback-sounds=0\n")
+                f"gtk-enable-input-feedback-sounds=0\n"
+                f"gtk-cursor-blink-time=1000\n")
 
 
 # ── 3. Qt (qt6ct) ───────────────────────────────────────────────────────
@@ -408,124 +477,105 @@ def qt():
     font = f"{F['ui']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
     fixed = f"{F['mono']},{F['size']},-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
     write("theme/templates/qt6ct.conf.in",
-          f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui-{MODES[0]}.conf\ncustom_palette=true\n"
-          f"icon_theme={D[MODES[0]]['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
+          f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui-{EDS[0]}.conf\ncustom_palette=true\n"
+          f"icon_theme={D['dark']['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
           f"[Fonts]\nfixed=\"{fixed}\"\ngeneral=\"{font}\"\n\n"
-          f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui-{MODES[0]}.qss\n")
-    for m in MODES:
-        p = P(m)
+          f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui-{EDS[0]}.qss\n")
+    for ed in EDS:
+        p = E(ed)
         # QPalette roles in qt6ct order: WindowText Button Light Midlight Dark Mid Text BrightText ButtonText
         # Base Window Shadow Highlight HighlightedText Link LinkVisited AlternateBase NoRole ToolTipBase
         # ToolTipText PlaceholderText Accent
-        roles = [p["text"], p["raised"], mix(p["raised"], "#FFFFFF", 0.4), mix(p["raised"], "#FFFFFF", 0.2),
-                 p["line_hi"], p["line"], p["text"], p["white"], p["text"], p["well"], p["bg"], "#000000",
-                 p["accent"], p["on_accent"], p["info"], p["info"], p["panel"], p["bg"],
-                 p["term_bg"], p["term_fg"], p["muted"], p["accent"]]
+        roles = [p["ink"], p["raised"], mix(p["raised"], "#FFFFFF", 0.4), mix(p["raised"], "#FFFFFF", 0.2),
+                 p["rule_hi"], p["rule"], p["ink"], p["white"], p["ink"], p["well"], p["floor"], "#000000",
+                 p["signal"], p["on_signal"], p["info"], p["info"], p["panel"], p["floor"],
+                 p["raised"], p["ink"], p["muted"], p["signal"]]
         active = ", ".join(qargb(x) for x in roles)
-        disabled = ", ".join(qargb(alpha(x, 0.45)) if i in (0, 6, 8) else qargb(x) for i, x in enumerate(roles))
-        write(f"qt/.config/qt6ct/colors/fui-{m}.conf",
+        disabled = ", ".join(qargb(p["faint"]) if i in (0, 6, 8) else qargb(x) for i, x in enumerate(roles))
+        write(f"qt/.config/qt6ct/colors/fui-{ed}.conf",
               f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
         q = lambda k: qcss(p[k])
-        r, cr = G["radius"], G["control"]
-        write(f"theme/templates/fui-{m}.qss.in", f"""{banner('/*')}
-/* fui: Qt, {m} theme, applied to every Qt6 app through qt6ct. (No double slashes in this file: qt6ct strips them as comments.) */
-QWidget {{ background-color: {q('bg')}; color: {q('text')}; selection-background-color: {q('accent')}; selection-color: {q('on_accent')}; }}
-QMainWindow, QDialog {{ background-color: {q('bg')}; }}
-QMenuBar {{ background: {q('panel')}; border-bottom: 1px solid {q('line')}; }}
+        r, cr, st = G["radius"], G["control"], TIER["lcd"]["stripe"]
+        write(f"theme/templates/fui-{ed}.qss.in", f"""{banner('/*')}
+/* fui: Qt, edition {ed}, applied to every Qt6 app through qt6ct. (No double slashes in this file: qt6ct strips them as comments.) */
+QWidget {{ background-color: {q('floor')}; color: {q('ink')}; selection-background-color: {q('signal')}; selection-color: {q('on_signal')}; }}
+QMainWindow, QDialog {{ background-color: {q('floor')}; }}
+QMenuBar {{ background: {q('panel')}; border-bottom: 1px solid {q('rule')}; }}
 QMenuBar::item {{ background: transparent; padding: 4px 10px; }}
-QMenuBar::item:selected {{ background: {q('accent_dim')}; border-radius: {cr}px; }}
-QMenu {{ background-color: {q('panel')}; border: 1px solid {q('line_hi')}; border-top: 2px solid {q('accent')}; border-radius: {r}px; padding: 4px; }}
+QMenuBar::item:selected {{ background: {q('signal_dim')}; border-radius: {cr}px; }}
+QMenu {{ background-color: {q('panel')}; border: 1px solid {q('rule_hi')}; border-top: 2px solid {q('signal')}; border-radius: {r}px; padding: 4px; }}
 QMenu::item {{ padding: 5px 18px 5px 12px; border-radius: {cr}px; }}
-QMenu::item:selected {{ background-color: {q('accent_dim')}; color: {q('text')}; border-left: {G['stripe']}px solid {q('accent')}; }}
-QMenu::separator {{ height: 1px; background: {q('line')}; margin: 4px 6px; }}
-QPushButton, QToolButton {{ background: {q('raised')}; border: 1px solid {q('line_hi')}; border-radius: {cr}px; padding: 4px 14px; color: {q('text')}; min-height: 18px; }}
-QPushButton:hover, QToolButton:hover {{ border-color: {q('accent')}; }}
-QPushButton:pressed, QPushButton:checked, QToolButton:checked {{ background: {q('accent_dim')}; border-color: {q('accent')}; }}
-QPushButton:default {{ background: {q('accent')}; color: {q('on_accent')}; border-color: {q('accent')}; font-weight: 600; }}
-QPushButton:disabled {{ color: {qcss(alpha(p['text'], 0.45))}; }}
+QMenu::item:selected {{ background-color: {q('signal_dim')}; color: {q('ink')}; border-left: {st}px solid {q('signal')}; }}
+QMenu::separator {{ height: 1px; background: {q('rule')}; margin: 4px 6px; }}
+QPushButton, QToolButton {{ background: transparent; border: 1px solid {q('edge')}; border-radius: {cr}px; padding: 4px 14px; color: {q('ink')}; min-height: 18px; }}
+QPushButton:hover, QToolButton:hover {{ background: {q('raised')}; border-color: {q('signal')}; }}
+QPushButton:pressed, QPushButton:checked, QToolButton:checked {{ background: {q('signal_dim')}; border-color: {q('signal')}; }}
+QPushButton:default {{ background: {q('signal')}; color: {q('on_signal')}; border-color: {q('signal')}; font-weight: 600; }}
+QPushButton:disabled, QToolButton:disabled {{ color: {q('faint')}; border-color: {q('rule')}; }}
+QPushButton:focus, QToolButton:focus {{ outline: none; border: 2px solid {q('signal')}; }}
 QToolButton[autoRaise="true"] {{ background: transparent; border-color: transparent; }}
-QToolButton[autoRaise="true"]:hover {{ background: {q('raised')}; border-color: {q('line')}; }}
+QToolButton[autoRaise="true"]:hover {{ background: {q('raised')}; border-color: {q('rule')}; }}
 QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{
-  background-color: {q('well')}; border: 1px solid {q('line_hi')}; border-radius: {cr}px; padding: 3px 8px; color: {q('text')}; }}
-QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus {{ border: 1px solid {q('accent')}; }}
+  background-color: {q('well')}; border: 1px solid {q('edge')}; border-radius: {cr}px; padding: 3px 8px; color: {q('ink')}; }}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus {{ border: 1px solid {q('signal')}; }}
 QComboBox::drop-down {{ border: none; width: 18px; }}
-QComboBox QAbstractItemView {{ background: {q('panel')}; border: 1px solid {q('line_hi')}; selection-background-color: {q('accent')}; selection-color: {q('on_accent')}; }}
-QProgressBar {{ background: {q('line')}; border: none; border-radius: 2px; text-align: center; color: {q('text')}; max-height: 6px; }}
-QProgressBar::chunk {{ background: {q('accent')}; border-radius: 2px; }}
-QSlider::groove:horizontal {{ height: 4px; background: {q('line')}; border-radius: 2px; }}
-QSlider::sub-page:horizontal {{ background: {q('accent')}; border-radius: 2px; }}
-QSlider::handle:horizontal {{ background: {q('panel')}; border: 2px solid {q('accent')}; width: 12px; margin: -6px 0; border-radius: 3px; }}
+QComboBox QAbstractItemView {{ background: {q('panel')}; border: 1px solid {q('rule_hi')}; selection-background-color: {q('signal_dim')}; selection-color: {q('ink')}; }}
+QProgressBar {{ background: {q('rule')}; border: none; border-radius: 0; text-align: center; color: {q('ink')}; max-height: 6px; }}
+QProgressBar::chunk {{ background: {q('signal')}; border-radius: 0; }}
+QSlider::groove:horizontal {{ height: 4px; background: {q('rule')}; border-radius: 0; }}
+QSlider::sub-page:horizontal {{ background: {q('signal')}; border-radius: 0; }}
+QSlider::handle:horizontal {{ background: {q('panel')}; border: 2px solid {q('signal')}; width: 12px; margin: -6px 0; border-radius: 0; }}
 QScrollBar:vertical {{ width: 10px; background: transparent; margin: 0; }}
 QScrollBar:horizontal {{ height: 10px; background: transparent; margin: 0; }}
-QScrollBar::handle {{ background: {q('line_hi')}; border-radius: 2px; margin: 2px; min-height: 24px; min-width: 24px; }}
+QScrollBar::handle {{ background: {q('rule_hi')}; border-radius: 0; margin: 2px; min-height: 24px; min-width: 24px; }}
 QScrollBar::handle:hover {{ background: {q('muted')}; }}
 QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page {{ height: 0; width: 0; background: none; border: none; }}
-QTabWidget::pane {{ border: 1px solid {q('line')}; border-radius: {r}px; top: -1px; }}
+QTabWidget::pane {{ border: 1px solid {q('rule')}; border-radius: {r}px; top: -1px; }}
 QTabBar::tab {{ background: transparent; border: none; padding: 6px 14px; color: {q('muted')}; }}
-QTabBar::tab:hover {{ color: {q('text')}; }}
-QTabBar::tab:selected {{ color: {q('text')}; border-bottom: 2px solid {q('accent')}; }}
-QGroupBox {{ border: 1px solid {q('line')}; border-radius: {r}px; margin-top: 16px; padding-top: 8px; }}
+QTabBar::tab:hover {{ color: {q('ink')}; }}
+QTabBar::tab:selected {{ color: {q('ink')}; border-bottom: 2px solid {q('signal')}; }}
+QGroupBox {{ border: 1px solid {q('rule')}; border-radius: {r}px; margin-top: 16px; padding-top: 8px; }}
 QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 4px; color: {q('muted')}; font-weight: 600; }}
-QHeaderView::section {{ background: {q('panel')}; color: {q('muted')}; border: none; border-bottom: 1px solid {q('line')}; padding: 5px 8px; font-weight: 600; }}
-QTableView, QTreeView, QListView {{ background: {q('well')}; alternate-background-color: {q('panel')}; gridline-color: {q('line')}; border: 1px solid {q('line')}; border-radius: {r}px; }}
-QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {q('accent')}; color: {q('on_accent')}; }}
-QToolTip {{ background: {q('term_bg')}; color: {q('term_fg')}; border: 1px solid {q('line_hi')}; border-radius: {cr}px; padding: 4px 8px; }}
-QStatusBar {{ background: {q('panel')}; color: {q('muted')}; border-top: 1px solid {q('line')}; }}
-QSplitter::handle {{ background: {q('line')}; }}
-QCheckBox::indicator, QRadioButton::indicator {{ width: 14px; height: 14px; border: 1px solid {q('line_hi')}; background: {q('well')}; }}
-QCheckBox::indicator {{ border-radius: 3px; }}
-QRadioButton::indicator {{ border-radius: 7px; }}
-QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('accent')}; border-color: {q('accent')}; }}
+QHeaderView::section {{ background: {q('panel')}; color: {q('muted')}; border: none; border-bottom: 1px solid {q('rule')}; padding: 5px 8px; font-weight: 600; }}
+QTableView, QTreeView, QListView {{ background: {q('well')}; alternate-background-color: {q('panel')}; gridline-color: {q('rule')}; border: 1px solid {q('rule')}; border-radius: {r}px; }}
+QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {q('signal_dim')}; color: {q('ink')}; border-left: {st}px solid {q('signal')}; }}
+QToolTip {{ background: {q('raised')}; color: {q('ink')}; border: 1px solid {q('rule_hi')}; border-radius: {cr}px; padding: 4px 8px; }}
+QStatusBar {{ background: {q('panel')}; color: {q('muted')}; border-top: 1px solid {q('rule')}; }}
+QSplitter::handle {{ background: {q('rule')}; }}
+QCheckBox::indicator, QRadioButton::indicator {{ width: 14px; height: 14px; border: 1px solid {q('edge')}; background: {q('well')}; border-radius: 0; }}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('signal')}; border-color: {q('signal')}; }}
 """)
 
 
-# ── 4. fixed: the console and everything that lives on it ───────────────
-def console():
-    ansi = TERM["normal"] + TERM["bright"]
-    write("kitty/.config/kitty/console.conf",
-          f"{banner()}# The terminal is a night console in every theme.\n"
-          f"foreground           {FX['term_fg']}\nbackground           {FX['term_bg']}\n"
-          f"selection_foreground {FX['term_bg']}\nselection_background {FX['term_accent']}\n"
-          f"cursor               {FX['term_accent']}\ncursor_text_color    {FX['term_bg']}\n"
-          f"url_color            {TERM['bright'][6]}\nmark1_background     {TERM['normal'][3]}\nmark1_foreground     {FX['term_bg']}\n"
-          + "".join(f"color{i:<3}{x}\n" for i, x in enumerate(ansi)))
-
-    def tc(h, bold=False):
-        r, g, b, _ = parse(h)
-        return f"{'1;' if bold else ''}38;2;{r};{g};{b}"
-    red, green, yellow, blue, magenta, cyan, white = TERM["normal"][1:8]
-    dim, bright = FX["term_dim"], FX["term_bright"]
-    ls = {"di": tc(cyan, True), "ln": tc(blue), "so": tc(magenta), "pi": tc(yellow), "ex": tc(green, True),
-          "bd": tc(yellow, True), "cd": tc(yellow, True), "or": tc(red), "mi": tc(red), "tw": tc(cyan), "ow": tc(cyan),
-          "st": tc(cyan)}
-    for col, exts in {yellow: "tar tgz zip zst xz gz bz2 7z rar deb rpm iso", magenta: "png jpg jpeg gif webp svg mp4 mkv webm mov mp3 flac ogg wav",
-                      white: "md txt pdf rst org tex", dim: "log bak tmp swp lock", blue: "toml yaml yml json jsonc conf ini lua"}.items():
+# ── 4. the console, and everything that lives on it ─────────────────────
+def shell_env():
+    """Shell colours as ANSI numbers, so they follow whichever console is loaded."""
+    ls = {"di": "1;36", "ln": "34", "so": "35", "pi": "33", "ex": "1;32", "bd": "1;33", "cd": "1;33", "or": "31",
+          "mi": "31", "tw": "36", "ow": "36", "st": "36"}
+    for code, exts in {"33": "tar tgz zip zst xz gz bz2 7z rar deb rpm iso", "35": "png jpg jpeg gif webp svg mp4 mkv webm mov mp3 flac ogg wav",
+                       "37": "md txt pdf rst org tex", "90": "log bak tmp swp lock", "34": "toml yaml yml json jsonc conf ini lua"}.items():
         for e in exts.split():
-            ls[f"*.{e}"] = tc(col)
+            ls[f"*.{e}"] = code
     env_vars = {
         "LS_COLORS": ":".join(f"{k}={v}" for k, v in ls.items()),
-        "EZA_COLORS": ":".join([f"da={tc(dim)}", f"uu={tc(cyan)}", f"gu={tc(blue)}", f"un={tc(yellow)}", f"sn={tc(bright)}",
-                                f"sb={tc(dim)}", f"ur={tc(cyan)}", f"uw={tc(yellow)}", f"ux={tc(green)}", f"ue={tc(green)}",
-                                f"ga={tc(green)}", f"gm={tc(yellow)}", f"gd={tc(red)}", f"xx={tc(dim)}", f"hd={tc(dim)};4"]),
-        "GREP_COLORS": f"ms={tc(yellow, True)}:mc={tc(yellow)}:sl=:cx=:fn={tc(cyan)}:ln={tc(green)}:bn={tc(green)}:se={tc(dim)}",
-        "GCC_COLORS": f"error={tc(red, True)}:warning={tc(yellow, True)}:note={tc(blue, True)}:caret={tc(cyan, True)}:locus={tc(dim)}:quote={tc(bright)}",
-        "JQ_COLORS": ":".join(["0;90", f"0;{tc(yellow)}", f"0;{tc(yellow)}", f"0;{tc(blue)}", f"0;{tc(green)}",
-                               f"1;{tc(white)}", f"1;{tc(white)}", f"1;{tc(cyan)}"]),
-        "FZF_DEFAULT_OPTS": (f"--color=bg+:{TERM['normal'][0]},fg:{FX['term_fg']},fg+:{bright},hl:{cyan},hl+:{cyan},"
-                             f"border:{TERM['bright'][0]},prompt:{cyan},pointer:{cyan},marker:{yellow},info:{dim},"
-                             f"header:{blue},spinner:{cyan},gutter:-1 --border=sharp --prompt='> ' --pointer='>' --marker='*'"),
+        "EZA_COLORS": "da=90:uu=36:gu=34:un=33:sn=97:sb=90:ur=36:uw=33:ux=32:ue=32:ga=32:gm=33:gd=31:xx=90:hd=90;4",
+        "GREP_COLORS": "ms=1;33:mc=33:sl=:cx=:fn=36:ln=32:bn=32:se=90",
+        "GCC_COLORS": "error=1;31:warning=1;33:note=1;34:caret=1;36:locus=90:quote=97",
+        "JQ_COLORS": "0;90:0;33:0;33:0;34:0;32:1;37:1;37:1;36",
+        "FZF_DEFAULT_OPTS": ("--color=bg+:0,fg:7,fg+:15,hl:6,hl+:14,border:8,prompt:6,pointer:6,marker:3,info:8,"
+                             "header:4,spinner:6,gutter:-1 --border=sharp --prompt='> ' --pointer='▌' --marker='▣'"),
         "BAT_THEME": "ansi",
         "GROFF_NO_SGR": "1",
         "LESS": "-R --use-color -Dd+c -Du+b",
-        "FUI_AUTOSUGGEST": f"fg={TERM['bright'][0]}",
+        "FUI_AUTOSUGGEST": "fg=8",
     }
     esc = lambda code: f"$'\\e[{code}m'"
-    termcap = {"LESS_TERMCAP_mb": esc(tc(yellow, True)), "LESS_TERMCAP_md": esc(tc(cyan, True)),
-               "LESS_TERMCAP_me": esc("0"), "LESS_TERMCAP_so": esc(f"{tc(FX['term_bg'])};48;2;{';'.join(map(str, parse(cyan)[:3]))}"),
-               "LESS_TERMCAP_se": esc("0"), "LESS_TERMCAP_us": esc(f"{tc(blue)};4"), "LESS_TERMCAP_ue": esc("0")}
+    termcap = {"LESS_TERMCAP_mb": esc("1;33"), "LESS_TERMCAP_md": esc("1;36"), "LESS_TERMCAP_me": esc("0"),
+               "LESS_TERMCAP_so": esc("30;46"), "LESS_TERMCAP_se": esc("0"), "LESS_TERMCAP_us": esc("4;34"),
+               "LESS_TERMCAP_ue": esc("0")}
     session = {"QT_QPA_PLATFORMTHEME": "qt6ct", "XCURSOR_THEME": D["cursor_theme"], "XCURSOR_SIZE": str(D["cursor_size"]),
                "ELECTRON_OZONE_PLATFORM_HINT": "auto", "FUI_THEME_DIR": "$HOME/.config/fui"}
-    lines = [banner(), "# Sourced by ~/.zshrc and ~/.zprofile. Terminal colours are the fixed console palette.\n"]
+    lines = [banner(), "# Sourced by ~/.zshrc and ~/.zprofile. Colours are ANSI numbers: they follow the console.\n"]
     lines += [f"export {k}=\"{v}\"\n" for k, v in session.items()]
     lines += ['case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac\n']
     lines += [f"export {k}=\"{v}\"\n" for k, v in env_vars.items()]
@@ -535,72 +585,145 @@ def console():
           banner() + "".join(f"{k}={v}\n" for k, v in session.items() if k != "FUI_THEME_DIR"))
     write("fui/.config/fui/tokens.json", json.dumps(TOK, indent=2) + "\n")
 
-    g = lambda x, *a: " ".join([x, *a])
-    write("fui/.config/git/fui.gitconfig", f"""{banner()}# Included from ~/.gitconfig by install.sh: the console palette.
+    write("fui/.config/git/fui.gitconfig", f"""{banner()}# Included from ~/.gitconfig by install.sh: ANSI colours, so git follows the console.
 [color]
 \tui = auto
 [color "diff"]
-\tmeta = {g(dim)}
-\tfrag = {g(cyan)}
-\tfunc = {g(dim)}
-\tcommit = {g(yellow)}
-\told = {g(red)}
-\tnew = {g(green)}
-\twhitespace = {g(red)} reverse
+\tmeta = 8
+\tfrag = 6
+\tfunc = 8
+\tcommit = 3
+\told = 1
+\tnew = 2
+\twhitespace = 1 reverse
 [color "status"]
-\theader = {g(dim)}
-\tbranch = {g(cyan, 'bold')}
-\tadded = {g(green)}
-\tchanged = {g(yellow)}
-\tuntracked = {g(magenta)}
+\theader = 8
+\tbranch = 6 bold
+\tadded = 2
+\tchanged = 3
+\tuntracked = 5
 [color "branch"]
-\tcurrent = {g(cyan, 'bold')}
-\tlocal = {g(white)}
-\tremote = {g(blue)}
+\tcurrent = 6 bold
+\tlocal = 7
+\tremote = 4
 [color "decorate"]
-\tHEAD = {g(cyan, 'bold')}
-\tbranch = {g(cyan)}
-\tremoteBranch = {g(blue)}
-\ttag = {g(yellow)}
+\tHEAD = 6 bold
+\tbranch = 6
+\tremoteBranch = 4
+\ttag = 3
 """)
-    t = {"main_bg": FX["term_bg"], "main_fg": FX["term_fg"], "title": bright, "hi_fg": cyan, "selected_bg": TERM["normal"][0],
-         "selected_fg": cyan, "inactive_fg": TERM["bright"][0], "graph_text": dim, "meter_bg": TERM["normal"][0],
-         "proc_misc": cyan, "cpu_box": TERM["bright"][0], "mem_box": TERM["bright"][0], "net_box": TERM["bright"][0],
-         "proc_box": TERM["bright"][0], "div_line": TERM["normal"][0], "temp_start": cyan, "temp_mid": yellow,
-         "temp_end": red, "cpu_start": cyan, "cpu_mid": blue, "cpu_end": magenta, "free_start": green, "free_mid": green,
-         "free_end": bright, "cached_start": blue, "cached_mid": blue, "cached_end": cyan, "available_start": cyan,
-         "available_mid": cyan, "available_end": bright, "used_start": yellow, "used_mid": yellow, "used_end": red,
-         "download_start": blue, "download_mid": cyan, "download_end": bright, "upload_start": magenta,
-         "upload_mid": magenta, "upload_end": bright, "process_start": cyan, "process_mid": blue, "process_end": magenta}
-    write("btop/.config/btop/themes/fui.theme", banner() + "".join(f'theme[{k}]="{v}"\n' for k, v in t.items()))
 
-    hl = {"Normal": (FX["term_fg"], None), "NormalFloat": (FX["term_fg"], TERM["normal"][0]), "FloatBorder": (dim, TERM["normal"][0]),
-          "Comment": (dim, None, "italic"), "Constant": (yellow, None), "String": (green, None), "Number": (yellow, None),
-          "Boolean": (yellow, None), "Identifier": (FX["term_fg"], None), "Function": (cyan, None), "Statement": (blue, None),
-          "Keyword": (blue, None), "Operator": (white, None), "PreProc": (magenta, None), "Type": (TERM["bright"][6], None),
-          "Special": (magenta, None), "Delimiter": (dim, None), "Todo": (FX["term_bg"], yellow, "bold"), "Error": (red, None),
-          "ErrorMsg": (red, None), "WarningMsg": (yellow, None), "LineNr": (TERM["bright"][0], None),
-          "CursorLineNr": (cyan, None, "bold"), "CursorLine": (None, "#0E1217"), "SignColumn": (None, None),
-          "Visual": (None, "#06353B"), "Search": (FX["term_bg"], yellow), "IncSearch": (FX["term_bg"], cyan),
-          "MatchParen": (yellow, None, "bold"), "Pmenu": (FX["term_fg"], TERM["normal"][0]), "PmenuSel": (FX["term_bg"], cyan),
-          "PmenuSbar": (None, TERM["normal"][0]), "PmenuThumb": (None, TERM["bright"][0]), "StatusLine": (bright, "#151A21"),
-          "StatusLineNC": (dim, TERM["normal"][0]), "WinSeparator": (TERM["bright"][0], None), "VertSplit": (TERM["bright"][0], None),
-          "TabLine": (dim, TERM["normal"][0]), "TabLineSel": (FX["term_bg"], cyan), "TabLineFill": (None, FX["term_bg"]),
-          "Title": (cyan, None, "bold"), "Directory": (cyan, None), "NonText": (TERM["bright"][0], None),
-          "Whitespace": (TERM["normal"][0], None), "Folded": (dim, TERM["normal"][0]), "DiffAdd": (green, None),
-          "DiffChange": (yellow, None), "DiffDelete": (red, None), "DiagnosticError": (red, None), "DiagnosticWarn": (yellow, None),
-          "DiagnosticInfo": (blue, None), "DiagnosticHint": (cyan, None), "Cursor": (FX["term_bg"], cyan)}
-    out = [banner("--"), "-- The console palette (fixed in every desktop theme).\n",
-           "vim.cmd('highlight clear')\nvim.o.background = 'dark'\nvim.g.colors_name = 'fui'\nlocal h = vim.api.nvim_set_hl\n"]
+
+def btop():
+    for ed in EDS:
+        c = console(ed)
+        a = c["ansi"]
+        red, green, yellow, blue, magenta, cyan = a[1:7]
+        dim, bright, box = c["dim"], c["bright"], a[8]
+        t = {"main_bg": c["bg"], "main_fg": c["fg"], "title": bright, "hi_fg": cyan, "selected_bg": c["raised"],
+             "selected_fg": cyan, "inactive_fg": dim, "graph_text": dim, "meter_bg": c["raised"],
+             "proc_misc": cyan, "cpu_box": box, "mem_box": box, "net_box": box, "proc_box": box,
+             "div_line": c["raised"], "temp_start": cyan, "temp_mid": yellow, "temp_end": red,
+             "cpu_start": c["signal_dim"], "cpu_mid": cyan, "cpu_end": a[14], "free_start": green, "free_mid": green,
+             "free_end": bright, "cached_start": blue, "cached_mid": blue, "cached_end": cyan, "available_start": cyan,
+             "available_mid": cyan, "available_end": bright, "used_start": yellow, "used_mid": yellow, "used_end": red,
+             "download_start": blue, "download_mid": cyan, "download_end": bright, "upload_start": magenta,
+             "upload_mid": magenta, "upload_end": bright, "process_start": c["signal_dim"], "process_mid": cyan,
+             "process_end": a[14]}
+        write(f"btop/.config/btop/themes/fui-{ed}.theme",
+              banner() + f"# fui // edition {ed}: fui mode links fui.theme here\n" + "".join(f'theme[{k}]="{v}"\n' for k, v in t.items()))
+
+
+def neovim():
+    """One colour file for every edition: it reads the edition fui mode saved."""
+    pal = {}
+    for ed in EDS:
+        c = console(ed)
+        a = c["ansi"]
+        pal[ed] = {"bg": c["bg"], "fg": c["fg"], "panel": c["panel"], "raised": c["raised"], "sel": c["signal_dim"],
+                   "dim": c["dim"], "bright": c["bright"], "red": a[1], "green": a[2], "yellow": a[3], "blue": a[4],
+                   "magenta": a[5], "signal": a[6], "signal_hi": a[14], "white": a[7], "on_signal": c["on_signal"],
+                   "ansi": a}
+    hl = {"Normal": ("fg", None), "NormalFloat": ("fg", "raised"), "FloatBorder": ("dim", "raised"),
+          "Comment": ("dim", None, "italic"), "Constant": ("yellow", None), "String": ("green", None), "Number": ("yellow", None),
+          "Boolean": ("yellow", None), "Identifier": ("fg", None), "Function": ("signal", None), "Statement": ("blue", None),
+          "Keyword": ("blue", None), "Operator": ("white", None), "PreProc": ("magenta", None), "Type": ("signal_hi", None),
+          "Special": ("magenta", None), "Delimiter": ("dim", None), "Todo": ("bg", "yellow", "bold"), "Error": ("red", None),
+          "ErrorMsg": ("red", None), "WarningMsg": ("yellow", None), "LineNr": ("dim", None),
+          "CursorLineNr": ("signal", None, "bold"), "CursorLine": (None, "panel"), "SignColumn": (None, None),
+          "Visual": (None, "sel"), "Search": ("bg", "yellow"), "IncSearch": ("on_signal", "signal"),
+          "MatchParen": ("yellow", None, "bold"), "Pmenu": ("fg", "raised"), "PmenuSel": ("on_signal", "signal"),
+          "PmenuSbar": (None, "raised"), "PmenuThumb": (None, "dim"), "StatusLine": ("bright", "raised"),
+          "StatusLineNC": ("dim", "panel"), "WinSeparator": ("dim", None), "VertSplit": ("dim", None),
+          "TabLine": ("dim", "raised"), "TabLineSel": ("on_signal", "signal"), "TabLineFill": (None, "bg"),
+          "Title": ("signal", None, "bold"), "Directory": ("signal", None), "NonText": ("dim", None),
+          "Whitespace": ("raised", None), "Folded": ("dim", "raised"), "DiffAdd": ("green", None),
+          "DiffChange": ("yellow", None), "DiffDelete": ("red", None), "DiagnosticError": ("red", None), "DiagnosticWarn": ("yellow", None),
+          "DiagnosticInfo": ("blue", None), "DiagnosticHint": ("signal", None), "Cursor": ("bg", "signal")}
+    lua_pal = "".join(f"  {ed} = {{ " + ", ".join(f"{k} = '{v}'" for k, v in p.items() if k != "ansi")
+                      + ", ansi = { " + ", ".join(f"'{x}'" for x in p["ansi"]) + " } },\n" for ed, p in pal.items())
+    renamed = ", ".join(f"{k} = '{v}'" for k, v in TOK["meta"].get("renamed", {}).items())
+    groups = ""
     for grp, spec in hl.items():
         fg, bg, *attr = spec
-        parts = [f"fg = '{fg}'"] if fg else []
-        parts.append(f"bg = '{bg}'" if bg else ("bg = 'NONE'" if grp in ("Normal", "SignColumn") else ""))
-        parts += [f"{a} = true" for a in attr]
-        out.append(f"h(0, '{grp}', {{ {', '.join(x for x in parts if x)} }})\n")
-    out += [f"vim.g.terminal_color_{i} = '{x}'\n" for i, x in enumerate(ansi)]
-    write("nvim/.config/nvim/colors/fui.lua", "".join(out))
+        parts = [f"fg = p.{fg}"] if fg else []
+        parts.append(f"bg = p.{bg}" if bg else ("bg = 'NONE'" if grp in ("Normal", "SignColumn") else ""))
+        parts += [f"{x} = true" for x in attr]
+        groups += f"h(0, '{grp}', {{ {', '.join(x for x in parts if x)} }})\n"
+    write("nvim/.config/nvim/colors/fui.lua", f"""{banner('--')}-- The console palette of the edition `fui mode` saved (light editions use a dark console).
+local P = {{
+{lua_pal}}}
+local renamed = {{ {renamed} }}
+local state = (os.getenv('XDG_STATE_HOME') or (os.getenv('HOME') .. '/.local/state')) .. '/fui/mode'
+local ed = '{EDS[0]}'
+local f = io.open(state, 'r')
+if f then ed = f:read('*l') or ed; f:close() end
+ed = renamed[ed] or ed
+local p = P[ed] or P['{EDS[0]}']
+vim.cmd('highlight clear')
+vim.o.background = 'dark'
+vim.g.colors_name = 'fui'
+local h = vim.api.nvim_set_hl
+{groups}for i, c in ipairs(p.ansi) do vim.g['terminal_color_' .. (i - 1)] = c end
+vim.g.fui_palette = p        -- init.lua colours lualine from this
+""")
 
+
+# ── 4b. small console apps: mpv, zathura, imv, satty (one file per edition) ──
+def console_apps():
+    for ed in EDS:
+        c, p = console(ed), E(ed)
+        a = c["ansi"]
+        write(f"mpv/.config/mpv/colors-{ed}.conf",
+              f"{banner()}# fui // edition {ed}: mpv's frame and on-screen text (mpv.conf includes fui-colors.conf)\n"
+              f'osd-color="{c["fg"]}"\nosd-border-color="{c["bg"]}"\nbackground-color="{c["bg"]}"\n')
+        rgba = lambda h, al: "rgba({},{},{},{})".format(*parse(h)[:3], al)
+        write(f"zathura/.config/zathura/colors-{ed}",
+              f"{banner()}# fui // edition {ed}: zathura's frame (zathurarc includes fui-colors)\n"
+              f'set default-bg "{c["bg"]}"\nset default-fg "{c["fg"]}"\n'
+              f'set statusbar-bg "{c["raised"]}"\nset statusbar-fg "{c["fg"]}"\n'
+              f'set inputbar-bg "{c["bg"]}"\nset inputbar-fg "{c["bright"]}"\n'
+              f'set notification-bg "{c["raised"]}"\nset notification-fg "{c["fg"]}"\n'
+              f'set notification-error-bg "{c["raised"]}"\nset notification-error-fg "{a[1]}"\n'
+              f'set notification-warning-bg "{c["raised"]}"\nset notification-warning-fg "{a[3]}"\n'
+              f'set highlight-color "{rgba(a[3], 0.40)}"\nset highlight-active-color "{rgba(c["signal"], 0.40)}"\n'
+              f'set completion-bg "{c["raised"]}"\nset completion-fg "{c["fg"]}"\n'
+              f'set completion-highlight-bg "{c["signal"]}"\nset completion-highlight-fg "{c["on_signal"]}"\n'
+              f'set recolor-lightcolor "{c["bg"]}"\nset recolor-darkcolor "{c["fg"]}"\n')
+        h = lambda x: x.lstrip("#").lower()
+        write(f"imv/.config/imv/config-{ed}",
+              f"{banner()}# fui // IMV, edition {ed}: images on the console (fui mode links config here)\n[options]\n"
+              f"background = {h(c['bg'])}\noverlay = false\noverlay_font = {F['mono']}:11\n"
+              f"overlay_text_color = {h(c['fg'])}\noverlay_background_color = {h(c['raised'])}\noverlay_background_alpha = cc\n"
+              f"title_text = imv · $imv_current_file ($imv_current_index/$imv_file_count)\n")
+        pal = ", ".join(f'"{x}"' for x in (p["signal"], p["counter"], p["bad"], p["ok"], p["info"], c["bright"]))
+        write(f"satty/.config/satty/config-{ed}.toml",
+              f"{banner()}# fui // SATTY, edition {ed}: annotating screenshots (SUPER+Print). fui mode links config.toml here.\n"
+              "[general]\nfullscreen = false\nearly-exit = true\ninitial-tool = \"arrow\"\ncopy-command = \"wl-copy\"\n"
+              "annotation-size-factor = 1.5\noutput-filename = \"~/Pictures/Screenshots/%Y%m%d-%H%M%S.png\"\n"
+              "save-after-copy = false\ndefault-hide-toolbars = false\n\n"
+              f"[font]\nfamily = \"{F['mono']}\"\nstyle = \"Bold\"\n\n"
+              f"# the signal first, then the counter colour and the status colours\n[color-palette]\npalette = [{pal}]\n")
 
 def fonts():
     fam = lambda fs: "".join(f"      <family>{x}</family>\n" for x in fs)
@@ -635,21 +758,39 @@ def fonts():
 
 
 # ── 5. Hyprland: token table and the optional screen finish ─────────────
+def lua_val(v):
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, str) and v.startswith("#"):
+        return json.dumps(hx8(v)[1:])
+    return json.dumps(v)
+
+
+def lua(d):
+    return "{ " + ", ".join(f"{k} = {lua_val(v)}" for k, v in d.items()) + " }"
+
+
 def hypr():
-    lua_val = lambda v: json.dumps(hx8(v)[1:] if isinstance(v, str) and v.startswith("#") else v)
-    lua = lambda d: "{ " + ", ".join(f"{k} = {lua_val(v)}" for k, v in d.items()) + " }"
-    modes = "".join(f"    {m} = {lua(P(m))},\n" for m in MODES)
-    desk = "".join(f"    {m} = {lua(D[m])},\n" for m in MODES)
+    eds = ""
+    for ed in EDS:
+        e = E(ed)
+        crt = {r: T(ed, "crt")[r] for r in CRT_SWAP}
+        eds += f"    {ed} = {{ scheme = {json.dumps(TOK['edition'][ed]['scheme'])}, crt = {lua(crt)}, deep = {lua({'void': T(ed, 'deep')['void']})},\n"
+        eds += "      " + ", ".join(f"{k} = {lua_val(v)}" for k, v in e.items()) + " },\n"
+    tiers = "".join(f"    {t} = {lua(TIER[t])},\n" for t in TIERS)
+    order = "{ " + ", ".join(json.dumps(x) for x in EDS) + " }"
+    renamed = lua(TOK["meta"].get("renamed", {}))
     write("hypr/.config/hypr/fui.lua", banner("--") + "return {\n"
-          f"  modes = {{\n{modes}  }},\n  desktop = {{\n{desk}  }},\n"
-          f"  order = {json.dumps(MODES).replace('[', '{ ').replace(']', ' }')},\n"
+          f"  editions = {{\n{eds}  }},\n  order = {order},\n  renamed = {renamed},\n  tiers = {{\n{tiers}  }},\n"
+          f"  desktop = {{ dark = {lua(D['dark'])}, light = {lua(D['light'])} }},\n"
           f"  cursor = {{ theme = {json.dumps(D['cursor_theme'])}, size = {D['cursor_size']} }},\n"
-          f"  geometry = {lua(G)},\n  opacity = {lua(O)},\n  blur = {lua(BL)},\n  screen = {lua(SCR)},\n"
+          f"  geometry = {lua({k: v for k, v in G.items()})},\n  opacity = {lua(O)},\n  blur = {lua(BL)},\n  screen = {lua(SCR)},\n"
           f"  font = {{ brand = {json.dumps(F['brand'])}, ui = {json.dumps(F['ui'])}, mono = {json.dumps(F['mono'])}, size = {F['size']} }},\n"
           f"  ease = {{ {', '.join(str(x) for x in MO['ease'])} }},\n}}\n")
     write("hypr/.config/hypr/screen.frag", f"""{banner('//')}
-// The optional screen finish (fui screen toggle): a faint vignette, and scanlines /
-// phosphor stripes only if tokens.toml asks for them. No time uniform: it never forces a redraw.
+// The optional screen finish (fui screen toggle; lcd and deep only, never on a real tube):
+// a faint vignette, and scanlines only if tokens.toml asks for them (at most 0.15).
+// No time uniform: it never forces a redraw.
 #version 300 es
 precision mediump float;
 in vec2 v_texcoord;
@@ -659,10 +800,7 @@ uniform sampler2D tex;
 void main() {{
     vec4 c = texture(tex, v_texcoord);
     float row = mod(floor(gl_FragCoord.y), 3.0);
-    float col = mod(floor(gl_FragCoord.x), 3.0);
-    c.rgb *= (row < 0.5) ? {1 - SCR['scanline']:.4f} : 1.0;
-    vec3 stripe = (col < 0.5) ? vec3(1.0, 0.0, 0.0) : ((col < 1.5) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0));
-    c.rgb = mix(c.rgb, c.rgb * (0.85 + 0.45 * stripe), {SCR['phosphor']:.4f});
+    c.rgb *= (row < 0.5) ? {1 - min(SCR['scanline'], 0.15):.4f} : 1.0;
     vec2 d = (v_texcoord - 0.5) * 2.0;
     float v = smoothstep(0.62 * 1.4142, 1.4142, length(d));
     c.rgb *= 1.0 - {SCR['vignette']:.4f} * v;
@@ -671,24 +809,40 @@ void main() {{
 """)
 
 
-# ── 6. Firefox start page: the intranet portal ──────────────────────────
+# ── 6. the start page: the intranet portal, one file for every edition ──
 def startpage():
     tpl = (ROOT / "theme/templates/start.html.in").read_text()
     art = lattice()
-    for m in MODES:
-        p = P(m)
-        values = {**{k: css(v) for k, v in p.items()}, "mode": m, "scheme": "dark" if m == "night" else "light",
-                  "lines": svg_lines(art, css(p["arc"]).replace(" ", "")), "beads": svg_beads(art, css(p["bead"]).replace(" ", "")),
-                  "font_brand": F["brand"], "font_ui": F["ui"], "font_mono": F["mono"],
-                  **{f"brand_{k}": v for k, v in BR.items()}, "mark": brand_mark_svg(p["accent"], p["text"])}
-        html = re.sub(r"\{\{(\w+)\}\}", lambda mt: values[mt.group(1)], tpl)
-        write(f"fui/.config/fui/start/start-{m}.html", html.replace("<!--BANNER-->", banner("<!--").strip()))
+    keys = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint", "signal",
+            "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info", "glass", "arc", "bead"]
+    d0 = E(EDS[0])
+    blocks = [":root { color-scheme: dark; " + " ".join(f"--{ident(k)}: {css(d0[k])};" for k in keys) + " }"]
+    for ed in EDS:
+        p, c = E(ed), T(ed, "crt")
+        dp = TOK["edition"][ed]["deep"]
+        blocks.append(f'html[data-theme="{ed}"] {{ color-scheme: {TOK["edition"][ed]["scheme"]};\n  '
+                      + " ".join(f"--{ident(k)}: {css(p[k])};" for k in keys) + " }")
+        blocks.append(f'html[data-theme="{ed}"][data-display="crt"] {{ '
+                      + " ".join(f"--{ident(k)}: {css(c[k])};" for k in CRT_SWAP if k in keys)
+                      + f" --glass: {css(c['panel'])}; --hair: {TIER['crt']['hair']}px; --stripe: {TIER['crt']['stripe']}px; }}")
+        blocks.append(f'html[data-theme="{ed}"][data-display="deep"] {{ --void: {css(T(ed, "deep")["void"])}; }}')
+        blocks.append(f'@media (color-gamut: p3) {{ html[data-theme="{ed}"]:not([data-display="crt"]) {{ --signal: {dp["signal_p3"]}; }} }}')
+    marks = "".join(f'<span class="mark" data-for="{ed}">{brand_mark_svg(E(ed)["signal"], E(ed)["ink"])}</span>' for ed in EDS)
+    marks_css = " ".join(f'html[data-theme="{ed}"] .mark {{ display: none; }} html[data-theme="{ed}"] .mark[data-for="{ed}"] {{ display: inline-block; }}'
+                         for ed in EDS)
+    values = {"palettes": "\n  ".join(blocks), "default": EDS[0], "marks_css": marks_css,
+              "lines": svg_lines(art, "currentColor"), "beads": svg_beads(art, "currentColor"),
+              "font_brand": F["brand"], "font_ui": F["ui"], "font_mono": F["mono"], "marks": marks,
+              "hair": f"{TIER['lcd']['hair']}px", "stripe": f"{TIER['lcd']['stripe']}px",
+              **{f"brand_{k}": v for k, v in BR.items()}}
+    html = re.sub(r"\{\{(\w+)\}\}", lambda mt: values[mt.group(1)], tpl)
+    write("fui/.config/fui/start/start.html", html.replace("<!--BANNER-->", banner("<!--").strip()))
 
 
-def brand_mark_svg(accent, ink, size=40):
-    """The company mark: a square plate with a notched corner, three bars stepping up (an F
-    read as a rising chart). Original geometry; drawn the same everywhere."""
-    a, k = css(accent), css(ink)
+def brand_mark_svg(signal, ink, size=40):
+    """The institution's mark: a square plate with a notched corner (a chamfer) and three bars
+    stepping down, the top one in the signal. Survives 1-bit rendering at 16 px."""
+    a, k = css(signal), css(ink)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="{size}" height="{size}" aria-hidden="true">'
             f'<path d="M2 2H30L38 10V38H2Z" fill="none" stroke="{k}" stroke-width="2"/>'
             f'<rect x="9" y="11" width="20" height="4" fill="{a}"/><rect x="9" y="19" width="14" height="4" fill="{k}"/>'
@@ -697,50 +851,67 @@ def brand_mark_svg(accent, ink, size=40):
 
 # ── 7. docs and web tokens ──────────────────────────────────────────────
 def docs():
-    keys_ = list(TOK["mode"][MODES[0]].keys())
-    rows = "".join(f"| `{k}` | " + " | ".join(f"`{TOK['mode'][m][k]}`" for m in MODES) + " |\n" for k in keys_)
-    fixed = "".join(f"| `{k}` | `{v}` |\n" for k, v in FX.items())
-    term = "".join(f"| {i} | `{TERM['normal'][i]}` | `{TERM['bright'][i]}` |\n" for i in range(8))
+    head = " | ".join(EDS)
+    rows = "".join(f"| `{k}` | " + " | ".join(f"`{TOK['edition'][ed][k]}`" for ed in EDS) + " |\n" for k in ROLES)
+    crt = "".join(f"| {ed} | " + " · ".join(f"{k} `{v}`" for k, v in TOK["edition"][ed]["crt"].items())
+                  + f" | `{TOK['edition'][ed]['deep']['signal_p3']}` |\n" for ed in EDS)
+    tiers = "".join(f"| {t} | " + " | ".join(str(TIER[t][k]).lower() for k in ("hair", "edge", "stripe", "border", "inset", "glass", "finish", "glow", "protect")) + " |\n" for t in TIERS)
+    cons = "".join(f"| {ed} | " + " ".join(f"`{x}`" for x in console(ed)["ansi"]) + " |\n" for ed in EDS)
     crows, _ = contrast_rows()
     write("theme/PALETTE.md", f"""<!-- GENERATED by theme/build.py from theme/tokens.toml. Edit the tokens, not this file. -->
 # fui palette
 
-Corporate sci-fi: a company workstation a few decades out. Three themes; only the colour
-changes. `fui mode toggle` (SUPER+SHIFT+T) cycles {' → '.join(MODES)}.
+Eight editions, each a complete palette named for its one signal colour; three display tiers.
+`fui mode toggle` (SUPER+SHIFT+T) cycles {' → '.join(EDS)}; `fui display` picks the tier.
 Source of truth: [`tokens.toml`](tokens.toml). Design rules: [`DESIGN.md`](DESIGN.md).
 
-## Themes
-| Token | {' | '.join(MODES)} |
-|---|{'---|' * len(MODES)}
+## Editions (lcd baseline)
+| Role | {head} |
+|---|{'---|' * len(EDS)}
 {rows}
-## Fixed (every theme)
-| Token | Value |
-|---|---|
-{fixed}
-## The console (every theme)
-| # | normal | bright |
+## Tier overrides
+| Edition | crt | deep signal (Display P3) |
 |---|---|---|
-{term}
-## Contrast (WCAG 2)
-`theme/build.py --check` fails when a pair drops below its minimum.
+{crt}
+On deep, dark editions use true black (`void`) outside the panels.
 
-| Pair | Min | {' | '.join(MODES)} |
-|---|---|{'---|' * len(MODES)}
+| Tier | hair | edge | stripe | border | inset | glass | finish | glow | protect |
+|---|---|---|---|---|---|---|---|---|---|
+{tiers}
+## The console
+Colours 0–15; light editions keep a dark console.
+
+| Edition | 0 … 15 |
+|---|---|
+{cons}
+## Contrast (WCAG 2)
+`theme/build.py --check` fails when a pair drops below its minimum. Every console colour
+(1–15) is also held at 4.5:1 on its background.
+
+| Pair | Min | {head} |
+|---|---|{'---|' * len(EDS)}
 {chr(10).join(crows)}
 
 ## Type
-| Role | Face |
+| Voice | Face |
 |---|---|
-| the company name, headings, the clock | {F['brand']} |
-| interface text | {F['ui']} |
-| data, codes, terminals | {F['mono']} |
+| brand: the institution, the clock, display numerals | {F['brand']} |
+| interface: controls and prose | {F['ui']} |
+| data: values, codes, labels, terminals | {F['mono']} |
 """)
-    css_root = "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in {**FX, **TOK['mode'][MODES[0]]}.items())
-    css_root += "".join(f"  --fui-{ident(k)}: {v}px;\n" for k, v in G.items())
-    themed = "".join(f":root[data-theme=\"{m}\"] {{\n" + "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in TOK["mode"][m].items()) + "}\n"
-                     for m in MODES)
-    write("theme/web/fui-tokens.css", f"{banner('/*')}:root {{\n{css_root}}}\n{themed}")
-    write("fui/.local/share/fui/brand/mark.svg", brand_mark_svg(TOK["mode"][MODES[0]]["accent"], TOK["mode"][MODES[0]]["text"], 256) + "\n")
+    root = "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in E(EDS[0]).items())
+    root += "".join(f"  --fui-{ident(k)}: {v}px;\n" for k, v in G.items() if isinstance(v, int))
+    root += f"  --fui-hair: 1px;\n  --fui-stripe: 3px;\n  --fui-ease: cubic-bezier({', '.join(str(x) for x in MO['ease'])});\n"
+    themed = ""
+    for ed in EDS:
+        themed += f":root[data-theme=\"{ed}\"] {{\n" + "".join(f"  --fui-{ident(k)}: {css(v)};\n" for k, v in E(ed).items()) + "}\n"
+        themed += (f":root[data-theme=\"{ed}\"][data-display=\"crt\"] {{ "
+                   + " ".join(f"--fui-{ident(r)}: {css(T(ed, 'crt')[r])};" for r in CRT_SWAP) + " --fui-hair: 2px; --fui-stripe: 4px; }\n")
+        themed += (f"@media (color-gamut: p3) {{ :root[data-theme=\"{ed}\"]:not([data-display=\"crt\"]) "
+                   f"{{ --fui-signal: {TOK['edition'][ed]['deep']['signal_p3']}; }} }}\n")
+    themed += "@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0ms !important; } }\n"
+    write("theme/web/fui-tokens.css", f"{banner('/*')}:root {{\n{root}}}\n{themed}")
+    write("fui/.local/share/fui/brand/mark.svg", brand_mark_svg(E(EDS[0])["signal"], E(EDS[0])["ink"], 256) + "\n")
 
 
 # ── 8. the key reference, read from hyprland.lua's comments ─────────────
@@ -764,17 +935,35 @@ def keys():
           f"| Keys | Does |\n|---|---|\n{table}")
 
 
+# ── 9. the bar's segment meters ─────────────────────────────────────────
+def meters():
+    """Waybar picks icon value / (100 / count) in whole numbers, clamped to the last icon. With
+    100 icons that is the value itself, so each icon shows the segments rounded DOWN and a
+    meter never overstates; the last icon (99 % and up) is the full meter."""
+    n = G["meter"]
+    seg = lambda v: n if v >= 99 else v * n // 100
+    icons = ["▮" * seg(v) + "▯" * (n - seg(v)) for v in range(100)]
+    arr = json.dumps(icons, ensure_ascii=False)
+    write("waybar/.config/waybar/meters.jsonc",
+          f"// {banner('').strip()}\n// The bar's segment meters ({n} segments, rounded down). config.jsonc includes this.\n"
+          f'{{\n  "pulseaudio": {{ "format-icons": {{ "default": {arr} }} }},\n'
+          f'  "battery": {{ "format-icons": {arr} }},\n  "backlight": {{ "format-icons": {arr} }}\n}}\n')
+
 
 # ── run ─────────────────────────────────────────────────────────────────
 colour_includes()
 gtk()
 qt()
-console()
+shell_env()
+btop()
+console_apps()
+neovim()
 fonts()
 hypr()
 startpage()
 docs()
 keys()
+meters()
 
 _, failures = contrast_rows()
 if CHECK:

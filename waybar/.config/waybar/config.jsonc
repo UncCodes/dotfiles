@@ -1,13 +1,14 @@
 // fui // WAYBAR: the status rail
-// A company workstation's rail: the brand badge, numbered workspace segments (the current
-// one underlined in the accent), the focused window, labelled telemetry and the clock.
-// Colours come from style.css (through fui-colors.css, one file per theme); labels only
-// dim with alpha, so they suit every theme. `fui bar` starts this file, or
-// config-compact.jsonc on screens narrower than 1400 px.
+// The institution's badge, index segments for the workspaces (the current one underlined in
+// the signal), the focused window, labelled readouts with segment meters, and the clock.
+// Colours come from style.css (roles, one file per edition); labels only dim with alpha, so
+// they suit every edition. `fui bar` starts this file, or config-compact.jsonc on screens
+// narrower than 1400 px, through a small file that sets the margins for the display tier.
 {
+  "include": ["~/.config/waybar/meters.jsonc"],
   "layer": "top",
   "position": "top",
-  "height": 34,
+  "height": 32,
   "margin-top": 8,
   "margin-left": 12,
   "margin-right": 12,
@@ -15,10 +16,10 @@
 
   "modules-left":   ["custom/brand", "hyprland/workspaces"],
   "modules-center": ["hyprland/window"],
-  "modules-right":  ["custom/rec", "mpris", "custom/updates", "cpu", "memory", "network", "pulseaudio",
+  "modules-right":  ["custom/rec", "mpris", "custom/updates", "cpu", "memory", "network", "pulseaudio", "battery",
                      "hyprland/language", "custom/sound", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 
-  // the brand badge: the company in Michroma; click for the command palette
+  // the badge: the institution in the brand voice; click for the command palette
   "custom/brand": {
     "exec": "~/.local/bin/fui brand --bar",
     "interval": "once",
@@ -26,7 +27,7 @@
     "on-click": "~/.local/bin/fui palette"
   },
 
-  // workspace segments: 01 02 03 ..., the current one underlined in the accent
+  // workspace index segments: 01 02 03 ..., the current one underlined in the signal
   "hyprland/workspaces": {
     "format": "{icon}",
     "format-icons": { "1": "01", "2": "02", "3": "03", "4": "04", "5": "05", "6": "06", "7": "07", "8": "08", "9": "09", "default": "{name}" },
@@ -67,6 +68,8 @@
     "format": "<span alpha='60%' size='small' letter_spacing='1600'>CPU</span> {usage:02}%",
     "interval": 2,
     "states": { "warning": 70, "critical": 90 },
+    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>CPU WARN</span> {usage:02}%",
+    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>CPU HIGH</span> {usage:02}%",
     "on-click": "~/.local/bin/fui tui btop"
   },
 
@@ -74,27 +77,41 @@
     "format": "<span alpha='60%' size='small' letter_spacing='1600'>MEM</span> {percentage:02}%",
     "interval": 4,
     "states": { "warning": 75, "critical": 90 },
+    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>MEM WARN</span> {percentage:02}%",
+    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>MEM HIGH</span> {percentage:02}%",
     "tooltip-format": "{used:0.1f} / {total:0.1f} GiB",
     "on-click": "~/.local/bin/fui tui btop"
   },
 
   "network": {
-    "format-ethernet": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> eth",
-    "format-wifi": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> {signalStrength}%",
-    "format-disconnected": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> offline",
+    "format-ethernet": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> ETH",
+    "format-wifi": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> {signalStrength:02}%",
+    "format-disconnected": "<span alpha='60%' size='small' letter_spacing='1600'>NET</span> OFFLINE",
     "tooltip-format": "{essid} {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
     "interval": 5,
     "on-click": "~/.local/bin/fui tui nmtui",
     "on-click-right": "nm-connection-editor"
   },
 
+  // a segment meter (meters.jsonc: rounded down, never more than the true value) and the number
   "pulseaudio": {
-    "format": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> {volume:02}%",
-    "format-muted": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> mute",
+    "format": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> {icon} {volume:02}%",
+    "format-muted": "<span alpha='60%' size='small' letter_spacing='1600'>VOL</span> ▯▯▯▯▯ MUTE",
     "on-click": "~/.local/bin/fui tui wiremix",
     "on-click-middle": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "scroll-step": 5
+  },
+
+  // shown only where there is a battery; WARN and LOW are words, not just a colour
+  "battery": {
+    "format": "<span alpha='60%' size='small' letter_spacing='1600'>BAT</span> {icon} {capacity:02}%",
+    "format-charging": "<span alpha='60%' size='small' letter_spacing='1600'>BAT</span> {icon} {capacity:02}% CHG",
+    "format-warning": "<span alpha='60%' size='small' letter_spacing='1600'>BAT WARN</span> {icon} {capacity:02}%",
+    "format-critical": "<span alpha='60%' size='small' letter_spacing='1600'>BAT LOW</span> {icon} {capacity:02}%",
+    "states": { "warning": 20, "critical": 10 },
+    "tooltip-format": "{timeTo} · {power:.1f} W",
+    "interval": 30
   },
 
   "hyprland/language": {
@@ -110,7 +127,7 @@
     "tooltip": false
   },
 
-  // the theme and its name; click cycles night → concrete → lab
+  // the edition and the display tier; click cycles the editions
   "custom/mode": {
     "exec": "~/.local/bin/fui mode status --bar",
     "interval": "once",
@@ -136,7 +153,7 @@
     "spacing": 8
   },
 
-  // the clock in the brand face, the date small beside it
+  // the clock in the brand voice, the date small beside it (24-hour; ISO in the alternate view)
   "clock": {
     "format": "{:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
     "format-alt": "{:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",

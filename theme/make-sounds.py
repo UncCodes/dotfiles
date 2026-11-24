@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make the fui sound theme: crisp synthetic interface cues for a company workstation.
+"""Make the fui sound theme: crisp synthetic interface cues for an issued workstation.
 
 Enveloped sine and triangle notes, a short filtered feedback echo for a clean tail, and a
 low swell under the sign-in arpeggio. Rendered to Ogg Vorbis under the freedesktop sound
@@ -142,7 +142,7 @@ SOUNDS = {
     "select":  lambda: sound(arpeggio([880, 1318.5], 0.07, 0.42, 0.07), 1.3),
     # something opened
     "open":    lambda: sound(arpeggio([1174.7, 1568], 0.045, 0.12, 0.05, False), 0.35),
-    # the theme changing: a quick filtered rise
+    # the edition changing: a quick filtered rise
     "move":    lambda: sound([(tone("sine", 600, 1200, 0.01, 0.18, 0.05), 0, True)], 0.9),
     "unmove":  lambda: sound([(tone("sine", 1200, 600, 0.01, 0.18, 0.05), 0, True)], 0.9),
     # signed in: an ascending major arpeggio over a low swell

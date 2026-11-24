@@ -3,24 +3,24 @@
 
   python3 theme/make-boot.py OUTDIR
 writes
-  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the company network on the night
-                     floor, the brand mark and name, a slim accent progress line that fills as
-                     the system starts, a status line, and a passphrase field when one is asked
+  OUTDIR/plymouth/   fui.plymouth, fui.script and images: the institution's network on the
+                     first edition's floor, the mark and name, a 4 px signal progress line that
+                     fills as the system starts, a status line, and a passphrase field when asked
   OUTDIR/console/    issue (the sign-in banner), vtrgb (the console palette for setvtrgb) and
                      the systemd unit that applies it
 Needs Pillow; fonts are looked up with fc-match (Michroma, Inter, JetBrains Mono).
 """
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-TOK = tomllib.loads((HERE / "tokens.toml").read_text())
-C = {**TOK["fixed"], **TOK["mode"]["night"]}         # the splash is always the night theme
+from palette import EDS, TOK, E, console  # noqa: E402
+
+C = E(EDS[0])                                         # the splash: the first edition (cyan)
 BR = TOK["brand"]
 F = TOK["font"]
 
@@ -45,28 +45,28 @@ def font(family, size, fallback="DejaVu Sans Mono"):
 
 
 def masthead():
-    """The centre of the splash: the mark, the company, the division, a status line."""
+    """The centre of the splash: the mark, the institution, the division, a status line."""
     W, H = 640, 260
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    mark_png = HERE.parent / "fui/.local/share/fui/brand/mark-night.png"
+    mark_png = HERE.parent / f"fui/.local/share/fui/brand/mark-{EDS[0]}.png"
     if mark_png.exists():
         m = Image.open(mark_png).convert("RGBA").resize((64, 64), Image.LANCZOS)
         img.alpha_composite(m, ((W - 64) // 2, 10))
-    d.text((W / 2, 112), BR["name"], font=font(F["brand"], 26), fill=rgba(C["text"]), anchor="mm")
-    d.text((W / 2, 146), BR["division"], font=font(F["ui"] + ":semibold", 12), fill=rgba(C["muted"]), anchor="mm")
-    d.text((W / 2, 236), "INITIALIZING WORKSTATION", font=font(F["mono"], 12), fill=rgba(C["faint"]), anchor="mm")
+    d.text((W / 2, 112), BR["name"], font=font(F["brand"], 26), fill=rgba(C["ink"]), anchor="mm")
+    d.text((W / 2, 146), BR["division"], font=font(F["mono"], 12), fill=rgba(C["muted"]), anchor="mm")
+    d.text((W / 2, 236), "STARTING WORKSTATION", font=font(F["mono"], 12), fill=rgba(C["muted"]), anchor="mm")
     return img
 
 
 def track(width=360, height=4):
-    """The progress line: a hairline track and its accent fill."""
-    t = Image.new("RGBA", (width, height), rgba(C["line"]))
-    f = Image.new("RGBA", (width, height), rgba(C["accent"]))
+    """The progress line: a rule-coloured track and its signal fill, square ends."""
+    t = Image.new("RGBA", (width, height), rgba(C["rule"]))
+    f = Image.new("RGBA", (width, height), rgba(C["signal"]))
     return t, f
 
 
-SCRIPT = r"""// fui // Plymouth: the company masthead over the network (made by theme/make-boot.py)
+SCRIPT = r"""// fui // Plymouth: the institution's masthead over the network (made by theme/make-boot.py)
 Window.SetBackgroundTopColor(%(bg)s);
 Window.SetBackgroundBottomColor(%(bg)s);
 sw = Window.GetWidth(); sh = Window.GetHeight();
@@ -128,27 +128,28 @@ def main(out):
     ply.mkdir(parents=True, exist_ok=True)
     con.mkdir(parents=True, exist_ok=True)
 
-    # the background: the night backdrop (the network), rendered for a 1920x1080 splash
-    wall = HERE.parent / "hypr/.config/hypr/wallpaper-night.png"
+    # the background: the fallback backdrop (the network, first edition), for a 1920x1080 splash
+    wall = HERE.parent / "hypr/.config/hypr/wallpaper.png"
     if wall.exists():
         Image.open(wall).convert("RGB").resize((1920, 1080), Image.LANCZOS).save(ply / "background.png")
     else:
-        Image.new("RGB", (1920, 1080), rgba(C["bg"])[:3]).save(ply / "background.png")
+        Image.new("RGB", (1920, 1080), rgba(C["floor"])[:3]).save(ply / "background.png")
     masthead().save(ply / "masthead.png")
     t, f = track()
     t.save(ply / "track.png")
     f.save(ply / "track-fill.png")
     field = Image.new("RGBA", (300, 36), (0, 0, 0, 0))
-    ImageDraw.Draw(field).rounded_rectangle((0, 0, 299, 35), radius=4, fill=rgba(C["well"]), outline=rgba(C["line_hi"]))
+    ImageDraw.Draw(field).rounded_rectangle((0, 0, 299, 35), radius=2, fill=rgba(C["well"]), outline=rgba(C["edge"]))
     field.save(ply / "field.png")
-    (ply / "fui.script").write_text(SCRIPT % {"bg": plyrgb(C["bg"]), "muted": plyrgb(C["muted"]), "text": plyrgb(C["text"])})
+    (ply / "fui.script").write_text(SCRIPT % {"bg": plyrgb(C["floor"]), "muted": plyrgb(C["muted"]), "text": plyrgb(C["ink"])})
     (ply / "fui.plymouth").write_text(
-        "[Plymouth Theme]\nName=fui\nDescription=The fui company masthead over the network\nModuleName=script\n\n"
+        "[Plymouth Theme]\nName=fui\nDescription=The fui masthead over the network\nModuleName=script\n\n"
         "[script]\nImageDir=/usr/share/plymouth/themes/fui\nScriptFile=/usr/share/plymouth/themes/fui/fui.script\n")
 
     # consoles: the console palette, a sign-in banner
-    term = TOK["terminal"]["normal"] + TOK["terminal"]["bright"]
-    term[0] = TOK["fixed"]["term_bg"]
+    cons = console(EDS[0])
+    term = list(cons["ansi"])
+    term[0] = cons["bg"]
     chans = list(zip(*(rgba(c)[:3] for c in term)))
     (con / "vtrgb").write_text("\n".join(",".join(str(v) for v in ch) for ch in chans) + "\n")
     (con / "issue").write_text(f"\n\\e{{cyan}}{BR['name']}\\e{{reset}}  {BR['division']}\n"

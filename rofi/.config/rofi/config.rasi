@@ -1,9 +1,11 @@
 /* fui // ROFI: the launcher is a directory panel
- * A flat glass panel with a hairline edge: a header plate (the accent stripe, a tracked
- * capital title, an asset code on the right), a search field set into the panel, and flat
- * rows; the selected row takes the accent stripe and tint. Colours: fui-colors.rasi, a link
- * to colors-<theme>.rasi. The palette, power menu and key list reuse this panel with their
- * own titles (fui palette / power / keys pass -theme-str). */
+ * A flat panel with a hairline: a header plate (the signal stripe, a tracked capital title,
+ * a code on the right), a search field set into the panel with a prompt in the signal, and
+ * flat rows; the selected row takes the signal stripe and tint. Colours and strokes:
+ *   fui-colors.rasi  the edition (colors-<edition>.rasi)       fui mode
+ *   fui-tier.rasi    the display tier (tier-<tier>.rasi)       fui display
+ * The palette, session menu and key list reuse this panel with their own titles and codes
+ * (fui palette / power / keys pass -theme-str). */
 
 configuration {
   modi: "drun,run,window";
@@ -17,18 +19,19 @@ configuration {
 }
 
 @import "fui-colors.rasi"
+@import "fui-tier.rasi"
 
 * {
   background-color: transparent;
-  text-color: @text;
+  text-color: @ink;
   font: @font-ui;
 }
 
 window {
   width: 620px;
-  border: 1px solid;
-  border-color: @line-hi;
-  border-radius: 6px;
+  border: @frame;
+  border-color: @rule-hi;
+  border-radius: 4px;
   background-color: @glass;
 }
 
@@ -37,21 +40,21 @@ mainbox {
   spacing: 0;
 }
 
-/* the header plate: the accent stripe at its left */
+/* the header plate: the signal stripe at its left, the title, the code */
 titlebar {
   expand: false;
   orientation: horizontal;
   children: [ textbox-title, textbox-code ];
   padding: 10px 14px 10px 12px;
-  border: 0 0 0 3px;
-  border-color: @accent;
+  border: @stripe;
+  border-color: @signal;
   background-color: @panel;
 }
 textbox-title {
   content: "DIRECTORY";
   expand: true;
   font: @font-label;
-  text-color: @text;
+  text-color: @ink;
   vertical-align: 0.5;
 }
 textbox-code {
@@ -65,26 +68,27 @@ textbox-code {
 well {
   orientation: vertical;
   children: [ inputbar, message, listview ];
-  padding: 14px;
-  spacing: 10px;
-  border: 1px 0 0 0;
-  border-color: @line;
+  padding: 12px;
+  spacing: 8px;
+  border: @rule-top;
+  border-color: @rule;
 }
 
+/* the field: set in, a prompt in the signal */
 inputbar {
   children: [ prompt, entry ];
   spacing: 12px;
-  padding: 9px 12px;
-  border: 1px solid;
-  border-color: @line-hi;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border: @field;
+  border-color: @edge;
+  border-radius: 2px;
   background-color: @well;
 }
-prompt { text-color: @accent; font: @font-label; vertical-align: 0.5; }
+prompt { text-color: @signal; font: @font-label; vertical-align: 0.5; }
 entry {
   placeholder: "Search";
   placeholder-color: @muted;
-  cursor-color: @accent;
+  cursor-color: @signal;
   vertical-align: 0.5;
 }
 
@@ -100,19 +104,19 @@ listview {
   spacing: 2px;
 }
 
-/* rows: flat; the selected one takes the stripe and the accent tint */
+/* rows: flat; the selected one takes the stripe and the signal tint */
 element {
   padding: 7px 12px;
   spacing: 12px;
-  border: 0 0 0 3px;
+  border: @stripe;
   border-color: transparent;
-  border-radius: 4px;
+  border-radius: 2px;
   background-color: transparent;
-  text-color: @text;
+  text-color: @ink;
 }
-element normal.normal, element alternate.normal { background-color: transparent; text-color: @text; }
-element selected.normal, element selected.active { background-color: @accent-dim; text-color: @text; border-color: @accent; }
-element normal.active, element alternate.active { text-color: @accent; }
-element normal.urgent, element alternate.urgent, element selected.urgent { background-color: @bad; text-color: @white; }
+element normal.normal, element alternate.normal { background-color: transparent; text-color: @ink; }
+element selected.normal, element selected.active { background-color: @signal-dim; text-color: @ink; border-color: @signal; }
+element normal.active, element alternate.active { text-color: @signal; }
+element normal.urgent, element alternate.urgent, element selected.urgent { background-color: @bad; text-color: @on-bad; }
 element-icon { size: 20px; background-color: transparent; }
 element-text { vertical-align: 0.5; background-color: transparent; text-color: inherit; }

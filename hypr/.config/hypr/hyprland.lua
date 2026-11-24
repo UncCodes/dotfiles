@@ -1,22 +1,27 @@
 -- ┌─ fui // HYPRLAND (Lua config, Hyprland 0.57+) ─────────────────────────┐
--- │ Corporate sci-fi: a company workstation a few decades out. Windows are   │
--- │ flat engineered panels with a hairline edge (the focused one in the      │
--- │ theme's accent), no drop shadows, soft glass where it helps, the company │
--- │ network behind everything. Tokens: ~/.config/hypr/fui.lua.               │
+-- │ An instrument issued by an institution. Windows are flat panels with a   │
+-- │ hairline edge (the focused one in the edition's signal), no drop shadow, │
+-- │ glass where the display allows it, the institution's network behind      │
+-- │ everything. Colours come in editions (fui mode), drawn for the display   │
+-- │ tier (fui display: crt, lcd or deep). Tokens: ~/.config/hypr/fui.lua.    │
 -- │ Keys: SUPER+/ shows them all (fui keys reads the comments below).        │
 -- └─────────────────────────────────────────────────────────────────────────┘
 
--- ── tokens and the current theme ────────────────────────────────────────
+-- ── tokens, the edition and the display tier ────────────────────────────
 local HOME = os.getenv("HOME")
 local ok, T = pcall(dofile, HOME .. "/.config/hypr/fui.lua")
-if not ok or type(T) ~= "table" then        -- keeps Hyprland usable if fui.lua is missing
+if not ok or type(T) ~= "table" or type(T.editions) ~= "table" then   -- keeps Hyprland usable without fui.lua
     T = {
-        modes = { night = { bg = "07090CFF", panel = "0E1217FF", line = "232A33FF", line_hi = "36424FFF",
-                            accent = "00C2D1FF", accent_hi = "5EE4EEFF", on_accent = "00171AFF", text = "E6EBF0FF",
-                            muted = "8B96A3FF" } },
-        desktop = { night = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" } },
-        order = { "night" }, cursor = { theme = "Adwaita", size = 24 },
-        geometry = { radius = 6, border = 1, gaps_in = 6, gaps_out = 14 },
+        editions = { cyan = { scheme = "dark", void = "000000FF", floor = "07090CFF", panel = "0E1217FF",
+                              rule = "232A33FF", rule_hi = "36424FFF", ink = "E6EBF0FF", muted = "8B96A3FF",
+                              signal = "00C2D1FF", on_signal = "000000FF", bad = "FF5C6CFF", crt = {}, deep = {} } },
+        order = { "cyan" }, renamed = {},
+        tiers = { lcd = { hair = 1, edge = 1, stripe = 3, border = 1, inset = 0, glass = true, finish = true,
+                          glow = false, protect = false } },
+        desktop = { dark = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" },
+                    light = { gtk_base = "adw-gtk3", icon_theme = "Papirus-Light", scheme = "prefer-light" } },
+        cursor = { theme = "Adwaita", size = 24 },
+        geometry = { radius = 4, gaps_in = 6, gaps_out = 14 },
         opacity = { window_active = 0.98, window_inactive = 0.94 },
         blur = { size = 6, passes = 3, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
         screen = { on = false }, font = { brand = "Michroma", ui = "Inter", mono = "JetBrainsMono Nerd Font", size = 10 },
@@ -33,11 +38,21 @@ local function state(name, default)
     return v or default
 end
 
--- night, concrete or lab: fui mode (SUPER+SHIFT+T) writes the file and reloads Hyprland
-local mode = state("mode", T.order[1])
-if type(T.modes[mode]) ~= "table" then mode = T.order[1] end
-local C = T.modes[mode]
-local DESK = T.desktop[mode] or T.desktop[T.order[1]]
+-- the edition: fui mode (SUPER+SHIFT+T) writes the file and reloads Hyprland
+local edition = state("mode", T.order[1])
+edition = T.renamed[edition] or edition
+if type(T.editions[edition]) ~= "table" then edition = T.order[1] end
+-- the display tier: fui display resolves auto to crt, lcd or deep
+local tier = state("tier", "lcd")
+if type(T.tiers[tier]) ~= "table" then tier = "lcd" end
+local TI = T.tiers[tier]
+
+local C = {}
+for k, v in pairs(T.editions[edition]) do C[k] = v end
+for k, v in pairs(T.editions[edition][tier] or {}) do C[k] = v end     -- crt: black floor, solid panels
+if state("alert", "off") == "on" then C.signal = C.bad end              -- the alert takeover (fui alert)
+local DESK = T.desktop[C.scheme] or T.desktop.dark
+local inset = tonumber(state("inset", "0")) or 0                         -- crt: the safe inset in px
 
 local function rgba(hex8, a)                 -- "RRGGBBAA" (optionally with a new alpha) -> "rgba(...)"
     if a then return string.format("rgba(%s%02X)", hex8:sub(1, 6), math.floor(a * 255 + 0.5)) end
@@ -68,12 +83,13 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 -- ── autostart ───────────────────────────────────────────────────────────
 hl.on("hyprland.start", function()
     -- each falls back to the plain program if the fui command is missing
-    hl.exec_cmd(fui .. "mode apply --quiet")
-    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper-night.png -m fill") -- the network, live or still
+    hl.exec_cmd(fui .. "mode apply --quiet; " .. fui .. "display start")                       -- the edition; the tier of this screen
+    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper.png -m fill")      -- the network, live or still
     hl.exec_cmd(fui .. "bar || waybar")                                                           -- compact on small screens
     hl.exec_cmd("swaync")                                                                         -- notifications + control centre
     hl.exec_cmd("swayosd-server")                                                                 -- volume / brightness on screen
     hl.exec_cmd("hypridle")
+    hl.exec_cmd(fui .. "watch")                                                                   -- battery / heat: the alert takeover
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("wl-paste --watch cliphist store")
@@ -92,30 +108,38 @@ hl.on("hyprland.start", function()
 end)
 
 -- ── look ────────────────────────────────────────────────────────────────
-local screen_on = T.screen.on and state("screen", "on") ~= "off"
+local screen_on = T.screen.on and TI.finish and state("screen", "on") ~= "off"   -- never on a real tube
+local glow = TI.glow                                                              -- deep: one soft halo
 
 hl.config({
     general = {
         gaps_in  = T.geometry.gaps_in,
-        gaps_out = T.geometry.gaps_out,
-        border_size = T.geometry.border,
+        gaps_out = math.max(T.geometry.gaps_out, inset),
+        border_size = TI.border,
         col = {
-            -- the focused window: the accent; the others: a hairline
-            active_border   = { colors = { rgba(C.accent_hi), rgba(C.accent) }, angle = 90 },
-            inactive_border = rgba(C.line_hi),
+            -- the focused window: the signal; the others: a hairline
+            active_border   = rgba(C.signal),
+            inactive_border = rgba(C.rule_hi),
         },
         resize_on_border = true,
         layout = "dwindle",
     },
 
-    -- Engineered panels: a little glass, softly blurred, no drop shadows.
+    -- Flat panels: glass where the display allows it, no drop shadows. On deep screens the
+    -- focused window carries one soft halo in the signal (luminance, not blur soup).
     decoration = {
         rounding = T.geometry.radius,
-        active_opacity   = T.opacity.window_active,
-        inactive_opacity = T.opacity.window_inactive,
-        shadow = { enabled = false },
+        active_opacity   = TI.glass and T.opacity.window_active or 1.0,
+        inactive_opacity = TI.glass and T.opacity.window_inactive or 1.0,
+        shadow = {
+            enabled = glow,
+            range = 8,
+            render_power = 3,
+            color = rgba(C.signal, 0.30),
+            color_inactive = rgba(C.signal, 0.0),
+        },
         blur = {
-            enabled    = true,
+            enabled    = TI.glass,
             size       = T.blur.size,
             passes     = T.blur.passes,
             noise      = T.blur.noise,
@@ -131,19 +155,19 @@ hl.config({
 
     animations = { enabled = true },
 
-    -- window groups are tabs: flat plates, the current one in the accent
+    -- window groups are tabs: flat plates, the current one in the signal
     group = {
-        col = { border_active = rgba(C.accent), border_inactive = rgba(C.line_hi) },
+        col = { border_active = rgba(C.signal), border_inactive = rgba(C.rule_hi) },
         groupbar = {
             enabled = true,
             font_family = T.font.mono,
             font_size = 11,
             height = 18,
-            gradients = true,
-            rounding = 2,
+            gradients = false,
+            rounding = 0,
             render_titles = true,
-            col = { active = rgba(C.accent, 0.95), inactive = rgba(C.panel, 0.95) },
-            text_color = rgba(C.on_accent),
+            col = { active = rgba(C.signal), inactive = rgba(C.panel) },
+            text_color = rgba(C.on_signal),
             text_color_inactive = rgba(C.muted),
         },
     },
@@ -154,7 +178,7 @@ hl.config({
         disable_hyprland_logo    = true,
         disable_splash_rendering = true,
         force_default_wallpaper  = 0,
-        background_color         = rgba(C.bg),
+        background_color         = rgba(tier == "lcd" and C.floor or C.void),
         font_family              = T.font.mono,
     },
 
@@ -183,7 +207,7 @@ hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 3, bezier = "g
 -- ── window rules ────────────────────────────────────────────────────────
 -- every window, including apps installed later: the frame's radius and edge
 hl.window_rule({ name = "fui-geometry", match = { class = ".*" },
-    rounding = T.geometry.radius, border_size = T.geometry.border })
+    rounding = T.geometry.radius, border_size = TI.border })
 -- terminal tools opened from the bar or the keys (fui tui): floating, centred
 hl.window_rule({ name = "fui-tui", match = { class = "^fui-tui$" },
     float = true, size = "monitor_w*0.62 monitor_h*0.66", center = true })
@@ -203,9 +227,11 @@ hl.window_rule({ name = "fui-small-tools",
 hl.window_rule({ name = "fui-pip", match = { title = "^Picture-in-Picture$" },
     float = true, pin = true, size = "monitor_w*0.26 monitor_h*0.26", move = "monitor_w*0.72 monitor_h*0.70" })
 
--- ── glass under the bar, launcher, notifications and OSD ────────────────
-for _, ns in ipairs({ "waybar", "rofi", "swaync-control-center", "swaync-notification-window", "swayosd" }) do
-    hl.layer_rule({ name = "glass-" .. ns, match = { namespace = "^" .. ns .. "$" }, blur = true, ignore_alpha = 0.1 })
+-- ── glass under the bar, launcher, notifications and OSD (not on a tube) ─
+if TI.glass then
+    for _, ns in ipairs({ "waybar", "rofi", "swaync-control-center", "swaync-notification-window", "swayosd" }) do
+        hl.layer_rule({ name = "glass-" .. ns, match = { namespace = "^" .. ns .. "$" }, blur = true, ignore_alpha = 0.1 })
+    end
 end
 
 -- ── keys ────────────────────────────────────────────────────────────────
@@ -237,9 +263,11 @@ hl.bind(k("SHIFT + Tab"), hl.dsp.group.prev())                                  
 hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock"))                                -- lock
 hl.bind(k("X"), hl.dsp.exec_cmd(fui .. "power"))                                 -- power menu
 hl.bind(k("SHIFT + E"), hl.dsp.exit())                                           -- quit Hyprland
-hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- theme: night → concrete → lab
+hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- edition: the next one (cyan → amber → ... → lab)
+hl.bind(k("ALT + T"), hl.dsp.exec_cmd(fui .. "mode pick"))                       -- edition: pick one from a list
+hl.bind(k("SHIFT + D"), hl.dsp.exec_cmd(fui .. "display pick"))                  -- display tier: auto, crt, lcd or deep
 hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(fui .. "wallpaper toggle"))              -- live / still backdrop
-hl.bind(k("SHIFT + C"), hl.dsp.exec_cmd(fui .. "screen toggle"))                 -- screen finish (vignette) on / off
+hl.bind(k("SHIFT + C"), hl.dsp.exec_cmd(fui .. "screen toggle"))                 -- screen finish (vignette) on / off; lcd and deep only
 hl.bind(k("R"), hl.dsp.exec_cmd(fui .. "record toggle"))                         -- screen recording start / stop
 hl.bind("Print", hl.dsp.exec_cmd(fui .. "shot region"))                          -- screenshot a region (copied and saved)
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(fui .. "shot screen"))                  -- screenshot the screen

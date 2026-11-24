@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""Draw the fui backdrop: the company network on the theme's floor colour.
+"""Draw the fui backdrop: the institution's network on the edition's ground.
 
 The lattice (theme/lattice.py) is mapped onto the screen scaled to cover, centred, enlarged
-1.1x, fading from the top of the screen to the bottom: lines in the theme's arc colour,
+1.1x, fading from the top of the screen to the bottom: lines in the edition's arc colour,
 nodes in its bead colour. The live version sends data packets along the lines in the
-theme's accent, at eight speeds, each from its own starting point. No text, ever.
+signal, at eight speeds, each from its own starting point. No text, ever.
+
+The ground follows the display tier: the floor on lcd; true black (void) outside the panels
+on deep and on a tube (the light editions keep their floor, dimmed on crt).
 
 Usage:
-  python3 theme/make-wallpaper.py [--mode night|concrete|lab] [out.png] [width] [height]
-  python3 theme/make-wallpaper.py --live [--mode M] [--seconds N] out.mp4 [width] [height]
-  python3 theme/make-wallpaper.py --all          # the three stills into hypr/.config/hypr/
+  python3 theme/make-wallpaper.py [--edition E] [--tier T] [out.png] [width] [height]
+  python3 theme/make-wallpaper.py --live [--edition E] [--tier T] [--seconds N] out.mp4 [width] [height]
+  python3 theme/make-wallpaper.py --all     # the fallback still (first edition, lcd) into hypr/.config/hypr/
+`fui wallpaper` renders the current edition and tier at the screen's size into ~/.cache/fui.
 The live loop is seamless at its default length (56 s, every bead speed divides it).
 Needs Pillow (and ffmpeg for --live).
 """
 import math
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw
@@ -24,8 +27,8 @@ from PIL import Image, ImageChops, ImageDraw
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from lattice import OPACITY, SCALE, WIDTH, dash_points, lattice  # noqa: E402
+from palette import EDS, E, T, edition, is_dark  # noqa: E402
 
-TOK = tomllib.loads((HERE / "tokens.toml").read_text())
 HYPR = HERE.parent / "hypr/.config/hypr"
 
 LOOP = 56.0                                            # seconds: every speed below divides it
@@ -45,11 +48,18 @@ def fade(y, h):
     return 1.0 - 0.35 * (t / 0.5) if t <= 0.5 else 0.65 - 0.45 * ((t - 0.5) / 0.5)
 
 
+def ground(ed, tier):
+    """The wallpaper's ground: the floor on lcd; void on deep and crt for dark editions."""
+    if tier == "lcd" or not is_dark(ed):
+        return T(ed, tier)["floor"]
+    return T(ed, tier)["void"]
+
+
 class Scene:
-    def __init__(self, mode, W, H):
-        c = TOK["mode"][mode]
+    def __init__(self, mode, W, H, tier="lcd"):
+        c = E(mode)
         self.W, self.H = W, H
-        self.ground = rgba(c["bg"])[:3]
+        self.ground = rgba(ground(mode, tier))[:3]
         self.arc, self.bead, self.packet = rgba(c["arc"]), rgba(c["bead"]), rgba(c["packet"])
         self.art = lattice()
         vw, vh = self.art["view"]
@@ -104,8 +114,8 @@ def sprite(colour, alpha, size, S=4):
     return big.resize((n, n), Image.LANCZOS)
 
 
-def render_still(mode, out, W, H):
-    scene = Scene(mode, W, H)
+def render_still(mode, out, W, H, tier="lcd"):
+    scene = Scene(mode, W, H, tier)
     img = scene.still()
     # the data packets where they stand at t = 0
     br, bg, bb, ba = scene.packet
@@ -118,12 +128,12 @@ def render_still(mode, out, W, H):
             img.alpha_composite(sp, (px, py))
     out.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out, optimize=True)
-    print(f"wrote {out} ({W}x{H}, {mode})")
+    print(f"wrote {out} ({W}x{H}, {mode}, {tier})")
 
 
-def render_live(mode, out, W, H, seconds=LOOP, fps=24):
+def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd"):
     W, H = W // 2 * 2, H // 2 * 2
-    scene = Scene(mode, W, H)
+    scene = Scene(mode, W, H, tier)
     base = scene.still()
     br, bg, bb, ba = scene.packet
     LEVELS = 24                                     # fade quantised: sprites made once
@@ -167,22 +177,22 @@ def main(argv):
             return val
         return default
     live, every = flag("--live"), flag("--all")
-    mode = opt("--mode", TOK["meta"]["modes"][0])
+    mode = edition(opt("--edition", opt("--mode", EDS[0])))
+    tier = opt("--tier", "lcd")
     seconds = float(opt("--seconds", LOOP))
     if every:                        # --all [width] [height]: no output path
         args.insert(0, "")
     W = int(args[1]) if len(args) > 1 else 2560
     H = int(args[2]) if len(args) > 2 else 1440
     if every:
-        for m in TOK["meta"]["modes"]:
-            render_still(m, HYPR / f"wallpaper-{m}.png", W, H)
+        render_still(EDS[0], HYPR / "wallpaper.png", W, H)
         return 0
     if live:
         if not args:
             print("--live needs an output file", file=sys.stderr)
             return 2
-        return render_live(mode, Path(args[0]), W, H, seconds)
-    render_still(mode, Path(args[0]) if args else HYPR / f"wallpaper-{mode}.png", W, H)
+        return render_live(mode, Path(args[0]), W, H, seconds, tier=tier)
+    render_still(mode, Path(args[0]) if args else HYPR / f"wallpaper-{mode}-{tier}.png", W, H, tier)
     return 0
 
 

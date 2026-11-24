@@ -1,7 +1,7 @@
 // fui // Firefox preferences, written into each profile by `fui setup firefox`.
 // The stylesheets in chrome/ (userChrome.css, userContent.css) need the first one.
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
-// the company intranet (the fui start page) as the home page
+// the intranet (the fui start page) as the home page
 user_pref("browser.startup.homepage", "@START@");
 user_pref("browser.startup.page", 1);
 // pages follow the desktop theme

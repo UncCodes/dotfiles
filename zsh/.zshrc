@@ -29,7 +29,7 @@ alias update='yay -Syu'
 
 # ── tools ───────────────────────────────────────────────────────────────
 export EDITOR=nvim
-# colours for ls/eza/grep/less/man/fzf/jq/gcc/bat come from the theme tokens
+# colours for ls/eza/grep/less/man/fzf/jq/gcc/bat: ANSI numbers, so they follow the console
 [ -r ~/.config/fui/env.sh ] && source ~/.config/fui/env.sh
 
 command -v fzf >/dev/null && source <(fzf --zsh)

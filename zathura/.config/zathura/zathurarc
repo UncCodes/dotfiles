@@ -1,25 +1,7 @@
-# fui // ZATHURA: a document on paper, the frame on the console palette
+# fui // ZATHURA: a document on paper, the frame in the edition's console colours
+# (fui mode links fui-colors to colors-<edition>)
+include fui-colors
 set font "JetBrainsMono Nerd Font 10"
-set default-bg "#07090C"
-set default-fg "#D7DEE5"
-set statusbar-bg "#151A21"
-set statusbar-fg "#D7DEE5"
-set inputbar-bg "#07090C"
-set inputbar-fg "#F4F7FA"
-set notification-bg "#151A21"
-set notification-fg "#D7DEE5"
-set notification-error-bg "#151A21"
-set notification-error-fg "#FF5C6C"
-set notification-warning-bg "#151A21"
-set notification-warning-fg "#F2A93B"
-set highlight-color "rgba(242,169,59,0.40)"
-set highlight-active-color "rgba(0,194,209,0.40)"
-set completion-bg "#151A21"
-set completion-fg "#D7DEE5"
-set completion-highlight-bg "#00C2D1"
-set completion-highlight-fg "#07090C"
-set recolor-lightcolor "#07090C"
-set recolor-darkcolor "#D7DEE5"
 set recolor false
 set selection-clipboard clipboard
 set adjust-open width

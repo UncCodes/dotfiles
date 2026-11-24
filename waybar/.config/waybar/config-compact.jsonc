@@ -8,7 +8,7 @@
 
   "modules-left":   ["custom/brand", "hyprland/workspaces"],
   "modules-center": [],
-  "modules-right":  ["custom/rec", "cpu", "memory", "pulseaudio", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
+  "modules-right":  ["custom/rec", "cpu", "memory", "pulseaudio", "battery", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 
   "hyprland/workspaces": { "persistent-workspaces": { "*": 3 } }
 }

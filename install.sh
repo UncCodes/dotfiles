@@ -32,8 +32,9 @@ for arg in "$@"; do
   esac
 done
 
-ICE=$'\033[38;2;143;211;220m' AMB=$'\033[38;2;201;154;78m' RED=$'\033[38;2;204;115;120m'
-DIM=$'\033[38;2;125;138;143m' OFF=$'\033[0m'
+# ANSI colours, so the installer's output follows the console: the signal, warn, bad, faint
+ICE=$'\033[36m' AMB=$'\033[33m' RED=$'\033[31m'
+DIM=$'\033[90m' OFF=$'\033[0m'
 say() { printf '  %s\n' "$*"; }
 
 # ── step runner ─────────────────────────────────────────────────────────
@@ -217,9 +218,10 @@ fui_on_path() {
 }
 
 apply_mode() {
-  # the theme links (dark on a fresh install, otherwise whatever was chosen)
+  # the edition and display-tier links (cyan on lcd on a fresh install, otherwise what was chosen)
+  "$HOME/.local/bin/fui" display apply || return 1
   "$HOME/.local/bin/fui" mode apply --quiet || return 1
-  NOTE="$("$HOME/.local/bin/fui" mode status) theme"
+  NOTE="$("$HOME/.local/bin/fui" mode status) edition, $("$HOME/.local/bin/fui" display status | cut -d' ' -f1) tier"
 }
 
 login_shell() {
