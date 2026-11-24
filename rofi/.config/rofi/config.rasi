@@ -41,6 +41,7 @@ mainbox {
 
 /* the gel title bar: four stops, top to bottom, a highlight line along its top */
 titlebar {
+  expand: false;
   orientation: horizontal;
   children: [ textbox-title, textbox-grip ];
   padding: 6px 12px;
@@ -54,6 +55,7 @@ textbox-title {
   expand: false;
   font: @font-pixel;
   text-color: @gel-text;
+  vertical-align: 0.5;
 }
 textbox-grip {
   content: "";

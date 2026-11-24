@@ -70,7 +70,9 @@ CONF
 cat > "$TMPD/desktop.sh" <<'EOS'
 set -u
 export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1
-timeout 200 sway -c "$TMPD/sway.conf" >"$OUT/sway.log" 2>&1 &
+# Arch's sway carries a file capability, which a container won't execute: run a plain copy
+cp "$(command -v sway)" "$TMPD/sway-bin"
+timeout 200 "$TMPD/sway-bin" -c "$TMPD/sway.conf" >"$OUT/sway.log" 2>&1 &
 for _ in $(seq 15); do [ -S "$XDG_RUNTIME_DIR/wayland-1" ] && break; sleep 1; done
 export WAYLAND_DISPLAY=wayland-1
 SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1); export SWAYSOCK
@@ -93,7 +95,7 @@ for m in dark mid light; do
   snap "$m-launcher" 3; pkill -x rofi
   kill "$WF" 2>/dev/null
 done
-pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -x sway
+pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
 EOS
 OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
   timeout 400 dbus-run-session -- bash "$TMPD/desktop.sh" || echo "  the sway session ended early (see sway.log)"
