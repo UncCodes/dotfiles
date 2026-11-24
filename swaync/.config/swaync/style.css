@@ -14,6 +14,10 @@ notificationwindow, blankwindow, .blank-window { background: transparent; }
 
 /* ── a notification: the capsule window ── */
 .notification-row { outline: none; margin: 0; padding: 0; background: transparent; }
+/* swaync's own dark panels stay underneath otherwise */
+.notification-background, .notification-group, .notification-group .notification-row,
+.control-center-list scrolledwindow, .control-center-list viewport, .control-center-list list,
+.notification-group-headers, .notification-group-buttons { background: transparent; box-shadow: none; }
 .notification-row:focus .notification, .notification-row:hover .notification { border-color: @skin_aqua; }
 
 .notification {
@@ -136,7 +140,7 @@ progressbar progress { min-height: 6px; background-color: @lcd_ink; border-radiu
   margin: 3px; padding: 4px 8px;
   color: @nav_accent;
   background: @white;
-  border: none; border-radius: 0; box-shadow: none;
+  border: none; border-radius: 0; box-shadow: inset 0 0 0 1px @edge;
   letter-spacing: 2px;
 }
 .widget-buttons-grid flowboxchild > button:hover { background: @light_gray; color: @white; }

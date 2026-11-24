@@ -39,7 +39,7 @@ window#waybar {
   background: @white;
   color: @nav_accent;
   letter-spacing: 2px;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px @edge;
   text-shadow: none;
   transition: all 0.25s ease-in;
 }

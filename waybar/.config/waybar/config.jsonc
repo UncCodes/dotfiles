@@ -123,12 +123,12 @@
   "custom/notify": {
     "exec": "swaync-client -swb",
     "return-type": "json",
-    "format": "{icon} {}",
+    "format": "<span alpha='55%' size='small' letter_spacing='2048'>MSG</span> {}",
     "format-icons": { "notification": "󰂚", "none": "󰂜", "dnd-notification": "󰂛", "dnd-none": "󰂛",
                       "inhibited-notification": "󰂚", "inhibited-none": "󰂜", "dnd-inhibited-notification": "󰂛", "dnd-inhibited-none": "󰂛" },
     "on-click": "swaync-client -t -sw",
     "on-click-right": "swaync-client -d -sw",
-    "escape": true
+    "escape": false
   },
 
   "tray": {

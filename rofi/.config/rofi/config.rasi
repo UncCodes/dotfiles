@@ -94,6 +94,7 @@ message { padding: 4px 6px; }
 textbox { text-color: @muted; }
 
 listview {
+  border: 0;
   lines: 9;
   columns: 1;
   fixed-height: true;
@@ -105,6 +106,8 @@ listview {
 element {
   padding: 5px 14px;
   spacing: 12px;
+  border: 1px solid;
+  border-color: @edge;
   background-color: @white;
   text-color: @nav-accent;
 }
