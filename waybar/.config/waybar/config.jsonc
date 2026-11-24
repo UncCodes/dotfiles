@@ -138,8 +138,8 @@
 
   // the clock in the brand face, the date small beside it
   "clock": {
-    "format": "{:%H:%M}  <span alpha='60%' size='small' letter_spacing='1600'>%a %d %b</span>",
-    "format-alt": "{:%H:%M:%S}  <span alpha='60%' size='small' letter_spacing='1600'>%Y-%m-%d</span>",
+    "format": "{:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
+    "format-alt": "{:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",
     "interval": 1,
     "tooltip-format": "<tt>{calendar}</tt>",
     "calendar": {
