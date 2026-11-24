@@ -91,7 +91,7 @@ xdg-user-dirs
 
 # look
 ttf-jetbrains-mono-nerd
-ttf-profont-nerd   # ProFont IIx: window titles
+inter-font         # Inter: interface text
 noto-fonts
 noto-fonts-emoji
 papirus-icon-theme

@@ -189,7 +189,7 @@ toolkit_files() {
     # shellcheck disable=SC2088  # git expands the ~ itself
     git config --global --add include.path "~/.config/git/fui.gitconfig"
   fi
-  command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1      # includes the vendored Michroma and DSEG7
+  command -v fc-cache >/dev/null && fc-cache -f >/dev/null 2>&1      # includes the vendored Michroma
   command -v tldr >/dev/null && { tldr --update >/dev/null 2>&1 || true; }
   # default apps (real entries in ~/.config/mimeapps.list, which apps also write to)
   if command -v xdg-mime >/dev/null; then

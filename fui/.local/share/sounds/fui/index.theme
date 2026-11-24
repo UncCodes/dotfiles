@@ -1,6 +1,6 @@
 [Sound Theme]
 Name=fui
-Comment=aljulandani.dev's interface sounds (theme/make-sounds.py)
+Comment=fui workstation interface cues (theme/make-sounds.py)
 Inherits=freedesktop
 Directories=stereo
 

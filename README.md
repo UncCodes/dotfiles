@@ -1,11 +1,11 @@
 # dotfiles
 
-Hyprland on EndeavourOS, dressed as [aljulandani.dev](https://aljulandani.dev): Y2K cybercore,
-one person's computer from the 2000s web. Every surface is a window of frosted, glossy
-plastic with a 1px bevel, a gel title bar and an inset well, over the site's network lattice
-and old-screen glass. Three themes (dark, mid, light); only the colour changes.
+Hyprland on EndeavourOS as a **company-issued workstation from a few decades out**: corporate
+sci-fi. Flat engineered panels with hairline rules, header plates with an accent stripe,
+tracked capital labels and asset codes, a brand mark, the company network behind everything.
+Three themes (night, concrete, lab); only the colour changes.
 
-![wallpaper](hypr/.config/hypr/wallpaper-dark.png)
+![backdrop](hypr/.config/hypr/wallpaper-night.png)
 
 Design rules: [`theme/DESIGN.md`](theme/DESIGN.md) · colours and contrast:
 [`theme/PALETTE.md`](theme/PALETTE.md) · every key: [`docs/KEYS.md`](docs/KEYS.md)
@@ -47,10 +47,11 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 
 | Command | Does |
 |---|---|
-| `fui mode toggle` | cycle the theme: dark → mid → light (`SUPER+SHIFT+T`, or click it in the bar) |
-| `fui wallpaper toggle` | the lattice live (beads travelling) or still (`SUPER+SHIFT+W`) |
-| `fui screen toggle` | old-screen glass over the whole screen on / off (`SUPER+SHIFT+C`) |
-| `fui sound on` / `off` | the interface sounds |
+| `fui mode toggle` | cycle the theme: night → concrete → lab (`SUPER+SHIFT+T`, or click it in the bar) |
+| `fui wallpaper toggle` | the network backdrop live (data packets travelling) or still (`SUPER+SHIFT+W`) |
+| `fui screen toggle` | the screen finish (a faint vignette) on / off (`SUPER+SHIFT+C`) |
+| `fui sound on` / `off` | the interface cues |
+| `fui brand` | the company: name, division, motto (`[brand]` in `tokens.toml`) |
 | `fui palette` | every action in one window (`SUPER+Space`) |
 | `fui power` · `fui keys` · `fui clipboard` | power menu (`SUPER+X`), the key list (`SUPER+/`), clipboard history (`SUPER+SHIFT+V`) |
 | `fui shot region` / `screen` / `edit` | screenshots, saved and copied (`Print`, `SHIFT+Print`, `SUPER+Print` to annotate) |
@@ -67,19 +68,19 @@ When something looks wrong, run `fui doctor` and send its output.
 
 | Area | What you get |
 |---|---|
-| Windows | frosted plastic, radius 10, the focused one edged in the theme's gel, no shadows; dialogs, pickers and small tools float centred; picture-in-picture pinned |
-| Bar | the site's menubar strip: `@user`, white nav-button workspaces, the window's path, readouts, now playing, updates, recording, the theme switch, an LCD clock |
-| Launcher | apps, the command palette, the power menu, the key list, clipboard, emoji, calculator: all one Aero window |
-| Notifications | capsule windows; the control centre (`SUPER+N`) with do-not-disturb, toggles, volume and media |
-| Volume / brightness | an on-screen capsule with an LCD level |
-| Lock screen | a whoami window with an LCD clock |
-| Apps | GTK3, GTK4 / libadwaita and Qt6 themed in all three themes, including apps installed later |
-| Terminal | a dark CRT in every theme (the site's home terminal palette), tabs titled `[0x01] zsh`; zsh, starship, fastfetch, btop, Neovim, git colours on the same palette |
+| Windows | flat panels, radius 6, a hairline edge (the focused one in the accent), no shadows; dialogs, pickers and small tools float centred; picture-in-picture pinned |
+| Bar | the status rail: the brand badge, workspace segments `01 02 03`, the focused window, labelled telemetry, now playing, updates, recording, the theme, notices, the clock |
+| Launcher | apps, the command palette, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |
+| Notices | memo cards with a stripe by urgency; the system console (`SUPER+N`) with do-not-disturb, toggles, volume and media |
+| Volume / brightness | a small plate with a slim accent level |
+| Lock screen | employee authentication: the company, a large clock, operator and node, a passphrase field, the logging notice |
+| Apps | GTK3, GTK4 / libadwaita and Qt6 in all three themes, including apps installed later |
+| Terminal | a night console in every theme; zsh, starship, fastfetch (the workstation's asset sheet with the mark), btop, Neovim, git colours on the same palette |
 | Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
-| Browser | Firefox with a gel tab strip and pill address bar; a start page of windows over the lattice |
+| Browser | Firefox with a flat tab strip and accent details; the start page is the company intranet |
 | Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
-| Sound | the site's synthesised interface sounds as a sound theme: login chime, notification bell, ticks, the theme glide |
-| Boot | a Plymouth splash (the boot window with an LCD progress bar), the CRT palette and a banner on the consoles |
+| Sound | crisp synthetic cues as a sound theme: the sign-in arpeggio, notice tones, ticks, alerts |
+| Boot | a Plymouth splash (the masthead over the network, a slim progress line), the console palette and a sign-in banner |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
 
 ## Startup
@@ -103,16 +104,18 @@ Every visual value lives in [`theme/tokens.toml`](theme/tokens.toml). After edit
 
 ```bash
 python3 theme/build.py            # regenerate everything (and check contrast)
-python3 theme/make-wallpaper.py --all   # redraw the three wallpapers
+python3 theme/make-wallpaper.py --all   # redraw the three backdrops
 python3 theme/make-sounds.py      # re-synthesise the sounds
+python3 theme/make-brand.py       # redraw the brand mark
 ```
 
 `build.py` writes one colour file per theme for each app (waybar, rofi, swaync, swayosd,
-hyprlock, kitty's tab bar, Firefox), the whole GTK and Qt themes per theme, the fixed CRT
-palette for everything on the terminal, fonts, the Hyprland token table, the screen shader,
-the start page and the docs. `fui mode` points each app's `fui-colors.*` link at the current
-theme and reloads what's running. The lattice is a port of the site's generator
-([`theme/lattice.py`](theme/lattice.py), the same seeded drawing).
+hyprlock, kitty's tab bar, Firefox), the whole GTK and Qt themes per theme, the fixed console
+palette for everything on the terminal, fonts, the Hyprland token table, the screen finish,
+the intranet start page and the docs. `fui mode` points each app's `fui-colors.*` link (and
+the brand mark) at the current theme and reloads what's running. The network is a seeded
+3D lattice ([`theme/lattice.py`](theme/lattice.py)); the mark is drawn by
+[`theme/make-brand.py`](theme/make-brand.py).
 
 Not reachable by a theme: apps that draw their own UI (Blender, games). They still get the
 window frame, fonts and the dark / light preference.

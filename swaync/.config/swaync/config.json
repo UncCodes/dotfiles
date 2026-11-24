@@ -25,31 +25,82 @@
   "transition-time": 200,
   "hide-on-clear": false,
   "hide-on-action": true,
-  "text-empty": "no notifications",
+  "text-empty": "NO NOTICES",
   "script-fail-notify": false,
   "scripts": {
-    "alert": { "exec": "sh -c '$HOME/.local/bin/fui sound alert'", "urgency": "Critical" },
-    "message": { "exec": "sh -c '$HOME/.local/bin/fui sound message'", "urgency": "Normal" }
+    "alert": {
+      "exec": "sh -c '$HOME/.local/bin/fui sound alert'",
+      "urgency": "Critical"
+    },
+    "message": {
+      "exec": "sh -c '$HOME/.local/bin/fui sound message'",
+      "urgency": "Normal"
+    }
   },
-  "widgets": ["title", "dnd", "buttons-grid", "volume", "mpris", "notifications"],
+  "widgets": [
+    "title",
+    "dnd",
+    "buttons-grid",
+    "volume",
+    "mpris",
+    "notifications"
+  ],
   "widget-config": {
-    "title": { "text": "[0x07] notifications", "clear-all-button": true, "button-text": "clear" },
-    "dnd": { "text": "do not disturb" },
+    "title": {
+      "text": "SYSTEM CONSOLE",
+      "clear-all-button": true,
+      "button-text": "Clear"
+    },
+    "dnd": {
+      "text": "DO NOT DISTURB"
+    },
     "buttons-grid": {
       "buttons-per-row": 3,
       "actions": [
-        { "label": "/theme", "command": "sh -c '$HOME/.local/bin/fui mode toggle'" },
-        { "label": "/wallpaper", "command": "sh -c '$HOME/.local/bin/fui wallpaper toggle'" },
-        { "label": "/screen", "command": "sh -c '$HOME/.local/bin/fui screen toggle'" },
-        { "label": "/sound", "command": "sh -c '$HOME/.local/bin/fui sound toggle'" },
-        { "label": "/shot", "command": "sh -c '$HOME/.local/bin/fui shot region'" },
-        { "label": "/record", "command": "sh -c '$HOME/.local/bin/fui record toggle'" },
-        { "label": "/network", "command": "sh -c '$HOME/.local/bin/fui tui nmtui'" },
-        { "label": "/lock", "command": "hyprlock" },
-        { "label": "/power", "command": "sh -c '$HOME/.local/bin/fui power'" }
+        {
+          "label": "THEME",
+          "command": "sh -c '$HOME/.local/bin/fui mode toggle'"
+        },
+        {
+          "label": "WALLPAPER",
+          "command": "sh -c '$HOME/.local/bin/fui wallpaper toggle'"
+        },
+        {
+          "label": "SCREEN",
+          "command": "sh -c '$HOME/.local/bin/fui screen toggle'"
+        },
+        {
+          "label": "SOUND",
+          "command": "sh -c '$HOME/.local/bin/fui sound toggle'"
+        },
+        {
+          "label": "CAPTURE",
+          "command": "sh -c '$HOME/.local/bin/fui shot region'"
+        },
+        {
+          "label": "RECORD",
+          "command": "sh -c '$HOME/.local/bin/fui record toggle'"
+        },
+        {
+          "label": "NETWORK",
+          "command": "sh -c '$HOME/.local/bin/fui tui nmtui'"
+        },
+        {
+          "label": "LOCK",
+          "command": "hyprlock"
+        },
+        {
+          "label": "POWER",
+          "command": "sh -c '$HOME/.local/bin/fui power'"
+        }
       ]
     },
-    "volume": { "label": "vol" },
-    "mpris": { "show-album-art": "when-available", "autohide": true }
+    "volume": {
+      "label": "VOL"
+    },
+    "mpris": {
+      "show-album-art": "when-available",
+      "autohide": true
+    }
   }
 }

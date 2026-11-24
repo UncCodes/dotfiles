@@ -1,11 +1,12 @@
-# fui // STARSHIP: the portfolio terminal's prompt
-#   user@host:~/projects/app (main *)$
-# Colours are the fixed CRT palette: green user, blue path, amber git.
+# fui // STARSHIP: the console prompt
+#   mo@workstation  ~/projects/app  main *
+#   >
+# Colours are the fixed console palette: cyan operator, blue path, amber git.
 
 add_newline = true
 
 format = """
-[$username@$hostname](bold #5FD75F)[:](#D4D4D4)$directory$git_branch$git_status$python$nodejs$rust$golang$cmd_duration
+[$username@$hostname](bold #00C2D1)  $directory$git_branch$git_status$python$nodejs$rust$golang$cmd_duration
 $character"""
 
 [username]
@@ -17,25 +18,25 @@ ssh_only = false
 format = "$hostname"
 
 [character]
-success_symbol = "[\\$](#D4D4D4)"
-error_symbol   = "[\\$](bold #FF6B6B)"
-vimcmd_symbol  = "[:](bold #E5C07B)"
+success_symbol = "[>](bold #00C2D1)"
+error_symbol   = "[>](bold #FF5C6C)"
+vimcmd_symbol  = "[<](bold #F2A93B)"
 
 [directory]
-style = "bold #6AB0FF"
+style = "bold #8FB0FF"
 truncation_length = 4
 truncate_to_repo = false
-format = "[$path]($style)[$read_only]($read_only_style) "
+format = "[$path]($style)[$read_only]($read_only_style)  "
 read_only = " ro"
 
 [git_branch]
 symbol = ""
-style = "#E5C07B"
-format = "[\\($branch]($style)"
+style = "#F2A93B"
+format = "[$branch]($style)"
 
 [git_status]
-style = "#E5C07B"
-format = "[( $all_status$ahead_behind)\\)]($style) "
+style = "#F2A93B"
+format = "[( $all_status$ahead_behind)]($style)  "
 modified = "*"
 staged = "+"
 untracked = "?"
@@ -45,25 +46,25 @@ behind = "↓${count}"
 
 [cmd_duration]
 min_time = 2000
-style = "#8A8A8A"
-format = "[took $duration]($style) "
+style = "#7D8894"
+format = "[$duration]($style)  "
 
 [python]
 symbol = "py "
-style = "#8A8A8A"
-format = "[$symbol$version]($style) "
+style = "#7D8894"
+format = "[$symbol$version]($style)  "
 
 [nodejs]
 symbol = "node "
-style = "#8A8A8A"
-format = "[$symbol$version]($style) "
+style = "#7D8894"
+format = "[$symbol$version]($style)  "
 
 [rust]
 symbol = "rs "
-style = "#8A8A8A"
-format = "[$symbol$version]($style) "
+style = "#7D8894"
+format = "[$symbol$version]($style)  "
 
 [golang]
 symbol = "go "
-style = "#8A8A8A"
-format = "[$symbol$version]($style) "
+style = "#7D8894"
+format = "[$symbol$version]($style)  "

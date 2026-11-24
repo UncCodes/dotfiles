@@ -29,9 +29,9 @@ shot_x() {   # shot_x <name> <seconds> <command...>: run a program, screenshot t
   [ -s "$OUT/$name.log" ] || rm -f "$OUT/$name.log"
 }
 
-for m in dark mid light; do
+for m in night concrete lab; do
   T 30 "$FUI" mode "$m" --quiet
-  base=$([ "$m" = dark ] && echo adw-gtk3-dark || echo adw-gtk3)
+  base=$([ "$m" = night ] && echo adw-gtk3-dark || echo adw-gtk3)
   echo "theme: $m"
   shot_x "$m-gtk3" 5 env GDK_BACKEND=x11 GTK_THEME="$base" gtk3-widget-factory
   shot_x "$m-gtk4" 6 env GDK_BACKEND=x11 gtk4-widget-factory
@@ -40,8 +40,8 @@ for m in dark mid light; do
   T 90 firefox --headless --window-size=1280,800 --screenshot "$OUT/$m-start.png" "file://$HOME/.local/share/fui/start.html" \
     >/dev/null 2>&1 && echo "  shot $m-start" || echo "  no shot: $m-start"
 done
-T 30 "$FUI" mode dark --quiet
-shot_x "kitty" 6 kitty --hold sh -c 'fastfetch; echo; ls -la --color=always ~ | head -12; echo; printf "\033[1;32mmo@fui\033[0m:\033[1;34m~\033[0m$ "'
+T 30 "$FUI" mode night --quiet
+shot_x "kitty" 6 kitty --hold sh -c 'fastfetch; echo; ls -la --color=always ~ | head -12; echo; printf "\033[1;36mmo@fui\033[0m  \033[1;34m~\033[0m\n\033[1;36m>\033[0m "'
 kill "$XVFB" 2>/dev/null
 
 # ── the desktop surfaces, on a headless sway ────────────────────────────
@@ -60,11 +60,11 @@ CONF
 cat > "$TMPD/bar.jsonc" <<'CONF'
 {
   "include": ["~/.config/waybar/config.jsonc"],
-  "modules-left": ["custom/wordmark", "sway/workspaces"],
+  "modules-left": ["custom/brand", "sway/workspaces"],
   "modules-center": ["sway/window"],
   "modules-right": ["cpu", "memory", "network", "pulseaudio", "custom/sound", "custom/mode", "custom/notify", "clock", "custom/power"],
-  "sway/workspaces": { "format": "/{name}", "persistent-workspaces": { "1": [], "2": [], "3": [], "4": [] } },
-  "sway/window": { "format": "/{app_id} <span alpha='55%'>/</span> {title}", "max-length": 60 }
+  "sway/workspaces": { "format": "{icon}", "format-icons": { "1": "01", "2": "02", "3": "03", "4": "04" }, "persistent-workspaces": { "1": [], "2": [], "3": [], "4": [] } },
+  "sway/window": { "format": "<span alpha='60%' size='small' letter_spacing='1600'>{app_id}</span>  {title}", "max-length": 60 }
 }
 CONF
 cat > "$TMPD/desktop.sh" <<'EOS'
@@ -79,16 +79,16 @@ SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1); export 
 unset DISPLAY
 snap() { sleep "${2:-1}"; timeout 15 grim "$OUT/$1.png" 2>/dev/null && echo "  shot $1" || echo "  no shot: $1"; }
 timeout 150 swaync >"$OUT/swaync.log" 2>&1 &
-for m in dark mid light; do
+for m in night concrete lab; do
   timeout 30 "$FUI" mode "$m" --quiet
   pkill -x swaybg; timeout 150 swaybg -i "$HOME/.config/hypr/wallpaper-$m.png" -m fill >/dev/null 2>&1 &
   pkill -x waybar; timeout 150 waybar -c "$TMPD/bar.jsonc" -s "$HOME/.config/waybar/style.css" >"$OUT/waybar-$m.log" 2>&1 &
   timeout 10 swaync-client -rs >/dev/null 2>&1
-  base=adw-gtk3; [ "$m" = dark ] && base=adw-gtk3-dark
+  base=adw-gtk3; [ "$m" = night ] && base=adw-gtk3-dark
   timeout 60 env GDK_BACKEND=wayland GTK_THEME="$base" gtk3-widget-factory >/dev/null 2>&1 &
   WF=$!
   snap "$m-desktop" 5
-  timeout 10 notify-send -a fui "[0x07] sample" "A notification in the $m theme." 2>/dev/null
+  timeout 10 notify-send -a fui "Scheduled maintenance" "Workstation updates install tonight at 02:00. Save your work." 2>/dev/null
   snap "$m-notification" 2
   timeout 10 swaync-client -op >/dev/null 2>&1; snap "$m-control-centre" 2; timeout 10 swaync-client -cp >/dev/null 2>&1
   timeout 20 rofi -config "$HOME/.config/rofi/config.rasi" -show drun >"$OUT/rofi-$m.log" 2>&1 &

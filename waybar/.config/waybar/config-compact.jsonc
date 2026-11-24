@@ -1,4 +1,4 @@
-// fui // WAYBAR, compact
+// fui // WAYBAR, compact (the status rail on small screens)
 // `fui bar` picks this on screens narrower than 1400 px (e.g. 1024x768). Everything not set
 // here comes from config.jsonc.
 {
@@ -6,7 +6,7 @@
   "margin-left": 8,
   "margin-right": 8,
 
-  "modules-left":   ["custom/wordmark", "hyprland/workspaces"],
+  "modules-left":   ["custom/brand", "hyprland/workspaces"],
   "modules-center": [],
   "modules-right":  ["custom/rec", "cpu", "memory", "pulseaudio", "custom/mode", "custom/notify", "tray", "clock", "custom/power"],
 

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Make the fui sound theme: aljulandani.dev's interface sounds, as files.
+"""Make the fui sound theme: crisp synthetic interface cues for a company workstation.
 
-The site synthesises its sounds with the Web Audio API (public/js/sound.js): enveloped
-sine and triangle notes, a short filtered feedback echo for the glassy tail, and a warm
-detuned pad through a sweeping low-pass for the startup chime. This is the same synthesis
-in Python, rendered to Ogg Vorbis under the freedesktop sound names, so every app that
-plays system sounds (and fui sound) uses them.
+Enveloped sine and triangle notes, a short filtered feedback echo for a clean tail, and a
+low swell under the sign-in arpeggio. Rendered to Ogg Vorbis under the freedesktop sound
+names, so every app that plays system sounds (and fui sound) uses them.
 
   python3 theme/make-sounds.py      # writes fui/.local/share/sounds/fui/
 Needs ffmpeg (libvorbis). Deterministic: the pad's random detune uses a fixed seed.
@@ -84,13 +82,13 @@ def tone(kind, f0, f1, attack, length, gain):
 
 
 def pad(down=False):
-    """The startup chime: four detuned low voices (172/258/345/474 Hz) through a low-pass that
-    sweeps 320 -> 1500 -> 500 Hz, swelling in over 0.55 s and fading out by 3.2 s.
-    down=True: the logout version, shorter, the filter closing instead of opening."""
+    """The low swell under the sign-in cue: four detuned voices (C3, G3, C4, G4) through a
+    low-pass that sweeps 320 -> 1500 -> 500 Hz, swelling in over 0.55 s and out by 3.2 s.
+    down=True: a shorter version with the filter closing."""
     rnd = random.Random(7)
     length = 2.2 if down else 3.3
     n = int(length * RATE)
-    voices = [(172, "triangle", 1.0), (258, "triangle", 0.9), (345, "sine", 0.5), (474, "sine", 0.3)]
+    voices = [(130.8, "sine", 1.0), (196, "sine", 0.7), (261.6, "triangle", 0.35), (392, "sine", 0.2)]
     det = [2 ** ((rnd.random() - 0.5) * 8 / 1200) for _ in voices]
     phases = [0.0] * len(voices)
     out = []
@@ -131,25 +129,36 @@ def sound(parts, seconds):
     return m.render()
 
 
-# the site's cues, by name (sound.js), plus three made from them for the desktop
+# the cues
+def arpeggio(freqs, step, length, gain, wet=True):
+    return [(tone("sine", f, f, 0.012, length, gain), i * step, wet) for i, f in enumerate(freqs)]
+
+
 SOUNDS = {
-    "tick":    lambda: sound([(tone("triangle", 1040, 1040, 0.003, 0.055, 0.06), 0, False),
-                              (tone("sine", 760, 760, 0.003, 0.045, 0.035), 0, False)], 0.2),
-    "select":  lambda: sound([(tone("sine", 668, 668, 0.05, 1.4, 0.09), 0, True), (tone("sine", 1336, 1336, 0.04, 1.0, 0.045), 0, True),
-                              (tone("sine", 883, 883, 0.06, 0.6, 0.055), 0, True), (tone("sine", 1378, 1378, 0.05, 0.45, 0.032), 0, True)], 2.2),
-    "open":    lambda: sound([(tone("sine", 668, 668, 0.012, 0.16, 0.09), 0, False),
-                              (tone("sine", 1336, 1336, 0.01, 0.13, 0.045), 0.03, False)], 0.4),
-    "move":    lambda: sound([(tone("sine", 520, 980, 0.01, 0.16, 0.06), 0, True)], 0.9),
-    "unmove":  lambda: sound([(tone("sine", 980, 520, 0.01, 0.16, 0.06), 0, True)], 0.9),
-    "startup": lambda: sound([(pad(), 0, True)], 3.8),
-    "shutdown": lambda: sound([(pad(down=True), 0, True)], 2.7),
-    "clap":    lambda: sound([(tone("sine", 400, 600, 0.008, 0.12, 0.1), 0, False)], 0.3),
-    "key":     lambda: sound([(tone("triangle", 1200, 1200, 0.002, 0.02, 0.025), 0, False)], 0.1),
-    # a warning: the open cue twice, a fourth lower
-    "alert":   lambda: sound([(tone("sine", 501, 501, 0.012, 0.16, 0.1), 0, True), (tone("sine", 1002, 1002, 0.01, 0.13, 0.05), 0.03, True),
-                              (tone("sine", 501, 501, 0.012, 0.16, 0.1), 0.22, True), (tone("sine", 1002, 1002, 0.01, 0.13, 0.05), 0.25, True)], 1.4),
-    # an error: the clap falling
-    "error":   lambda: sound([(tone("sine", 420, 260, 0.008, 0.22, 0.12), 0, False)], 0.4),
+    # a dry, short blip: toggles, volume, buttons
+    "tick":    lambda: sound([(tone("sine", 1760, 1760, 0.002, 0.04, 0.05), 0, False),
+                              (tone("triangle", 3520, 3520, 0.001, 0.015, 0.012), 0, False)], 0.15),
+    # an incoming notice: two notes up a fifth, a clean tail
+    "select":  lambda: sound(arpeggio([880, 1318.5], 0.07, 0.42, 0.07), 1.3),
+    # something opened
+    "open":    lambda: sound(arpeggio([1174.7, 1568], 0.045, 0.12, 0.05, False), 0.35),
+    # the theme changing: a quick filtered rise
+    "move":    lambda: sound([(tone("sine", 600, 1200, 0.01, 0.18, 0.05), 0, True)], 0.9),
+    "unmove":  lambda: sound([(tone("sine", 1200, 600, 0.01, 0.18, 0.05), 0, True)], 0.9),
+    # signed in: an ascending major arpeggio over a low swell
+    "startup": lambda: sound([(pad(), 0, True)] + arpeggio([523.3, 659.3, 784, 1046.5], 0.11, 0.9, 0.06), 3.8),
+    # signing out: the same, falling
+    "shutdown": lambda: sound(arpeggio([1046.5, 784, 659.3, 523.3], 0.1, 0.6, 0.055), 2.0),
+    # a capture: a short bright glide down
+    "clap":    lambda: sound([(tone("triangle", 2600, 1300, 0.002, 0.07, 0.06), 0, False),
+                              (tone("sine", 1300, 1300, 0.002, 0.05, 0.03), 0.05, False)], 0.3),
+    "key":     lambda: sound([(tone("sine", 2093, 2093, 0.001, 0.015, 0.02), 0, False)], 0.08),
+    # attention: two even pulses
+    "alert":   lambda: sound([(tone("triangle", 740, 740, 0.004, 0.11, 0.08), 0, True),
+                              (tone("triangle", 740, 740, 0.004, 0.11, 0.08), 0.18, True)], 1.2),
+    # an error: a falling minor third, low
+    "error":   lambda: sound([(tone("sine", 392, 392, 0.006, 0.16, 0.09), 0, False),
+                              (tone("sine", 329.6, 329.6, 0.006, 0.22, 0.09), 0.14, False)], 0.6),
 }
 
 # freedesktop names -> cue
@@ -182,7 +191,7 @@ def write_ogg(samples, path):
 def main():
     (OUT / "stereo").mkdir(parents=True, exist_ok=True)
     (OUT / "index.theme").write_text(
-        "[Sound Theme]\nName=fui\nComment=aljulandani.dev's interface sounds (theme/make-sounds.py)\n"
+        "[Sound Theme]\nName=fui\nComment=fui workstation interface cues (theme/make-sounds.py)\n"
         "Inherits=freedesktop\nDirectories=stereo\n\n[stereo]\nOutputProfile=stereo\n")
     made = {}
     for name, cue in NAMES.items():

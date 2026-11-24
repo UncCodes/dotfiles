@@ -1,9 +1,9 @@
-# fui // IMV: images on the CRT
+# fui // IMV: images on the console
 [options]
-background = 0d0d0d
+background = 07090c
 overlay = false
 overlay_font = JetBrainsMono Nerd Font:11
-overlay_text_color = d4d4d4
-overlay_background_color = 1a1a1a
+overlay_text_color = d7dee5
+overlay_background_color = 151a21
 overlay_background_alpha = cc
 title_text = imv · $imv_current_file ($imv_current_index/$imv_file_count)

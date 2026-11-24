@@ -1,137 +1,118 @@
 <!doctype html>
 <!--BANNER-->
-<!-- fui // the browser start page, {{mode}} theme. fui setup firefox installs it as the home page. -->
+<!-- fui // the browser start page, {{mode}} theme: the company intranet. fui setup firefox installs it. -->
 <html lang="en" data-theme="{{mode}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>start</title>
+<title>{{brand_name}}</title>
 <style>
   :root {
     color-scheme: {{scheme}};
-    --bg: {{bg}}; --card: {{card}}; --well: {{well}}; --text: {{text}}; --muted: {{muted}};
-    --accent: {{accent}}; --nav: {{nav_accent}}; --edge: {{edge}}; --hi: {{hi}}; --lo: {{lo}};
-    --glass: {{glass}}; --glass-well: {{glass_well}}; --sheen: {{sheen}}; --gloss: {{gloss}}; --gloss-lo: {{gloss_lo}};
-    --gel: linear-gradient(to bottom, {{gel_hi}} 0, {{gel_mid}} 46%, {{gel}} 54%, {{gel_lo}} 100%);
-    --gel-edge: {{gel_edge}}; --gel-code: {{gel_code}};
-    --skin-aqua: {{skin_aqua}}; --skin-teal: {{skin_teal}};
-    --graphite: linear-gradient(to bottom, {{graphite_hi}} 0, {{graphite}} 46%, {{graphite_mid}} 54%, {{graphite_lo}} 100%);
-    --plate-ink: {{plate_ink}}; --metal: linear-gradient(to bottom, {{metal_hi}}, {{metal}});
-    --lcd-bg: {{lcd_bg}}; --lcd-ink: {{lcd_ink}}; --lcd-ghost: {{lcd_ghost}};
-    --white: {{white}}; --light-gray: {{light_gray}}; --lighter-gray: {{lighter_gray}};
-    --pixel: "{{font_pixel}}", monospace; --mono: "{{font_mono}}", ui-monospace, monospace;
-    --wordmark: "{{font_wordmark}}", var(--mono); --lcd: "{{font_lcd}}", var(--mono); --sans: "{{font_sans}}", system-ui, sans-serif;
+    --bg: {{bg}}; --panel: {{panel}}; --raised: {{raised}}; --well: {{well}}; --line: {{line}}; --line-hi: {{line_hi}};
+    --text: {{text}}; --muted: {{muted}}; --faint: {{faint}};
+    --accent: {{accent}}; --accent-hi: {{accent_hi}}; --accent-dim: {{accent_dim}}; --on-accent: {{on_accent}};
+    --ok: {{ok}}; --warn: {{warn}}; --glass: {{glass}}; --hi: {{hi}};
+    --brand: "{{font_brand}}", sans-serif; --ui: "{{font_ui}}", system-ui, sans-serif; --mono: "{{font_mono}}", ui-monospace, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { min-height: 100%; }
-  body { background: var(--bg); color: var(--text); font: 16px/1.65 var(--sans); padding: 2.5rem 1.5rem; }
-  /* the network lattice, fading from the top of the screen to the bottom */
+  body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--ui); }
+  /* the company network behind everything, fading towards the bottom */
   .backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; transform: scale(1.1);
-    -webkit-mask: linear-gradient(#000 0%, rgba(0,0,0,.65) 50%, rgba(0,0,0,.2) 100%);
-            mask: linear-gradient(#000 0%, rgba(0,0,0,.65) 50%, rgba(0,0,0,.2) 100%); }
+    -webkit-mask: linear-gradient(#000 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,.15) 100%);
+            mask: linear-gradient(#000 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,.15) 100%); }
   .backdrop svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  /* old-screen glass */
-  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 10;
-    background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.16) 100%),
-                repeating-linear-gradient(to bottom, rgba(0,0,0,.157) 0 1px, transparent 1px 3px); }
-  .desk { max-width: 980px; margin: 0 auto; display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
-  .wordmark { grid-column: 1 / -1; font: 400 clamp(1.4rem, 1rem + 2.4vw, 2.6rem)/1.3 var(--wordmark);
-    color: var(--accent); -webkit-text-stroke: .035em currentColor; paint-order: stroke fill; }
-  .role { grid-column: 1 / -1; margin-top: -14px; font: 800 1rem/1.4 var(--mono); color: var(--accent); }
-  /* a window: frosted plastic frame, title bar, inset well */
-  .window { padding: 4px; background: linear-gradient(135deg, var(--sheen), transparent 38%), var(--glass);
-    border: 1px solid var(--edge); border-radius: 10px; box-shadow: inset 1px 1px 0 var(--hi), inset -1px -1px 0 var(--lo); }
-  .bar { display: flex; align-items: center; gap: .6rem; min-height: 32px; padding: .15rem .5rem .15rem .75rem;
-    font: 18px/1 var(--pixel); -webkit-font-smoothing: none; }
-  .bar .code { color: var(--gel-code); }
-  .grip { flex: 1; height: 2px; border-radius: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,.55)); }
-  .aero > .bar { background: var(--gel); color: #fff; border: 1px solid var(--gel-edge); border-radius: 999px;
-    text-shadow: 0 1px 1px rgba(0,0,0,.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 0 rgba(255,255,255,.18); }
-  .capsule { border-radius: 16px; }
-  .capsule > .bar { padding: 3px 10px 3px 4px; border: 1px solid var(--edge); border-radius: 999px;
-    background: linear-gradient(to bottom, rgba(255,255,255,.55) 0 45%, rgba(255,255,255,.1) 55% 100%),
-                color-mix(in srgb, color-mix(in srgb, var(--skin-aqua) 24%, var(--card)) 75%, transparent); }
-  .capsule > .bar::before { content: ""; width: 18px; height: 18px; border-radius: 50%; flex: none;
-    border: 1px solid color-mix(in srgb, var(--skin-aqua) 65%, #000);
-    background: radial-gradient(circle at 36% 30%, #fff 0 16%, transparent 38%),
-                radial-gradient(circle at 50% 62%, color-mix(in srgb, var(--skin-aqua) 55%, #fff), var(--skin-aqua) 75%); }
-  .capsule > .bar .code { color: var(--skin-aqua); }
-  .slab { border-radius: 6px; }
-  .slab > .bar { min-height: 28px; padding: 0 8px 0 4px; background: var(--graphite); color: var(--plate-ink);
-    border: 1px solid rgba(0,0,0,.55); border-radius: 3px 3px 2px 2px; box-shadow: inset 0 1px 0 rgba(255,255,255,.2); }
-  .slab > .bar::before { content: ""; width: 8px; height: 16px; border-radius: 3px; background: var(--metal); border: 1px solid rgba(0,0,0,.55); }
-  .slab > .bar .code { color: color-mix(in srgb, var(--skin-aqua) 40%, #fff); }
-  .well { margin-top: 4px; padding: 1rem 1.1rem 1.15rem; background: var(--glass-well); border: 1px solid var(--edge);
-    border-radius: 2px 2px 6px 6px; box-shadow: inset 0 2px 3px var(--lo); }
+
+  /* the masthead: mark, company, division; a status line on the right */
+  header { display: flex; align-items: center; gap: 16px; padding: 18px 32px; border-bottom: 1px solid var(--line);
+    background: var(--glass); backdrop-filter: blur(10px); }
+  .name { font: 400 18px/1 var(--brand); letter-spacing: .18em; }
+  .division { margin-top: 6px; font: 600 10px/1 var(--ui); letter-spacing: .22em; color: var(--muted); }
+  .status { margin-left: auto; display: flex; gap: 18px; font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: .08em; }
+  .status b { color: var(--text); font-weight: 600; }
+  .dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 1px; background: var(--ok); vertical-align: 1px; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 32px 32px; display: grid; gap: 20px; grid-template-columns: 2fr 1fr; }
+  /* a panel: flat, a hairline, a header plate with the accent stripe and an asset code */
+  .panel { background: var(--glass); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(10px); overflow: hidden; }
+  .plate { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 14px 0 12px;
+    border-bottom: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--accent), inset 0 1px 0 var(--hi); }
+  .plate h2 { font: 600 11px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; }
+  .plate .code { margin-left: auto; font: 500 10px/1 var(--mono); color: var(--faint); letter-spacing: .06em; }
+  .body { padding: 18px; }
   .search { grid-column: 1 / -1; }
-  form { display: flex; gap: .6rem; }
-  input { flex: 1; min-height: 40px; padding: 0 1rem; font: 1rem var(--mono); color: var(--text);
-    background: var(--well); border: 1px solid var(--edge); border-radius: 999px; box-shadow: inset 0 1px 3px var(--lo); outline: none; }
-  input:focus { border-color: var(--nav); }
-  button { min-height: 40px; padding: 0 1.2rem; font: 1rem var(--mono); color: #fff; cursor: pointer;
-    background: linear-gradient(to bottom, rgba(255,255,255,.2) 0 45%, transparent 55% 100%), var(--nav);
-    border: 1px solid color-mix(in srgb, var(--nav) 70%, #000); border-radius: 999px; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
-  /* the white nav buttons: the label blinks while hovered */
-  nav ul { list-style: none; display: grid; gap: 8px; }
-  nav a { position: relative; display: block; padding: .35rem 1rem; font: .95rem var(--mono); letter-spacing: 2px;
-    color: var(--nav); background: var(--white); text-decoration: none; box-shadow: 0 0 0 1px var(--edge); }
-  nav a::after { content: ""; position: absolute; left: 0; top: 7.5%; width: 0; height: 85%; background: var(--light-gray); transition: width .25s ease-in; z-index: 0; }
-  nav a span { position: relative; z-index: 1; }
-  nav a:hover, nav a:focus-visible { color: var(--white); }
-  nav a:hover::after, nav a:focus-visible::after { width: 100%; animation: blink 2s linear infinite; }
-  @keyframes blink { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
-  .lcd { display: inline-flex; padding: 6px 10px; font: italic 700 2.4rem/1 var(--lcd); color: var(--lcd-ink); position: relative;
-    background: var(--lcd-bg); border: 1px solid var(--edge); border-radius: 3px; box-shadow: inset 0 2px 4px rgba(0,0,0,.35); }
-  .lcd::before { content: "88:88:88"; position: absolute; left: 10px; top: 6px; color: var(--lcd-ghost); }
-  .lcd span { position: relative; }
-  .date { margin-top: .6rem; font: .9rem var(--mono); color: var(--muted); }
-  @media (max-width: 700px) { .desk { grid-template-columns: 1fr; } }
+  form { display: flex; gap: 10px; }
+  input { flex: 1; height: 44px; padding: 0 14px; font: 15px var(--ui); color: var(--text);
+    background: var(--well); border: 1px solid var(--line-hi); border-radius: 4px; outline: none; }
+  input:focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  button { height: 44px; padding: 0 22px; font: 600 12px var(--ui); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--on-accent); background: var(--accent); border: 0; border-radius: 4px; cursor: pointer; }
+  button:hover { background: var(--accent-hi); }
+  /* directory tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .tiles a { display: block; padding: 12px 14px; color: var(--text); text-decoration: none; background: var(--raised);
+    border: 1px solid var(--line); border-radius: 4px; transition: border-color .15s, box-shadow .15s; }
+  .tiles a:hover { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .tiles .t { font-weight: 600; }
+  .tiles .u { font: 11px var(--mono); color: var(--muted); }
+  /* the clock */
+  .clock { font: 400 46px/1 var(--brand); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  .clock small { font-size: 18px; color: var(--muted); }
+  .date { margin-top: 10px; font: 600 11px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  .meta { margin-top: 18px; display: grid; gap: 6px; font: 12px var(--mono); color: var(--muted); }
+  .meta span { color: var(--text); }
+  footer { max-width: 1040px; margin: 0 auto; padding: 0 32px 40px; display: flex; justify-content: space-between;
+    font: 500 10px/1.5 var(--mono); color: var(--faint); letter-spacing: .06em; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } .status { display: none; } }
 </style>
 </head>
 <body>
 <div class="backdrop" aria-hidden="true">{{lines}}{{beads}}</div>
-<main class="desk">
-  <div class="wordmark">@__USER__</div>
-  <div class="role">__HOST__</div>
-
-  <section class="window aero search">
-    <div class="bar"><span class="code">[0x01]</span> search <span class="grip"></span></div>
-    <div class="well">
+<header>
+  {{mark}}
+  <div><div class="name">{{brand_name}}</div><div class="division">{{brand_division}}</div></div>
+  <div class="status"><span><span class="dot"></span>SECURE LINK</span><span>OPERATOR <b>__USER__</b></span><span>NODE <b>__HOST__</b></span></div>
+</header>
+<main>
+  <section class="panel search">
+    <div class="plate"><h2>Search</h2><span class="code">SRCH-01</span></div>
+    <div class="body">
       <form action="https://duckduckgo.com/" method="get">
-        <input name="q" autofocus autocomplete="off" placeholder="search the web" aria-label="Search">
-        <button type="submit">go</button>
+        <input name="q" autofocus autocomplete="off" placeholder="Search the network" aria-label="Search">
+        <button type="submit">Query</button>
       </form>
     </div>
   </section>
-
-  <section class="window capsule">
-    <div class="bar"><span class="code">[0x02]</span> links</div>
-    <div class="well">
-      <nav><ul>
-        <li><a href="https://aljulandani.dev"><span>/aljulandani.dev</span></a></li>
-        <li><a href="https://github.com"><span>/github</span></a></li>
-        <li><a href="https://wiki.archlinux.org"><span>/arch-wiki</span></a></li>
-        <li><a href="https://forum.endeavouros.com"><span>/endeavouros</span></a></li>
-        <li><a href="https://www.youtube.com"><span>/youtube</span></a></li>
-      </ul></nav>
+  <section class="panel">
+    <div class="plate"><h2>Directory</h2><span class="code">DIR-02</span></div>
+    <div class="body tiles">
+      <a href="https://aljulandani.dev"><div class="t">Portfolio</div><div class="u">aljulandani.dev</div></a>
+      <a href="https://github.com"><div class="t">Repositories</div><div class="u">github.com</div></a>
+      <a href="https://wiki.archlinux.org"><div class="t">Reference</div><div class="u">wiki.archlinux.org</div></a>
+      <a href="https://forum.endeavouros.com"><div class="t">Support</div><div class="u">endeavouros.com</div></a>
+      <a href="https://www.youtube.com"><div class="t">Media</div><div class="u">youtube.com</div></a>
+      <a href="https://mail.google.com"><div class="t">Mail</div><div class="u">mail.google.com</div></a>
     </div>
   </section>
-
-  <section class="window slab">
-    <div class="bar"><span class="code">[0x03]</span> clock</div>
-    <div class="well">
-      <div class="lcd"><span id="clock">00:00:00</span></div>
+  <section class="panel">
+    <div class="plate"><h2>Local time</h2><span class="code">CLK-03</span></div>
+    <div class="body">
+      <div class="clock" id="clock">00:00<small>:00</small></div>
       <div class="date" id="date"></div>
+      <div class="meta"><div>THEME <span>{{mode}}</span></div><div>SHIFT <span id="shift"></span></div></div>
     </div>
   </section>
 </main>
+<footer><span>{{brand_notice}}</span><span>{{brand_motto}}</span></footer>
 <script>
   (function () {
     var pad = function (n) { return (n < 10 ? "0" : "") + n; };
     function tick() {
-      var d = new Date();
-      document.getElementById("clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
-      document.getElementById("date").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+      var d = new Date(), h = d.getHours();
+      document.getElementById("clock").innerHTML = pad(h) + ":" + pad(d.getMinutes()) + "<small>:" + pad(d.getSeconds()) + "</small>";
+      document.getElementById("date").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      document.getElementById("shift").textContent = h < 6 ? "night" : h < 14 ? "day" : h < 22 ? "evening" : "night";
     }
     tick(); setInterval(tick, 1000);
   })();

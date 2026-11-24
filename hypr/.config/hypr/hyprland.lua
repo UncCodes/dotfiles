@@ -1,9 +1,9 @@
 -- ┌─ fui // HYPRLAND (Lua config, Hyprland 0.57+) ─────────────────────────┐
--- │ Y2K cybercore after aljulandani.dev: frosted plastic windows with a     │
--- │ 1px bevelled edge (the focused one carries the theme's gel colour), no  │
--- │ drop shadows, old-screen glass over the whole screen, a network lattice │
--- │ behind everything. Tokens: ~/.config/hypr/fui.lua (from tokens.toml).   │
--- │ Keys: SUPER+/ shows them all (fui keys reads the comments below).       │
+-- │ Corporate sci-fi: a company workstation a few decades out. Windows are   │
+-- │ flat engineered panels with a hairline edge (the focused one in the      │
+-- │ theme's accent), no drop shadows, soft glass where it helps, the company │
+-- │ network behind everything. Tokens: ~/.config/hypr/fui.lua.               │
+-- │ Keys: SUPER+/ shows them all (fui keys reads the comments below).        │
 -- └─────────────────────────────────────────────────────────────────────────┘
 
 -- ── tokens and the current theme ────────────────────────────────────────
@@ -11,16 +11,16 @@ local HOME = os.getenv("HOME")
 local ok, T = pcall(dofile, HOME .. "/.config/hypr/fui.lua")
 if not ok or type(T) ~= "table" then        -- keeps Hyprland usable if fui.lua is missing
     T = {
-        modes = { dark = { bg = "0C0A09FF", edge = "4AF48366", hi = "FFFFFF24", lo = "0000008C", gel_hi = "2AB2A9FF",
-                           gel_mid = "1D7C76FF", gel = "186762FF", gel_edge = "0F3E3BFF", card = "171412FF", text = "F5F2F0FF",
-                           muted = "A8959AFF", skin_teal = "4FD1C0FF", white = "FFFFFFFF" } },
-        desktop = { dark = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" } },
-        order = { "dark" }, cursor = { theme = "Adwaita", size = 24 },
-        geometry = { radius = 10, border = 2, gaps_in = 6, gaps_out = 12 },
-        opacity = { window_active = 0.97, window_inactive = 0.92 },
-        blur = { size = 8, passes = 3, noise = 0.02, contrast = 1.0, brightness = 1.0, vibrancy = 0.2 },
-        screen = { on = false }, font = { mono = "JetBrainsMono Nerd Font", pixel = "ProFontIIx Nerd Font", sans = "Noto Sans", size = 10 },
-        ease = { 0.2, 0.8, 0.2, 1.0 },
+        modes = { night = { bg = "07090CFF", panel = "0E1217FF", line = "232A33FF", line_hi = "36424FFF",
+                            accent = "00C2D1FF", accent_hi = "5EE4EEFF", on_accent = "00171AFF", text = "E6EBF0FF",
+                            muted = "8B96A3FF" } },
+        desktop = { night = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" } },
+        order = { "night" }, cursor = { theme = "Adwaita", size = 24 },
+        geometry = { radius = 6, border = 1, gaps_in = 6, gaps_out = 14 },
+        opacity = { window_active = 0.98, window_inactive = 0.94 },
+        blur = { size = 6, passes = 3, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
+        screen = { on = false }, font = { brand = "Michroma", ui = "Inter", mono = "JetBrainsMono Nerd Font", size = 10 },
+        ease = { 0.25, 0.9, 0.25, 1.0 },
     }
 end
 
@@ -33,7 +33,7 @@ local function state(name, default)
     return v or default
 end
 
--- dark, mid or light: fui mode (SUPER+SHIFT+T) writes the file and reloads Hyprland
+-- night, concrete or lab: fui mode (SUPER+SHIFT+T) writes the file and reloads Hyprland
 local mode = state("mode", T.order[1])
 if type(T.modes[mode]) ~= "table" then mode = T.order[1] end
 local C = T.modes[mode]
@@ -69,7 +69,7 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.on("hyprland.start", function()
     -- each falls back to the plain program if the fui command is missing
     hl.exec_cmd(fui .. "mode apply --quiet")
-    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper-dark.png -m fill")  -- the lattice, live or still
+    hl.exec_cmd(fui .. "wallpaper start || swaybg -i ~/.config/hypr/wallpaper-night.png -m fill") -- the network, live or still
     hl.exec_cmd(fui .. "bar || waybar")                                                           -- compact on small screens
     hl.exec_cmd("swaync")                                                                         -- notifications + control centre
     hl.exec_cmd("swayosd-server")                                                                 -- volume / brightness on screen
@@ -81,13 +81,13 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme " .. DESK.gtk_base)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface icon-theme " .. DESK.icon_theme)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. T.cursor.theme)
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface font-name '" .. T.font.sans .. " " .. T.font.size .. "'")
+    hl.exec_cmd("gsettings set org.gnome.desktop.interface font-name '" .. T.font.ui .. " " .. T.font.size .. "'")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface monospace-font-name '" .. T.font.mono .. " " .. T.font.size .. "'")
     hl.exec_cmd("gsettings set org.gnome.desktop.sound theme-name fui")
     hl.exec_cmd("gsettings set org.gnome.desktop.sound event-sounds true")
     -- the dropdown terminal waits, hidden, on its special workspace (SUPER+`)
     hl.exec_cmd(terminal .. " --class fui-drop", { workspace = "special:drop silent" })
-    hl.exec_cmd(fui .. "sound login")                      -- the startup chime (fui sound off to silence)
+    hl.exec_cmd(fui .. "sound login")                      -- the sign-in tone (fui sound off to silence)
     hl.exec_cmd(fui .. "layout")                           -- the startup layout (~/.config/fui/layout.conf)
 end)
 
@@ -100,17 +100,15 @@ hl.config({
         gaps_out = T.geometry.gaps_out,
         border_size = T.geometry.border,
         col = {
-            -- the focused window wears the gel: its light top-left into its deep edge
-            active_border   = { colors = { rgba(C.gel_hi), rgba(C.gel_edge) }, angle = 135 },
-            -- the others: a plain bevel, highlight into shade
-            inactive_border = { colors = { rgba(C.hi), rgba(C.edge) }, angle = 135 },
+            -- the focused window: the accent; the others: a hairline
+            active_border   = { colors = { rgba(C.accent_hi), rgba(C.accent) }, angle = 90 },
+            inactive_border = rgba(C.line_hi),
         },
         resize_on_border = true,
         layout = "dwindle",
     },
 
-    -- Frosted plastic: windows let the lattice through, softly blurred. No drop
-    -- shadows: depth comes from bevels and insets only.
+    -- Engineered panels: a little glass, softly blurred, no drop shadows.
     decoration = {
         rounding = T.geometry.radius,
         active_opacity   = T.opacity.window_active,
@@ -127,25 +125,25 @@ hl.config({
             popups     = true,
         },
         dim_inactive = false,
-        -- old-screen glass: scanlines, phosphor stripes, darker corners (fui screen toggles it)
+        -- the optional screen finish: a faint vignette (fui screen toggles it)
         screen_shader = screen_on and (HOME .. "/.config/hypr/screen.frag") or "",
     },
 
     animations = { enabled = true },
 
-    -- window groups are tabs: the "tab" skin's teal plates with pixel-font titles
+    -- window groups are tabs: flat plates, the current one in the accent
     group = {
-        col = { border_active = rgba(C.gel_hi), border_inactive = rgba(C.edge) },
+        col = { border_active = rgba(C.accent), border_inactive = rgba(C.line_hi) },
         groupbar = {
             enabled = true,
             font_family = T.font.mono,
             font_size = 11,
             height = 18,
             gradients = true,
-            rounding = 4,
+            rounding = 2,
             render_titles = true,
-            col = { active = rgba(C.skin_teal, 0.85), inactive = rgba(C.card, 0.85) },
-            text_color = rgba(C.white),
+            col = { active = rgba(C.accent, 0.95), inactive = rgba(C.panel, 0.95) },
+            text_color = rgba(C.on_accent),
             text_color_inactive = rgba(C.muted),
         },
     },
@@ -169,7 +167,7 @@ hl.config({
     },
 })
 
--- ── motion: the site's ease (fast out, long settle) ─────────────────────
+-- ── motion: decisive (quick out, firm settle) ───────────────────────────
 local e = T.ease
 hl.curve("glide", { type = "bezier", points = { { e[1], e[2] }, { e[3], e[4] } } })
 hl.curve("snap",  { type = "bezier", points = { { 0.2, 0.9 }, { 0.1, 1 } } })
@@ -205,7 +203,7 @@ hl.window_rule({ name = "fui-small-tools",
 hl.window_rule({ name = "fui-pip", match = { title = "^Picture-in-Picture$" },
     float = true, pin = true, size = "monitor_w*0.26 monitor_h*0.26", move = "monitor_w*0.72 monitor_h*0.70" })
 
--- ── frosted bar, launcher, notifications and OSD ────────────────────────
+-- ── glass under the bar, launcher, notifications and OSD ────────────────
 for _, ns in ipairs({ "waybar", "rofi", "swaync-control-center", "swaync-notification-window", "swayosd" }) do
     hl.layer_rule({ name = "glass-" .. ns, match = { namespace = "^" .. ns .. "$" }, blur = true, ignore_alpha = 0.1 })
 end
@@ -239,9 +237,9 @@ hl.bind(k("SHIFT + Tab"), hl.dsp.group.prev())                                  
 hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock"))                                -- lock
 hl.bind(k("X"), hl.dsp.exec_cmd(fui .. "power"))                                 -- power menu
 hl.bind(k("SHIFT + E"), hl.dsp.exit())                                           -- quit Hyprland
-hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- theme: dark → mid → light
-hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(fui .. "wallpaper toggle"))              -- live / still wallpaper
-hl.bind(k("SHIFT + C"), hl.dsp.exec_cmd(fui .. "screen toggle"))                 -- old-screen glass on / off
+hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- theme: night → concrete → lab
+hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(fui .. "wallpaper toggle"))              -- live / still backdrop
+hl.bind(k("SHIFT + C"), hl.dsp.exec_cmd(fui .. "screen toggle"))                 -- screen finish (vignette) on / off
 hl.bind(k("R"), hl.dsp.exec_cmd(fui .. "record toggle"))                         -- screen recording start / stop
 hl.bind("Print", hl.dsp.exec_cmd(fui .. "shot region"))                          -- screenshot a region (copied and saved)
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(fui .. "shot screen"))                  -- screenshot the screen
@@ -255,7 +253,7 @@ end
 --@ SUPER+arrows | focus the window in that direction
 --@ SUPER+SHIFT+arrows | move the window in that direction
 
--- workspaces 1-9 (the bar's /1 /2 /3 buttons)
+-- workspaces 1-9 (the bar's 01 02 03 segments)
 for i = 1, 9 do
     hl.bind(k(tostring(i)), hl.dsp.focus({ workspace = i }))
     hl.bind(k("SHIFT + " .. i), hl.dsp.window.move({ workspace = i }))
@@ -269,7 +267,7 @@ hl.bind(k("mouse:272"),  hl.dsp.window.drag(),   { mouse = true })
 hl.bind(k("mouse:273"),  hl.dsp.window.resize(), { mouse = true })
 --@ SUPER+drag | move a window (left button) or resize it (right button)
 
--- volume and brightness: shown by swayosd, with the site's tick
+-- volume and brightness: shown by swayosd, with a tick
 local osd, tick = "swayosd-client ", " && " .. fui .. "sound volume"
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(osd .. "--output-volume raise" .. tick), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(osd .. "--output-volume lower" .. tick), { locked = true, repeating = true })

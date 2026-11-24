@@ -1,18 +1,18 @@
-/* fui // ROFI: the launcher is an aero window
- * Frosted plastic frame (10px radius, 1px bevel), a glossy gel title bar with a pixel-font
- * [0xNN] title, and an inset well holding the search field and the list. The selected row
- * is a white nav button turned accent. Colours: fui-colors.rasi, a link to colors-<theme>.rasi.
- * The command palette, power menu and key list reuse this window with their own titles
- * (fui palette / power / keys pass -theme-str). */
+/* fui // ROFI: the launcher is a directory panel
+ * A flat glass panel with a hairline edge: a header plate (the accent stripe, a tracked
+ * capital title, an asset code on the right), a search field set into the panel, and flat
+ * rows; the selected row takes the accent stripe and tint. Colours: fui-colors.rasi, a link
+ * to colors-<theme>.rasi. The palette, power menu and key list reuse this panel with their
+ * own titles (fui palette / power / keys pass -theme-str). */
 
 configuration {
   modi: "drun,run,window";
   show-icons: true;
   icon-theme: "Papirus";
   terminal: "kitty";
-  display-drun: "apps";
-  display-run: "run";
-  display-window: "windows";
+  display-drun: "APPS";
+  display-run: "RUN";
+  display-window: "WINDOWS";
   drun-display-format: "{name}";
 }
 
@@ -21,73 +21,71 @@ configuration {
 * {
   background-color: transparent;
   text-color: @text;
-  font: @font-mono;
+  font: @font-ui;
 }
 
 window {
-  width: 600px;
-  padding: 4px;
+  width: 620px;
   border: 1px solid;
-  border-color: @edge;
-  border-radius: 10px;
+  border-color: @line-hi;
+  border-radius: 6px;
   background-color: @glass;
-  background-image: @sheen-face;
 }
 
 mainbox {
   children: [ titlebar, well ];
-  spacing: 4px;
+  spacing: 0;
 }
 
-/* the gel title bar: four stops, top to bottom, a highlight line along its top */
+/* the header plate: the accent stripe at its left */
 titlebar {
   expand: false;
   orientation: horizontal;
-  children: [ textbox-title, textbox-grip ];
-  padding: 6px 12px;
-  border: 1px solid;
-  border-color: @gel-edge;
-  border-radius: 999px;
-  background-image: @gel-face;
+  children: [ textbox-title, textbox-code ];
+  padding: 10px 14px 10px 12px;
+  border: 0 0 0 3px;
+  border-color: @accent;
+  background-color: @panel;
 }
 textbox-title {
-  content: "[0x01] run";
-  expand: false;
-  font: @font-pixel;
-  text-color: @gel-text;
+  content: "DIRECTORY";
+  expand: true;
+  font: @font-label;
+  text-color: @text;
   vertical-align: 0.5;
 }
-textbox-grip {
-  content: "";
-  expand: true;
+textbox-code {
+  content: "DIR-01";
+  expand: false;
+  font: @font-mono;
+  text-color: @faint;
+  vertical-align: 0.5;
 }
 
-/* the well: inset, translucent, holding the field and the rows */
 well {
   orientation: vertical;
   children: [ inputbar, message, listview ];
-  padding: 12px;
+  padding: 14px;
   spacing: 10px;
-  border: 1px solid;
-  border-color: @edge;
-  border-radius: 2px 2px 6px 6px;
-  background-color: @glass-well;
+  border: 1px 0 0 0;
+  border-color: @line;
 }
 
 inputbar {
   children: [ prompt, entry ];
-  spacing: 10px;
-  padding: 6px 14px;
+  spacing: 12px;
+  padding: 9px 12px;
   border: 1px solid;
-  border-color: @edge;
-  border-radius: 999px;
+  border-color: @line-hi;
+  border-radius: 4px;
   background-color: @well;
 }
-prompt { text-color: @nav-accent; }
+prompt { text-color: @accent; font: @font-label; vertical-align: 0.5; }
 entry {
-  placeholder: "type to search";
+  placeholder: "Search";
   placeholder-color: @muted;
-  cursor-color: @nav-accent;
+  cursor-color: @accent;
+  vertical-align: 0.5;
 }
 
 message { padding: 4px 6px; }
@@ -99,21 +97,22 @@ listview {
   columns: 1;
   fixed-height: true;
   scrollbar: false;
-  spacing: 6px;
+  spacing: 2px;
 }
 
-/* rows: white nav buttons; the selected one turns accent */
+/* rows: flat; the selected one takes the stripe and the accent tint */
 element {
-  padding: 5px 14px;
+  padding: 7px 12px;
   spacing: 12px;
-  border: 1px solid;
-  border-color: @edge;
-  background-color: @white;
-  text-color: @nav-accent;
+  border: 0 0 0 3px;
+  border-color: transparent;
+  border-radius: 4px;
+  background-color: transparent;
+  text-color: @text;
 }
-element normal.normal, element alternate.normal { background-color: @white; text-color: @nav-accent; }
-element selected.normal, element selected.active { background-color: @nav-accent; text-color: @white; }
-element normal.active, element alternate.active { background-color: @white; text-color: @link; }
+element normal.normal, element alternate.normal { background-color: transparent; text-color: @text; }
+element selected.normal, element selected.active { background-color: @accent-dim; text-color: @text; border-color: @accent; }
+element normal.active, element alternate.active { text-color: @accent; }
 element normal.urgent, element alternate.urgent, element selected.urgent { background-color: @bad; text-color: @white; }
-element-icon { size: 18px; background-color: transparent; }
+element-icon { size: 20px; background-color: transparent; }
 element-text { vertical-align: 0.5; background-color: transparent; text-color: inherit; }

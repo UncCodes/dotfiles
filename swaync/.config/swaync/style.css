@@ -1,160 +1,112 @@
-/* fui // SWAYNC: notifications and the control centre
- * A notification is a "capsule" window: aqua-tinted frosted plastic, a pill title in the
- * pixel face, and an inset well for the text. The control centre is a window of the same
- * plastic with a graphite "slab" title plate, white nav-button toggles and LCD-glass sliders.
- * Colours: fui-colors.css, a link to colors-<theme>.css. */
+/* fui // SWAYNC: notifications and the system console
+ * A notification is a memo card: a flat glass panel, a hairline edge, a stripe at the left
+ * in the accent (bad for critical), the summary in bold, the body below. The control
+ * centre is the "system console": a panel with a header plate, flat toggles and slim
+ * sliders. Colours: fui-colors.css, a link to colors-<theme>.css. */
 @import url("fui-colors.css");
 
 * {
-  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-family: "Inter", sans-serif;
   font-size: 13px;
 }
 
 notificationwindow, blankwindow, .blank-window { background: transparent; }
 
-/* ── a notification: the capsule window ── */
-.notification-row { outline: none; margin: 0; padding: 0; background: transparent; }
-/* swaync's own dark panels stay underneath otherwise */
-.notification-background, .notification-group, .notification-group .notification-row,
+/* swaync's own panels stay underneath otherwise */
+.notification-row, .notification-background, .notification-group, .notification-group .notification-row,
 .control-center-list scrolledwindow, .control-center-list viewport, .control-center-list list,
-.notification-group-headers, .notification-group-buttons { background: transparent; box-shadow: none; }
-.notification-row:focus .notification, .notification-row:hover .notification { border-color: @skin_aqua; }
+.notification-group-headers, .notification-group-buttons { background: transparent; box-shadow: none; outline: none; }
 
+/* ── a memo card ── */
 .notification {
-  margin: 6px 10px;
-  padding: 4px;
-  background-color: alpha(mix(@card, @skin_aqua, 0.07), 0.9);
-  background-image: linear-gradient(135deg, @sheen, transparent 38%);
-  border: 1px solid mix(@edge, @skin_aqua, 0.35);
-  border-radius: 16px;
-  box-shadow: inset 1px 1px @hi, inset -1px -1px @lo;
+  margin: 6px 12px;
+  padding: 0;
+  background-color: @glass;
+  border: 1px solid @line_hi;
+  border-radius: 6px;
+  box-shadow: inset 3px 0 @accent;
 }
-.notification.critical { border-color: @bad; }
-.notification-default-action, .notification-default-action:hover {
-  background: transparent; border: none; box-shadow: none; padding: 0; margin: 0;
-}
-
-/* the well */
-.notification-content {
-  padding: 8px 10px 10px;
-  background-color: @glass_well;
-  border: 1px solid @edge;
-  border-radius: 4px 4px 11px 11px;
-  box-shadow: inset 0 2px 3px @lo;
-}
-
-/* the title: a tinted gel pill in the pixel face */
-.summary {
-  font-family: "ProFontIIx Nerd Font", monospace;
-  font-size: 18px;
-  font-weight: normal;
-  color: @text;
-  padding: 2px 12px;
-  margin-bottom: 6px;
-  background-color: alpha(mix(@card, @skin_aqua, 0.24), 0.75);
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0.08) 55%);
-  border: 1px solid mix(@edge, @skin_aqua, 0.4);
-  border-radius: 999px;
-}
+.notification.low { box-shadow: inset 3px 0 @line_hi; }
+.notification.critical { box-shadow: inset 3px 0 @bad; border-color: @bad; }
+.notification-row:hover .notification, .notification-row:focus .notification { border-color: @accent; }
+.notification-default-action, .notification-default-action:hover { background: transparent; border: none; box-shadow: none; padding: 0; margin: 0; }
+.notification-content { padding: 12px 14px 12px 16px; }
+.summary { font-weight: 700; font-size: 13px; color: @text; }
 .notification.critical .summary { color: @bad; }
-.time { font-size: 11px; color: @muted; margin-right: 26px; }
-.body { font-family: "Noto Sans", sans-serif; font-size: 13px; color: @text; }
-.image, .app-icon { margin-right: 8px; border-radius: 6px; }
-.body-image { margin-top: 6px; border-radius: 6px; }
-progressbar trough { min-height: 6px; background-color: @lcd_bg; border-radius: 3px; }
-progressbar progress { min-height: 6px; background-color: @lcd_ink; border-radius: 3px; }
+.time { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 10px; color: @faint; margin-right: 28px; }
+.body { font-size: 12px; color: @muted; }
+.image, .app-icon { margin-right: 10px; border-radius: 4px; }
+.body-image { margin-top: 8px; border-radius: 4px; }
+progressbar trough { min-height: 4px; background-color: @line; border-radius: 2px; }
+progressbar progress { min-height: 4px; background-color: @accent; border-radius: 2px; }
 
-/* close: a small gel pill */
 .close-button {
-  min-width: 20px; min-height: 20px; margin: 10px 14px 0 0; padding: 0;
-  color: @text;
-  background-color: @card;
-  background-image: linear-gradient(to bottom, @gloss 0%, @gloss 45%, @gloss_lo 55%);
-  border: 1px solid @edge; border-radius: 999px; box-shadow: inset 0 1px @hi;
+  min-width: 20px; min-height: 20px; margin: 10px 12px 0 0; padding: 0;
+  color: @muted; background: transparent; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
 }
-.close-button:hover { color: @white; background-color: @bad; background-image: none; }
+.close-button:hover { color: @white; background: @bad; border-color: @bad; }
 
-/* actions: gel pills; the first one carries the accent */
 .notification-action > button, .notification-alt-actions button {
-  margin: 4px 3px 0;
-  padding: 3px 10px;
-  color: @text;
-  background-color: @card;
-  background-image: linear-gradient(to bottom, @gloss 0%, @gloss 45%, @gloss_lo 55%);
-  border: 1px solid @edge; border-radius: 999px; box-shadow: inset 0 1px @hi;
+  margin: 0 4px 8px; padding: 4px 12px; font-weight: 600; font-size: 11px;
+  color: @text; background: @raised; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
 }
-.notification-action:first-child > button { background-color: @nav_accent; color: @white; }
-.notification-action > button:hover, .notification-alt-actions button:hover { border-color: @nav_accent; }
-.inline-reply-entry { background: @well; color: @text; border: 1px solid @edge; border-radius: 999px; padding: 3px 10px; }
-
-/* groups */
-.notification-group { margin: 0; }
+.notification-action:first-child > button { background: @accent; color: @on_accent; border-color: @accent; }
+.notification-action > button:hover, .notification-alt-actions button:hover { border-color: @accent; }
+.inline-reply-entry { background: @well; color: @text; border: 1px solid @line_hi; border-radius: 4px; padding: 4px 10px; }
+.notification-group-header { font-weight: 700; color: @text; }
 .notification-group-headers, .notification-group-buttons { margin: 4px 14px; color: @muted; }
-.notification-group-header { font-family: "ProFontIIx Nerd Font", monospace; font-size: 18px; color: @text; }
 
-/* ── the control centre: a window of the same plastic ── */
+/* ── the system console ── */
 .control-center {
-  padding: 4px;
-  background-color: alpha(@card, 0.86);
-  background-image: linear-gradient(135deg, @sheen, transparent 38%);
-  border: 1px solid @edge;
-  border-radius: 10px;
-  box-shadow: inset 1px 1px @hi, inset -1px -1px @lo;
+  padding: 0;
+  background-color: @glass;
+  border: 1px solid @line_hi;
+  border-radius: 6px;
 }
-.control-center-list {
-  background-color: @glass_well;
-  border: 1px solid @edge;
-  border-radius: 2px 2px 6px 6px;
-  box-shadow: inset 0 2px 3px @lo;
-}
-.control-center-list .notification { margin: 6px; }
-.control-center-list-placeholder { color: @muted; font-family: "ProFontIIx Nerd Font", monospace; font-size: 18px; }
-.widget { margin: 4px 4px 0; }
+.control-center-list { background: transparent; }
+.control-center-list .notification { margin: 6px 10px; }
+.control-center-list-placeholder { color: @faint; font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px; }
+.widget { margin: 0; }
 
-/* the slab: a graphite title plate with the pixel face */
+/* the header plate */
 .widget-title {
-  padding: 2px 6px 2px 10px;
-  background-color: @graphite;
-  background-image: linear-gradient(to bottom, @graphite_hi 0%, @graphite 46%, @graphite_mid 54%, @graphite_lo 100%);
-  border: 1px solid rgba(0, 0, 0, 0.55);
-  border-radius: 3px;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
+  padding: 8px 10px 8px 14px;
+  background-color: @panel;
+  border-bottom: 1px solid @line;
+  box-shadow: inset 3px 0 @accent;
+  border-radius: 6px 6px 0 0;
 }
-.widget-title > label { font-family: "ProFontIIx Nerd Font", monospace; font-size: 18px; color: @plate_ink; }
+.widget-title > label { font-weight: 700; font-size: 11px; letter-spacing: 3px; color: @text; }
 .widget-title > button {
-  padding: 1px 12px; color: @plate_ink;
-  background-image: linear-gradient(to bottom, @metal_hi, @metal);
-  color: #22262b;
-  border: 1px solid rgba(0, 0, 0, 0.55); border-radius: 999px;
+  padding: 2px 12px; font-size: 11px; font-weight: 600;
+  color: @text; background: @raised; border: 1px solid @line_hi; border-radius: 4px; box-shadow: none;
 }
+.widget-title > button:hover { border-color: @accent; }
 
-.widget-dnd { padding: 4px 8px; }
-.widget-dnd > label { color: @text; }
-.widget-dnd switch { background-color: @well; border: 1px solid @edge; border-radius: 999px; box-shadow: inset 0 1px 3px @lo; }
-.widget-dnd switch:checked { background-color: @nav_accent; }
-.widget-dnd switch slider { background-color: @white; border: 1px solid @edge; border-radius: 999px; }
+.widget-dnd { padding: 8px 14px; border-bottom: 1px solid @line; }
+.widget-dnd > label { color: @muted; font-size: 11px; font-weight: 600; letter-spacing: 2px; }
+.widget-dnd switch { background-color: @line; border: 1px solid @line_hi; border-radius: 4px; }
+.widget-dnd switch:checked { background-color: @accent; border-color: @accent; }
+.widget-dnd switch slider { background-color: @white; border-radius: 3px; }
 
-/* the toggles: white nav buttons, lowercase paths */
-.widget-buttons-grid { padding: 4px 2px; }
+/* toggles: flat tiles; on = the accent tint and stripe */
+.widget-buttons-grid { padding: 8px 10px; border-bottom: 1px solid @line; }
 .widget-buttons-grid flowboxchild > button {
-  margin: 3px; padding: 4px 8px;
-  color: @nav_accent;
-  background: @white;
-  border: none; border-radius: 0; box-shadow: inset 0 0 0 1px @edge;
-  letter-spacing: 2px;
+  margin: 3px; padding: 8px 6px;
+  font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px;
+  color: @text; background: @raised; border: 1px solid @line; border-radius: 4px; box-shadow: none;
 }
-.widget-buttons-grid flowboxchild > button:hover { background: @light_gray; color: @white; }
-.widget-buttons-grid flowboxchild > button.toggle:checked { background: @nav_accent; color: @white; }
+.widget-buttons-grid flowboxchild > button:hover { border-color: @accent; }
+.widget-buttons-grid flowboxchild > button.toggle:checked { background: @accent_dim; border-color: @accent; }
 
-/* sliders: an inset trough, an accent fill, a white gel knob */
-.widget-volume, .widget-backlight { padding: 4px 8px; color: @text; }
-scale trough { min-height: 6px; background-color: @well; border: 1px solid @edge; border-radius: 999px; box-shadow: inset 0 1px 2px @lo; }
-scale highlight { background-color: @nav_accent; border-radius: 999px; }
-scale slider { min-width: 14px; min-height: 14px; background-color: @white; border: 1px solid @edge; border-radius: 999px; }
+/* sliders: a hairline track, the accent fill, a square knob */
+.widget-volume, .widget-backlight { padding: 8px 14px; color: @muted; border-bottom: 1px solid @line; }
+scale trough { min-height: 4px; background-color: @line; border-radius: 2px; }
+scale highlight { background-color: @accent; border-radius: 2px; }
+scale slider { min-width: 12px; min-height: 12px; background-color: @panel; border: 2px solid @accent; border-radius: 3px; }
 
-/* now playing: a small well */
-.widget-mpris { padding: 4px; }
-.widget-mpris-player { padding: 6px; background-color: @glass_well; border: 1px solid @edge; border-radius: 6px; }
-.widget-mpris-title { font-weight: bold; color: @text; }
+.widget-mpris { padding: 8px 10px; border-bottom: 1px solid @line; }
+.widget-mpris-player { padding: 8px; background-color: @raised; border: 1px solid @line; border-radius: 4px; }
+.widget-mpris-title { font-weight: 700; color: @text; }
 .widget-mpris-subtitle { color: @muted; }
 .widget-mpris-album-art { border-radius: 4px; }

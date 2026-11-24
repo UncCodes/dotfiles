@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # fui // one command for the desktop.
 #
-#   fui mode [toggle|dark|mid|light|apply|status]   the theme (SUPER+SHIFT+T cycles dark → mid → light)
-#   fui wallpaper [start|toggle|live|still]          the lattice backdrop, live or still (SUPER+SHIFT+W)
-#   fui screen [toggle|on|off]                       old-screen glass over everything (SUPER+SHIFT+C)
+#   fui mode [toggle|night|concrete|lab|apply|status]  the theme (SUPER+SHIFT+T cycles them)
+#   fui wallpaper [start|toggle|live|still]          the network backdrop, live or still (SUPER+SHIFT+W)
+#   fui screen [toggle|on|off]                       the screen finish, a faint vignette (SUPER+SHIFT+C)
 #   fui sound <event>|on|off|toggle|status           interface sounds
 #   fui palette | power | keys | clipboard           launcher windows (SUPER+Space, SUPER+X, SUPER+/, SUPER+SHIFT+V)
 #   fui shot [region|screen|edit|tour]               screenshots (Print, SHIFT+Print, SUPER+Print)
 #   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
 #   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
-#   fui updates                                      count pending package updates
+#   fui updates | brand                              count pending package updates · the company name
 #   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
 #   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
@@ -43,17 +43,18 @@ print(" ".join(v) if isinstance(v, list) else v)
 ' "$CFG/fui/tokens.json" "$1" 2>/dev/null
 }
 
-# rofi in the fui window, with its own [0xNN] title
-rofi_window() {   # rofi_window "<title>" [rofi args...]
-  local title="$1"; shift
-  rofi -config "$CFG/rofi/config.rasi" -theme-str "textbox-title { content: \"$title\"; }" "$@"
+# rofi in the fui panel, with its own plate title and asset code
+rofi_window() {   # rofi_window "<TITLE>" "<CODE>" [rofi args...]
+  local title="$1" code="$2"; shift 2
+  rofi -config "$CFG/rofi/config.rasi" \
+    -theme-str "textbox-title { content: \"$title\"; } textbox-code { content: \"$code\"; }" "$@"
 }
 
 
-# ── mode: dark, mid, light ──────────────────────────────────────────────
+# ── mode: night, concrete, lab ────────────────────────────────────────────
 # theme/build.py writes every themed file once per theme. Each app reads a fui-colors.*
 # (or fui-mode.css) link next to them; this points the links at one theme.
-modes() { local m; m=$(tok meta.modes); echo "${m:-dark mid light}"; }
+modes() { local m; m=$(tok meta.modes); echo "${m:-night concrete lab}"; }
 
 current_mode() {
   local m all
@@ -94,8 +95,7 @@ cmd_mode() {
   case "$cmd" in
     status)
       if [ "${2:-}" = --bar ]; then
-        case "$cur" in dark) a="󰖔" ;; mid) a="󰖚" ;; *) a="󰖙" ;; esac
-        echo "$a $cur"
+        echo "<span alpha='60%' size='small' letter_spacing='1600'>THEME</span> $cur"
       else
         echo "$cur"
       fi
@@ -125,6 +125,7 @@ cmd_mode() {
   mode_link "$CFG/kitty"   "colors-$new.conf" fui-colors.conf
   mode_link "$CFG/gtk-3.0" "fui-$new.css"     fui-mode.css
   mode_link "$CFG/gtk-4.0" "fui-$new.css"     fui-mode.css
+  mode_link "$SHARE/brand" "mark-$new.png"    mark.png
   if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
     sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$CFG/qt6ct/qt6ct.conf"
   fi
@@ -181,7 +182,7 @@ cmd_wallpaper() {
   local mode png
   mode=$(current_mode)
   png="$CFG/hypr/wallpaper-$mode.png"
-  [ -e "$png" ] || png="$CFG/hypr/wallpaper-dark.png"
+  [ -e "$png" ] || png="$CFG/hypr/wallpaper-night.png"
 
   # one instance at a time: a newer call (a theme change) takes over from an older one
   exec 9>"$CACHE/.wallpaper.lock"
@@ -243,7 +244,7 @@ cmd_screen() {
   esac
   echo "$cur" > "$STATE/screen"
   [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl reload >/dev/null 2>&1
-  note "screen glass" "$cur"
+  note "screen finish" "$cur"
 }
 
 
@@ -261,7 +262,9 @@ cmd_sound() {
       [ "$ev" = on ] && cmd_sound tick
       return 0 ;;
     status)
-      if [ "${2:-}" = --bar ]; then [ "$cur" = on ] && echo "󰕾" || echo "󰖁"; else echo "$cur"; fi
+      if [ "${2:-}" = --bar ]; then
+        echo "<span alpha='60%' size='small' letter_spacing='1600'>SND</span> $cur"
+      else echo "$cur"; fi
       return 0 ;;
     "") die "usage: fui sound <event>|on|off|toggle|status" ;;
   esac
@@ -363,33 +366,33 @@ cmd_tui() {
 # ── launcher windows: palette, power, keys, clipboard ───────────────────
 cmd_palette() {
   local -a rows=(
-    "/apps|rofi -config $CFG/rofi/config.rasi -show drun"
-    "/windows|rofi -config $CFG/rofi/config.rasi -show window"
-    "/run|rofi -config $CFG/rofi/config.rasi -show run"
-    "/theme   dark · mid · light|$SELF mode toggle"
-    "/wallpaper   live · still|$SELF wallpaper toggle"
-    "/screen   old-screen glass|$SELF screen toggle"
-    "/sound   interface sounds|$SELF sound toggle"
-    "/screenshot   region|$SELF shot region"
-    "/screenshot   screen|$SELF shot screen"
-    "/screenshot   annotate|$SELF shot edit"
-    "/record   start · stop|$SELF record toggle"
-    "/clipboard|$SELF clipboard"
-    "/emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
-    "/calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
-    "/files|$SELF tui yazi"
-    "/network|$SELF tui nmtui"
-    "/audio|$SELF tui wiremix"
-    "/monitor|$SELF tui btop"
-    "/notifications|swaync-client -t -sw"
-    "/keys|$SELF keys"
-    "/update|$SELF tui sh -c '$SELF update; echo; read -r -p \"done: press enter\" _'"
-    "/doctor|$SELF tui sh -c '$SELF doctor; echo; read -r -p \"press enter\" _'"
-    "/power|$SELF power"
+    "Applications|rofi -config $CFG/rofi/config.rasi -show drun"
+    "Windows|rofi -config $CFG/rofi/config.rasi -show window"
+    "Run a command|rofi -config $CFG/rofi/config.rasi -show run"
+    "Theme: night, concrete, lab|$SELF mode toggle"
+    "Backdrop: live or still|$SELF wallpaper toggle"
+    "Screen finish|$SELF screen toggle"
+    "Interface sounds|$SELF sound toggle"
+    "Capture a region|$SELF shot region"
+    "Capture the screen|$SELF shot screen"
+    "Capture and annotate|$SELF shot edit"
+    "Record the screen|$SELF record toggle"
+    "Clipboard|$SELF clipboard"
+    "Emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
+    "Calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
+    "Files|$SELF tui yazi"
+    "Network|$SELF tui nmtui"
+    "Audio|$SELF tui wiremix"
+    "System monitor|$SELF tui btop"
+    "Notices|swaync-client -t -sw"
+    "Key reference|$SELF keys"
+    "Update the workstation|$SELF tui sh -c '$SELF update; echo; read -r -p \"done: press enter\" _'"
+    "Diagnostics|$SELF tui sh -c '$SELF doctor; echo; read -r -p \"press enter\" _'"
+    "Session|$SELF power"
   )
   local labels pick row
   labels=$(printf '%s\n' "${rows[@]}" | cut -d'|' -f1)
-  pick=$(printf '%s\n' "$labels" | rofi_window "[0x02] palette" -dmenu -i -p ">" -no-custom) || return 0
+  pick=$(printf '%s\n' "$labels" | rofi_window "COMMAND PALETTE" "CMD-02" -dmenu -i -p "RUN" -no-custom) || return 0
   for row in "${rows[@]}"; do
     if [ "${row%%|*}" = "$pick" ]; then cmd_sound tick; eval "detach ${row#*|}"; return 0; fi
   done
@@ -398,13 +401,14 @@ cmd_palette() {
 cmd_power() {
   local pick="${1:-}"
   if [ -z "$pick" ]; then
-    pick=$(printf '/lock\n/logout\n/suspend\n/reboot\n/shutdown\n' | rofi_window "[0x05] power" -dmenu -i -p ">" -no-custom -lines 5) || return 0
-    pick="${pick#/}"
+    local choice
+    choice=$(printf 'Lock\nSign out\nSuspend\nRestart\nShut down\n' | rofi_window "SESSION" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 5) || return 0
+    case "$choice" in Lock) pick=lock ;; "Sign out") pick=logout ;; Suspend) pick=suspend ;; Restart) pick=reboot ;; "Shut down") pick=shutdown ;; *) return 0 ;; esac
     case "$pick" in
       reboot|shutdown|logout)
         local sure
-        sure=$(printf "/yes, $pick\n/cancel\n" | rofi_window "[0x05] $pick?" -dmenu -i -p ">" -no-custom -lines 2) || return 0
-        [ "$sure" = "/yes, $pick" ] || return 0 ;;
+        sure=$(printf "Confirm: %s\nCancel\n" "$choice" | rofi_window "CONFIRM" "PWR-05" -dmenu -i -p "ACTION" -no-custom -lines 2) || return 0
+        [ "$sure" = "Confirm: $choice" ] || return 0 ;;
     esac
   fi
   case "$pick" in
@@ -441,13 +445,13 @@ PY
 
 cmd_keys() {
   if [ "${1:-}" = --text ] || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then keys_list; return 0; fi
-  keys_list | rofi_window "[0x03] keys" -dmenu -i -p "find" -no-custom >/dev/null
+  keys_list | rofi_window "KEY REFERENCE" "KEY-03" -dmenu -i -p "FIND" -no-custom >/dev/null
   return 0
 }
 
 cmd_clipboard() {
   have cliphist || die "cliphist is not installed"
-  cliphist list | rofi_window "[0x04] clipboard" -dmenu -i -p ">" -display-columns 2 | cliphist decode | wl-copy
+  cliphist list | rofi_window "CLIPBOARD" "CLP-04" -dmenu -i -p "PASTE" -display-columns 2 | cliphist decode | wl-copy
 }
 
 
@@ -489,7 +493,7 @@ shot_tour() {   # a fixed set of screenshots for design reviews, in every theme
     dispatch "hl.dsp.focus({ workspace = '$ws' })"; snap "$m-desktop" 1
     dispatch "hl.dsp.focus({ workspace = 'empty' })"; snap "$m-empty" 1.5
     detach rofi -config "$CFG/rofi/config.rasi" -show drun; snap "$m-launcher" 1.2; pkill -x rofi
-    notify-send -a fui "[0x07] sample" "A notification for the screenshot tour."; snap "$m-notification" 1
+    notify-send -a fui "Scheduled maintenance" "A sample notice for the screenshot tour."; snap "$m-notification" 1
     swaync-client -op >/dev/null 2>&1; snap "$m-control-centre" 1.2; swaync-client -cp >/dev/null 2>&1
   done
   cmd_mode "$start" --quiet >/dev/null
@@ -520,11 +524,20 @@ cmd_record() {
       if [ "$running" = 1 ]; then
         local now began s
         now=$(date +%s); began=$(cat "$STATE/record-start" 2>/dev/null || echo "$now"); s=$((now - began))
-        printf '{"text": "● rec %02d:%02d", "class": "recording", "tooltip": "click to stop"}\n' $((s / 60)) $((s % 60))
+        printf '{"text": "● REC %02d:%02d", "class": "recording", "tooltip": "click to stop"}\n' $((s / 60)) $((s % 60))
       else
         echo '{"text": ""}'
       fi ;;
     *) die "usage: fui record [toggle|start|stop|status]" ;;
+  esac
+}
+
+
+# ── brand ───────────────────────────────────────────────────────────────
+cmd_brand() {
+  case "${1:-}" in
+    --bar) tok brand.short ;;
+    *) printf '%s · %s\n%s\n' "$(tok brand.name)" "$(tok brand.division)" "$(tok brand.motto)" ;;
   esac
 }
 
@@ -804,12 +817,12 @@ for m in json.load(sys.stdin):
     bad "no dotfiles at $DOTS"
   fi
   local face
-  for face in "JetBrainsMono Nerd Font" "ProFontIIx Nerd Font" "Michroma" "DSEG7 Classic" "Noto Sans"; do
+  for face in "JetBrainsMono Nerd Font" "Inter" "Michroma" "Noto Sans"; do
     fc-list 2>/dev/null | grep -qi "$face" && ok "font: $face" || { bad "font missing: $face"; fix fix_links "re-link the dotfiles and rebuild the font cache"; }
   done
 
   section "look"
-  info "theme: $(current_mode) (SUPER+SHIFT+T)   screen glass: $(cmd_screen status) (SUPER+SHIFT+C)"
+  info "theme: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
   if have plymouth-set-default-theme; then
     [ "$(plymouth-set-default-theme 2>/dev/null)" = fui ] && ok "boot splash: fui" || info "boot splash not set up: fui setup boot"
   else
@@ -1004,7 +1017,7 @@ setup_boot() {
   else echo "  rebuild your initramfs to include the splash"; fi
   # boot menu hidden unless a key is held (systemd-boot)
   have bootctl && sudo bootctl set-timeout 0 >/dev/null 2>&1 && echo "  boot menu: hidden (hold Space while booting to show it)"
-  # text consoles: the CRT palette, a clean font, a login banner in the house style
+  # text consoles: the console palette, a clean font, the sign-in banner
   sudo install -m 644 "$tmp/console/issue" /etc/issue
   sudo install -m 644 "$tmp/console/vtrgb" /etc/vtrgb
   sudo install -m 644 "$tmp/console/fui-vtrgb.service" /etc/systemd/system/fui-vtrgb.service
@@ -1014,7 +1027,7 @@ setup_boot() {
   else
     echo "FONT=ter-v18n" | sudo tee -a /etc/vconsole.conf >/dev/null
   fi
-  echo "  consoles: CRT palette, Terminus 18, login banner"
+  echo "  consoles: console palette, Terminus 18, sign-in banner"
   rm -rf "$tmp"
   echo "  reboot to see it: systemctl reboot"
 }
@@ -1055,6 +1068,7 @@ case "$sub" in
   shot)      cmd_shot "$@" ;;
   record)    cmd_record "$@" ;;
   updates)   cmd_updates "$@" ;;
+  brand)     cmd_brand "$@" ;;
   version)   cmd_version "$@" ;;
   rollback)  cmd_rollback "$@" ;;
   update)    cmd_update "$@" ;;

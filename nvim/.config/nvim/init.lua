@@ -1,5 +1,5 @@
 -- fui // NEOVIM
--- A small, complete setup on the CRT palette: files (oil, telescope), git signs, a status
+-- A small, complete setup on the console palette: files (oil, telescope), git signs, a status
 -- line, completion and language servers (mason installs them: :Mason). Plugins install
 -- themselves on the first start (lazy.nvim). Space is the leader; Space alone shows the keys.
 
@@ -30,9 +30,9 @@ vim.opt.rtp:prepend(lazypath)
 local ok, lazy = pcall(require, "lazy")
 if not ok then return end
 
-local crt = { bg = "#0D0D0D", fg = "#D4D4D4", dim = "#8A8A8A", green = "#5FD75F", blue = "#6AB0FF",
-              yellow = "#E5C07B", red = "#FF6B6B", magenta = "#C678DD", panel = "#1A1A1A" }
-local function section(b) return { a = { fg = crt.bg, bg = b, gui = "bold" }, b = { fg = crt.fg, bg = crt.panel }, c = { fg = crt.dim, bg = crt.bg } } end
+local con = { bg = "#07090C", fg = "#D7DEE5", dim = "#7D8894", green = "#00C2D1", blue = "#5B8CFF",
+              yellow = "#F2A93B", red = "#FF5C6C", magenta = "#B78CFF", panel = "#151A21" }
+local function section(b) return { a = { fg = con.bg, bg = b, gui = "bold" }, b = { fg = con.fg, bg = con.panel }, c = { fg = con.dim, bg = con.bg } } end
 
 lazy.setup({
   { "stevearc/oil.nvim", opts = { view_options = { show_hidden = true } },
@@ -46,8 +46,8 @@ lazy.setup({
     } },
   { "lewis6991/gitsigns.nvim", event = "BufReadPre", opts = {} },
   { "nvim-lualine/lualine.nvim", opts = {
-      options = { theme = { normal = section(crt.green), insert = section(crt.blue), visual = section(crt.magenta),
-                            replace = section(crt.red), command = section(crt.yellow), inactive = section(crt.dim) },
+      options = { theme = { normal = section(con.green), insert = section(con.blue), visual = section(con.magenta),
+                            replace = section(con.red), command = section(con.yellow), inactive = section(con.dim) },
                   section_separators = "", component_separators = "│", globalstatus = true },
       sections = { lualine_a = { "mode" }, lualine_b = { "branch", "diff" }, lualine_c = { { "filename", path = 1 } },
                    lualine_x = { "diagnostics", "filetype" }, lualine_y = { "progress" }, lualine_z = { "location" } } } },

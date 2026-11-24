@@ -1,28 +1,28 @@
-# fui // ZATHURA: a document on paper, the frame on the CRT palette
+# fui // ZATHURA: a document on paper, the frame on the console palette
 set font "JetBrainsMono Nerd Font 10"
-set default-bg "#0D0D0D"
-set default-fg "#D4D4D4"
-set statusbar-bg "#1A1A1A"
-set statusbar-fg "#D4D4D4"
-set inputbar-bg "#0D0D0D"
-set inputbar-fg "#F2F2F2"
-set notification-bg "#1A1A1A"
-set notification-fg "#D4D4D4"
-set notification-error-bg "#1A1A1A"
-set notification-error-fg "#FF6B6B"
-set notification-warning-bg "#1A1A1A"
-set notification-warning-fg "#E5C07B"
-set highlight-color "rgba(229,192,123,0.45)"
-set highlight-active-color "rgba(95,215,95,0.45)"
-set completion-bg "#1A1A1A"
-set completion-fg "#D4D4D4"
-set completion-highlight-bg "#6AB0FF"
-set completion-highlight-fg "#0D0D0D"
-set recolor-lightcolor "#0D0D0D"
-set recolor-darkcolor "#D4D4D4"
+set default-bg "#07090C"
+set default-fg "#D7DEE5"
+set statusbar-bg "#151A21"
+set statusbar-fg "#D7DEE5"
+set inputbar-bg "#07090C"
+set inputbar-fg "#F4F7FA"
+set notification-bg "#151A21"
+set notification-fg "#D7DEE5"
+set notification-error-bg "#151A21"
+set notification-error-fg "#FF5C6C"
+set notification-warning-bg "#151A21"
+set notification-warning-fg "#F2A93B"
+set highlight-color "rgba(242,169,59,0.40)"
+set highlight-active-color "rgba(0,194,209,0.40)"
+set completion-bg "#151A21"
+set completion-fg "#D7DEE5"
+set completion-highlight-bg "#00C2D1"
+set completion-highlight-fg "#07090C"
+set recolor-lightcolor "#07090C"
+set recolor-darkcolor "#D7DEE5"
 set recolor false
 set selection-clipboard clipboard
 set adjust-open width
 set statusbar-h-padding 8
 set statusbar-v-padding 4
-# Ctrl+R: read on the CRT (recolour the page)
+# Ctrl+R: read on the console (recolour the page)

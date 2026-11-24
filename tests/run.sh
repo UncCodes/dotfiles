@@ -42,6 +42,16 @@ fi
 if command -v luacheck >/dev/null; then
   t "luacheck" luacheck --config "$DOTS/.luacheckrc" "$DOTS/hypr/.config/hypr" "$DOTS/nvim/.config/nvim"
 fi
+if command -v lua >/dev/null; then
+  for m in $(python3 -c 'import tomllib,sys; print(" ".join(tomllib.load(open(sys.argv[1],"rb"))["meta"]["modes"]))' "$DOTS/theme/tokens.toml"); do
+    t "hyprland.lua runs in the $m theme (startup included)" bash -c '
+      h=$(mktemp -d); mkdir -p "$h/.config/hypr" "$h/.local/state/fui"
+      cp "$1/hypr/.config/hypr/fui.lua" "$h/.config/hypr/"; echo "$2" > "$h/.local/state/fui/mode"
+      HOME="$h" XDG_STATE_HOME="$h/.local/state" lua "$1/tests/hyprland-mock.lua" "$1/hypr/.config/hypr/hyprland.lua"' _ "$DOTS" "$m"
+  done
+  t "hyprland.lua runs without its token file (the fallback)" bash -c '
+    h=$(mktemp -d); HOME="$h" XDG_STATE_HOME="$h/st" lua "$1/tests/hyprland-mock.lua" "$1/hypr/.config/hypr/hyprland.lua"' _ "$DOTS"
+fi
 t "theme build is current, contrast passes" python3 "$DOTS/theme/build.py" --check
 t "Qt stylesheets have no // (qt6ct strips it as a comment)" bash -c '! grep -l "//" "$1"/theme/templates/*.qss.in' _ "$DOTS"
 t "waybar configs parse" python3 -c '
@@ -101,17 +111,19 @@ t "fui is on the default PATH" env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/b
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"; chmod 700 "$XDG_RUNTIME_DIR"; export XDG_RUNTIME_DIR
 t "Hyprland --verify-config" Hyprland --verify-config
 t "theme links in place" bash -c 'for l in waybar/fui-colors.css rofi/fui-colors.rasi swaync/fui-colors.css swayosd/fui-colors.css hypr/fui-colors.conf kitty/fui-colors.conf gtk-3.0/fui-mode.css gtk-4.0/fui-mode.css; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done'
-for m in mid light dark; do
+for m in concrete lab night; do
   t "switch to $m" bash -c '"$HOME/.local/bin/fui" mode "$1" --quiet &&
     [ "$(readlink "$HOME/.config/kitty/fui-colors.conf")" = "colors-$1.conf" ] &&
     [ "$(readlink "$HOME/.config/gtk-4.0/fui-mode.css")" = "fui-$1.css" ] &&
     grep -q "fui-$1.conf" "$HOME/.config/qt6ct/qt6ct.conf" &&
     grep -q "data-theme=\"$1\"" "$HOME/.local/share/fui/start.html"' _ "$m"
 done
-t "theme cycles dark → mid → light" bash -c 'f="$HOME/.local/bin/fui"; "$f" mode dark --quiet; "$f" mode toggle --quiet; [ "$("$f" mode status)" = mid ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = light ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = dark ]'
+t "theme cycles night → concrete → lab" bash -c 'f="$HOME/.local/bin/fui"; "$f" mode night --quiet; "$f" mode toggle --quiet; [ "$("$f" mode status)" = concrete ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = lab ] && "$f" mode toggle --quiet && [ "$("$f" mode status)" = night ]'
 t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
 t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/stereo/desktop-login.oga"
-t "fonts: Michroma, DSEG7, ProFont IIx, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "DSEG7 Classic" && fc-list | grep -qi "ProFontIIx" && fc-list | grep -q "JetBrainsMono Nerd"'
+t "fonts: Michroma, Inter, JetBrains Mono" bash -c 'fc-list | grep -q Michroma && fc-list | grep -q "Inter" && fc-list | grep -q "JetBrainsMono Nerd"'
+t "the brand mark follows the theme" bash -c '[ -e "$HOME/.local/share/fui/brand/mark.png" ] && [ "$(readlink "$HOME/.local/share/fui/brand/mark.png")" = "mark-$("$HOME/.local/bin/fui" mode status).png" ]'
+t "fui brand reads the tokens" bash -c '[ "$("$HOME/.local/bin/fui" brand --bar)" = FUI ]'
 t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
 if command -v nvim >/dev/null; then
   t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'

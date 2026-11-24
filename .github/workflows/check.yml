@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Prepare Arch
         run: |
-          pacman -Syu --noconfirm --needed git sudo base-devel shellcheck luacheck python
+          pacman -Syu --noconfirm --needed git sudo base-devel shellcheck luacheck python lua
           useradd -m tester
           echo 'tester ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/tester
 

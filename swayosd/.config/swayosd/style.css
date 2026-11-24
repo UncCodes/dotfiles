@@ -1,23 +1,17 @@
 /* fui // SWAYOSD: volume and brightness on screen
- * A small frosted capsule holding an icon and a level on LCD glass.
+ * A small flat plate with the accent stripe: an icon and a slim accent level.
  * Colours: fui-colors.css, a link to colors-<theme>.css. */
 @import url("fui-colors.css");
 
 window#osd {
-  padding: 4px;
-  background-color: alpha(mix(@card, @skin_aqua, 0.07), 0.9);
-  background-image: linear-gradient(135deg, @sheen, transparent 38%);
-  border: 1px solid mix(@edge, @skin_aqua, 0.35);
-  border-radius: 16px;
-  box-shadow: inset 1px 1px @hi, inset -1px -1px @lo;
+  background-color: @glass;
+  border: 1px solid @line_hi;
+  border-radius: 6px;
+  box-shadow: inset 3px 0 @accent;
 }
-window#osd #container { margin: 10px 16px; }
+window#osd #container { margin: 12px 18px 12px 20px; }
 window#osd image, window#osd label { color: @text; font-family: "JetBrainsMono Nerd Font", monospace; }
-window#osd progressbar, window#osd segmentedprogress {
-  min-height: 10px; min-width: 180px;
-  background: @lcd_bg; border: 1px solid @edge; border-radius: 3px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
-}
-window#osd trough, window#osd segment { min-height: 8px; border-radius: 2px; border: none; background: @lcd_ghost; }
-window#osd progress, window#osd segment.active { min-height: 8px; border-radius: 2px; border: none; background: @lcd_ink; }
+window#osd progressbar, window#osd segmentedprogress { min-height: 4px; min-width: 200px; background: transparent; border: none; }
+window#osd trough, window#osd segment { min-height: 4px; border-radius: 2px; border: none; background: @line; }
+window#osd progress, window#osd segment.active { min-height: 4px; border-radius: 2px; border: none; background: @accent; }
 window#osd progressbar:disabled, window#osd image:disabled { opacity: 0.5; }

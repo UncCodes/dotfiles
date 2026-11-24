@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Draw the fui wallpaper: aljulandani.dev's network lattice on the theme's desk colour.
+"""Draw the fui backdrop: the company network on the theme's floor colour.
 
-The lattice (theme/lattice.py, the same drawing as the site) is mapped onto the screen the
-way the site's CSS does it: scaled to cover, centred, enlarged 1.1x, and fading from the
-top of the screen to the bottom. Lines in the theme's arc colour, bead strings in its bead
-colour. The live version adds the site's travelling beads: dots that run along their lines
-at eight speeds, each from its own starting point. Old-screen glass (scanlines) is not
-baked in: the Hyprland screen shader lays it over everything.
+The lattice (theme/lattice.py) is mapped onto the screen scaled to cover, centred, enlarged
+1.1x, fading from the top of the screen to the bottom: lines in the theme's arc colour,
+nodes in its bead colour. The live version sends data packets along the lines in the
+theme's accent, at eight speeds, each from its own starting point. No text, ever.
 
 Usage:
-  python3 theme/make-wallpaper.py [--mode dark|mid|light] [out.png] [width] [height]
+  python3 theme/make-wallpaper.py [--mode night|concrete|lab] [out.png] [width] [height]
   python3 theme/make-wallpaper.py --live [--mode M] [--seconds N] out.mp4 [width] [height]
   python3 theme/make-wallpaper.py --all          # the three stills into hypr/.config/hypr/
 The live loop is seamless at its default length (56 s, every bead speed divides it).
@@ -52,7 +50,7 @@ class Scene:
         c = TOK["mode"][mode]
         self.W, self.H = W, H
         self.ground = rgba(c["bg"])[:3]
-        self.arc, self.bead = rgba(c["arc"]), rgba(c["bead"])
+        self.arc, self.bead, self.packet = rgba(c["arc"]), rgba(c["bead"]), rgba(c["packet"])
         self.art = lattice()
         vw, vh = self.art["view"]
         self.s = max(W / vw, H / vh) * 1.1            # cover, centred, enlarged 1.1x
@@ -109,8 +107,8 @@ def sprite(colour, alpha, size, S=4):
 def render_still(mode, out, W, H):
     scene = Scene(mode, W, H)
     img = scene.still()
-    # the travelling beads where they stand at t = 0
-    br, bg, bb, ba = scene.bead
+    # the data packets where they stand at t = 0
+    br, bg, bb, ba = scene.packet
     for x1, y1, x2, y2, size, dur, ph in scene.packets():
         t = ph % 1.0
         x, y = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
@@ -127,7 +125,7 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24):
     W, H = W // 2 * 2, H // 2 * 2
     scene = Scene(mode, W, H)
     base = scene.still()
-    br, bg, bb, ba = scene.bead
+    br, bg, bb, ba = scene.packet
     LEVELS = 24                                     # fade quantised: sprites made once
     cache = {}
 
