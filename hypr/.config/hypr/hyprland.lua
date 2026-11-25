@@ -343,7 +343,8 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"),   { locked = tru
 
 -- ── machine-specific overrides ──────────────────────────────────────────
 -- ~/.config/hypr/local.lua is created by install.sh and ignored by git
--- (monitor layout, NVIDIA env vars). Loaded only if it exists.
+-- (monitor layout, NVIDIA env vars). Loaded only if it exists. Hyprland watches only this
+-- file, so after editing local.lua run `hyprctl reload`.
 pcall(function()
     local path = HOME .. "/.config/hypr/local.lua"
     local f = io.open(path, "r")

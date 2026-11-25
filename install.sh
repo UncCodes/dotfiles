@@ -160,8 +160,11 @@ machine_files() {
   local lc="$HOME/.config/hypr/local.lua"
   if [ ! -e "$lc" ]; then
     mkdir -p "$(dirname "$lc")"
-    printf '%s\n' "-- Machine-specific Hyprland settings (not in git)." \
-      '-- Example: hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })' > "$lc"
+    printf '%s\n' "-- Machine-specific Hyprland settings (not in git). Hyprland doesn't watch this file:" \
+      "-- run 'hyprctl reload' after editing it." \
+      '-- Example: hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })' \
+      '-- A mode the screen does not list (a CRT behind an adapter to VGA): give its VESA modeline, e.g.' \
+      '--   mode = "modeline 94.50 1024 1072 1168 1376 768 769 772 808 +hsync +vsync"   (1024x768 at 85 Hz)' > "$lc"
   fi
   if command -v lspci >/dev/null && lspci | grep -qiE '(vga|3d).*nvidia' && ! grep -q LIBVA_DRIVER_NAME "$lc"; then
     printf '\n-- NVIDIA (needs the nvidia driver: fui setup gpu)\nhl.env("LIBVA_DRIVER_NAME", "nvidia")\nhl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")\nhl.env("NVD_BACKEND", "direct")\n' >> "$lc"
