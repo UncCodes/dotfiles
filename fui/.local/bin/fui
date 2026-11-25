@@ -439,11 +439,15 @@ cmd_lockclock() {
 # mpvpaper. Still: swaybg with the PNG (also shown while the loop renders); before the still
 # exists, the edition's ground colour.
 # Stop every other `fui wallpaper` run (including ones an older version left waiting on a
-# lock), but not this one or the subshells it is running.
+# lock), but never this one, what started it (a shell, a timeout) or its own subshells.
 wallpaper_takeover() {
-  local pid ppid
+  local pid ppid p mine=" $$ "
+  p=$$
+  while p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ') && [ -n "$p" ] && [ "$p" -gt 1 ] 2>/dev/null; do
+    mine="$mine$p "
+  done
   for pid in $(pgrep -f "fui wallpaper" 2>/dev/null); do
-    [ "$pid" = "$$" ] && continue
+    [[ "$mine" == *" $pid "* ]] && continue
     ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     [ "$ppid" = "$$" ] && continue
     kill "$pid" 2>/dev/null
