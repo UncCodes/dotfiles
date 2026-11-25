@@ -126,6 +126,7 @@ for m in $EDITIONS; do shots "$m" lcd; done
 shots cyan crt; shots cyan deep; shots paper crt
 pkill -x waybar; pkill -x swaync
 # ReGreet lists the users through AccountsService on the system bus, which a container lacks
+[ -s /etc/machine-id ] || dbus-uuidgen | sudo tee /etc/machine-id >/dev/null   # AccountsService needs one
 if [ ! -S /run/dbus/system_bus_socket ]; then sudo mkdir -p /run/dbus && sudo dbus-daemon --system --fork; fi
 # (and AccountsService asks polkit), and D-Bus can't start either in a container: run them here
 [ -x /usr/lib/polkit-1/polkitd ] && sudo sh -c '/usr/lib/polkit-1/polkitd --no-debug >/dev/null 2>&1 &'
