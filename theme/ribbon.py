@@ -13,7 +13,10 @@ number of times.
 """
 import math
 
-from PIL import Image, ImageDraw, ImageFilter
+try:                                    # the drawing needs Pillow; the start page's line work (svg) does not
+    from PIL import Image, ImageDraw, ImageFilter
+except ImportError:
+    Image = ImageDraw = ImageFilter = None
 
 from palette import E, T, is_dark
 
