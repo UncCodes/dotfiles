@@ -276,6 +276,8 @@ t "boot splash, login screen and consoles render (and the splash animates its tr
     [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
   done
   grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
+t "rofi themes put no @reference inside linear-gradient() (rofi rejects it)" bash -c '
+  ! grep -n "linear-gradient([^)]*@" "$1"/rofi/.config/rofi/*.rasi' _ "$DOTS"
 t "the login screen follows the look, and styles only ReGreet's two panels" bash -c '
   for e in cyan slate; do
     rm -rf "/tmp/fui-gre-$e" && python3 "$1/theme/make-boot.py" --edition "$e" --size 800x600 "/tmp/fui-gre-$e" >/dev/null || exit 1

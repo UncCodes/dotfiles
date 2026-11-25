@@ -71,6 +71,9 @@
   font-mono: "JetBrainsMono Nerd Font 10";
   font-label: "JetBrainsMono Nerd Font Bold 9";
   font-brand: "Michroma 10";
+  chrome-strip: linear-gradient(to bottom, #989998FF, #1A1C1AFF, #141614FF, #141614FF, #0F110FFF, #0E100EFF, #0E100EFF, #0E100EFF, #141614FF);
+  chrome-strip-crt: linear-gradient(to bottom, #989998FF, #1A1C1AFF, #141614FF, #141614FF, #0F110FFF, #0E100EFF, #0E100EFF, #0E100EFF, #141614FF);
+  gel-face: linear-gradient(to bottom, #E0F893FF, #CCF34EFF, #C6F23AFF, #8BA929FF, #8BA929FF);
   frame: 1px solid;
   rule-top: 1px 0 0 0;
   stripe: 0 0 0 3px;

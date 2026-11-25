@@ -195,6 +195,23 @@ def alert_css(on, prefix=""):
     return head + "".join(f"@define-color {prefix}{k} @{prefix}{v};\n" for k, v in ALERT_SWAP.items())
 
 
+def rofi_gradient(cols):
+    return "linear-gradient(to bottom, " + ", ".join(hx8(c) for c in cols) + ")"
+
+
+def rofi_gradients(p):
+    """The y2k materials as rofi gradients. Rofi spaces the stops evenly, so the chrome strip
+    repeats stops to put its dark horizon at the middle (stop 5 of 9); gel turns at the middle."""
+    def strip(hi):
+        return [p["chrome_lip"], hi, p["chrome_mid"], p["chrome_mid"], p["chrome_horizon"],
+                p["chrome_low"], p["chrome_low"], p["chrome_low"], p["chrome_reflect"]]
+    return {
+        "chrome-strip": strip(p["shell_hi"]),
+        "chrome-strip-crt": strip(p.get("shell_hi_crt", p["shell_hi"])),
+        "gel-face": [p["gel_hi"], p["gel_mid"], p["signal"], p["gel_lo"], p["gel_lo"]],
+    }
+
+
 def colour_includes():
     for ed in EDS:
         p = full(ed)
@@ -206,6 +223,9 @@ def colour_includes():
         rasi = "".join(f"  {ident(k)}: {hx8(v)};\n" for k, v in p.items())
         rasi += (f'  font-ui: "{F["ui"]}, {F["mono"]} {F["size"] + 1}";\n  font-mono: "{F["mono"]} {F["size"]}";\n'
                  f'  font-label: "{F["mono"]} Bold {F["size"] - 1}";\n  font-brand: "{F["brand"]} 10";\n')
+        # rofi takes no references inside a gradient: each one is written out whole, with its
+        # colours, and the look refers to it by name (and the crt tier to its -crt twin)
+        rasi += "".join(f"  {name}: {rofi_gradient(cols)};\n" for name, cols in rofi_gradients(p).items())
         lt = TIER["lcd"]
         rasi += (f"  frame: {lt['hair']}px solid;\n  rule-top: {lt['hair']}px 0 0 0;\n"
                  f"  stripe: 0 0 0 {lt['stripe']}px;\n  field: {lt['edge']}px solid;\n")
@@ -251,6 +271,9 @@ def colour_includes():
         swap = {"crt": CRT_SWAP, "deep": DEEP_SWAP}.get(tier, [])
         t = TIER[tier]
         rasi = "".join(f"  {ident(r)}: @{ident(r)}-{tier};\n" for r in swap)
+        if tier == "crt":
+            names = rofi_gradients(full(EDS[0]))
+            rasi += "".join(f"  {n}: @{n}-crt;\n" for n in names if f"{n}-crt" in names)
         rasi += (f"  frame: {t['hair']}px solid;\n  rule-top: {t['hair']}px 0 0 0;\n"
                  f"  stripe: 0 0 0 {t['stripe']}px;\n  field: {t['edge']}px solid;\n")
         write(f"rofi/.config/rofi/tier-{tier}.rasi",

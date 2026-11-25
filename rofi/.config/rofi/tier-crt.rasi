@@ -11,6 +11,7 @@
   glass-well: @glass-well-crt;
   shell: @shell-crt;
   shell-hi: @shell-hi-crt;
+  chrome-strip: @chrome-strip-crt;
   frame: 2px solid;
   rule-top: 2px 0 0 0;
   stripe: 0 0 0 4px;

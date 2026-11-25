@@ -75,7 +75,7 @@ local function chassis(focused)
                           or { C.shell_hi, C.shell, C.shell_lo, C.shell }
     local out = {}
     for _, c in ipairs(stops) do out[#out + 1] = rgba(c or C.rule_hi) end
-    return table.concat(out, " ") .. " 90deg"
+    return { colors = out, angle = 90 }        -- Lua gradients are tables, not "rgba(..) rgba(..) 90deg"
 end
 local frame = y2k and ((LK.frame or 4) + (tier == "crt" and 1 or 0)) or TI.border
 
