@@ -1,0 +1,15 @@
+/* fui // SWAYOSD · the shared rules (the instrument look); a look's file may override them.
+   style.css imports this, then fui-look.css. */
+window#osd {
+  background-color: @glass;
+  border: 1px solid @rule_hi;
+  border-radius: 4px;
+  box-shadow: inset 3px 0 @signal;
+}
+window#osd #container { margin: 12px 18px 12px 20px; }
+window#osd image, window#osd label { color: @ink; font-family: "JetBrainsMono Nerd Font", monospace; }
+window#osd progressbar, window#osd segmentedprogress { min-height: 4px; min-width: 200px; background: transparent; border: none; }
+window#osd trough, window#osd segment { min-height: 6px; border-radius: 0; border: none; background: @rule; }
+window#osd segment { margin: 0 1px; }
+window#osd progress, window#osd segment.active { min-height: 6px; border-radius: 0; border: none; background: @signal; }
+window#osd progressbar:disabled, window#osd image:disabled { opacity: 0.5; }

@@ -14,7 +14,10 @@
 [meta]
 name     = "fui"
 # The editions, in the order `fui mode toggle` cycles them. The first is the default.
-editions = ["cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab"]
+editions = ["cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab", "ice", "chrome", "slate", "ruby"]
+# The looks: complete visual languages on the shared core. Every edition belongs to one
+# (its `look`, instrument when absent). `fui look` switches looks; `fui mode` editions.
+looks    = ["instrument", "y2k"]
 # Names from earlier versions, so a saved choice survives an update.
 renamed  = { night = "cyan", concrete = "paper" }
 tiers    = ["crt", "lcd", "deep"]
@@ -38,6 +41,9 @@ notice   = "Authorized personnel only. Activity on this workstation is logged."
 #   on_signal  text on a signal fill             counter the second data series, never focus
 #   ok warn bad info   status, always with a word
 # [edition.X.crt] and [edition.X.deep] replace roles on those display tiers.
+# Material roles (the y2k look draws them; instrument editions derive them in palette.py):
+#   shell      the device's chassis: window frames, the bar   shell_hi  its lit top
+#   lcd        the backing of a lit display well               readout_ink   what it lights
 
 [edition.cyan]      # night operations: obsidian and signal cyan (the default)
 scheme     = "dark"
@@ -311,6 +317,197 @@ edge       = "#76808C"
 [edition.lab.deep]
 signal_oklch = "oklch(49.8% 0.271 264.7)"
 signal_p3  = "color(display-p3 0.124 0.251 0.938)"
+
+# ── the y2k look: the owned device of the millennium ────────────────────
+# Shells of frost, aluminium, gunmetal or ruby; lit LCD wells; gel on the primary action.
+[edition.ice]       # the 1998 sleeve: ice haze and electric blue (soft strand)
+look       = "y2k"
+scheme     = "light"
+void       = "#D5E3F1"
+floor      = "#DCE7F2"
+panel      = "#F3F7FB"
+raised     = "#E4ECF5"
+well       = "#FAFCFE"
+rule       = "#C4D3E2"
+rule_hi    = "#9DB2C8"
+edge       = "#6B8197"
+ink        = "#0E1B2A"
+muted      = "#46586C"
+faint      = "#6E8094"
+signal     = "#1460D2"
+signal_hi  = "#0D4BAA"
+signal_dim = "#CCDDF6"
+on_signal  = "#FFFFFF"
+counter    = "#C2410C"
+ok         = "#1B6E44"
+warn       = "#8A5200"
+bad        = "#B3261E"
+info       = "#6A3FB5"
+shell      = "#B8CCE0"
+shell_hi   = "#F4F9FF"
+readout    = "#0F2236"
+readout_ink = "#9BD4FF"
+
+[edition.ice.crt]
+floor      = "#BBC4CE"
+panel      = "#D6D9DD"
+void       = "#D6D9DD"
+muted      = "#303E4B"
+faint      = "#52606F"
+
+[edition.ice.deep]
+signal_oklch = "oklch(51.6% 0.232 259.6)"
+signal_p3  = "color(display-p3 0.097 0.343 0.880)"
+
+[edition.chrome]    # the modern player skin: brushed aluminium and a blue LCD (skin strand)
+look       = "y2k"
+scheme     = "light"
+void       = "#8E98A3"
+floor      = "#B4BCC5"
+panel      = "#E1E5EA"
+raised     = "#D0D6DD"
+well       = "#F2F4F7"
+rule       = "#B2BBC5"
+rule_hi    = "#8C97A3"
+edge       = "#616C78"
+ink        = "#10161D"
+muted      = "#434D58"
+faint      = "#67727E"
+signal     = "#1D5BC9"
+signal_hi  = "#164AA5"
+signal_dim = "#C3D3F0"
+on_signal  = "#FFFFFF"
+counter    = "#B0480C"
+ok         = "#1B6E44"
+warn       = "#855000"
+bad        = "#B3261E"
+info       = "#6B3FA0"
+shell      = "#A9B2BC"
+shell_hi   = "#F1F3F6"
+readout    = "#0C2340"
+readout_ink = "#8FD0FF"
+
+[edition.chrome.crt]
+floor      = "#99A0A7"
+panel      = "#C6CACE"
+void       = "#C6CACE"
+muted      = "#2A2F36"
+faint      = "#4D565E"
+
+[edition.chrome.deep]
+signal_oklch = "oklch(50.0% 0.235 261.0)"
+signal_p3  = "color(display-p3 0.100 0.313 0.867)"
+
+[edition.slate]     # the skinned desktop: gunmetal and periwinkle (skin and console strands)
+look       = "y2k"
+scheme     = "dark"
+void       = "#07080D"
+floor      = "#121521"
+panel      = "#1B2033"
+raised     = "#262C43"
+well       = "#0E1019"
+rule       = "#2A3049"
+rule_hi    = "#3E4666"
+edge       = "#6A7496"
+ink        = "#E3E7F3"
+muted      = "#9AA3C2"
+faint      = "#6A7496"
+signal     = "#93A9FF"
+signal_hi  = "#BAC8FF"
+signal_dim = "#2A3462"
+on_signal  = "#0B0D16"
+counter    = "#E8B24A"
+ok         = "#3DDC97"
+warn       = "#F2A93B"
+bad        = "#FF5C6C"
+info       = "#5CCFE6"
+shell      = "#39415E"
+shell_hi   = "#8C96B8"
+readout    = "#05070C"
+readout_ink = "#7FE3FF"
+
+[edition.slate.crt]
+muted      = "#AFB6CF"
+faint      = "#7F87A5"
+void       = "#000000"
+floor      = "#000000"
+
+[edition.slate.deep]
+signal_oklch = "oklch(75.3% 0.133 272.1)"
+signal_p3  = "color(display-p3 0.588 0.658 0.990)"
+void       = "#000000"
+
+[edition.ruby]      # the disc suite: a ruby shell around navy (skin strand)
+look       = "y2k"
+scheme     = "dark"
+void       = "#05070F"
+floor      = "#0A1122"
+panel      = "#111C35"
+raised     = "#1A2848"
+well       = "#070C19"
+rule       = "#1E2D52"
+rule_hi    = "#2F4576"
+edge       = "#5970A6"
+ink        = "#E7EDF8"
+muted      = "#9CAAD0"
+faint      = "#5970A6"
+signal     = "#6FC0FF"
+signal_hi  = "#A3D8FF"
+signal_dim = "#173A66"
+on_signal  = "#04101F"
+counter    = "#FFC24D"
+ok         = "#3DDC97"
+warn       = "#F2A93B"
+bad        = "#FF5C6C"
+info       = "#B79CFF"
+shell      = "#A3121F"
+shell_hi   = "#FF5A5F"
+readout    = "#03060D"
+readout_ink = "#9FE3FF"
+
+[edition.ruby.crt]
+muted      = "#A6B2D5"
+faint      = "#7084B2"
+void       = "#000000"
+floor      = "#000000"
+
+[edition.ruby.deep]
+signal_oklch = "oklch(78.1% 0.127 243.7)"
+signal_p3  = "color(display-p3 0.498 0.746 0.991)"
+void       = "#000000"
+
+# ── looks: what each visual language changes beyond colour ──────────────
+# instrument: flat hairline panels, square-ish, decisive motion, no shadows.
+# y2k: rounded shells lit from above, bevels, gel on the primary action, one soft shadow,
+# expo-out glides with a hint of spring.
+[look.instrument]
+radius     = 4
+control    = 2
+shell      = 4
+shadow     = false
+glide      = [0.25, 0.9, 0.25, 1.0]
+pop        = [0.2, 0.9, 0.1, 1.0]
+popin      = "94%"
+backdrop   = "survey"      # theme/survey.py: a topographic map per edition
+
+[look.y2k]
+radius     = 10
+frame      = 4          # the chrome chassis around every window, px (crt: +1)
+control    = 4
+shell      = 14
+bevel      = 1
+shadow     = true
+shadow_y   = 6
+shadow_blur = 18
+shadow_dark = 0.36
+shadow_light = 0.22
+glide      = [0.16, 1.0, 0.3, 1.0]
+pop        = [0.3, 1.25, 0.6, 1.0]
+popin      = "86%"
+gloss_band = 0.48
+font_pixel = "Silkscreen"      # title bars and tiny caps (AUR ttf-silkscreen); falls back to the mono face
+font_lcd   = "DSEG7 Classic"   # digits in LCD wells (AUR ttf-dseg); falls back to the mono face
+backdrop   = "ribbon"      # theme/ribbon.py: a sheaf of light lines on a haze
 
 # ── display tiers ───────────────────────────────────────────────────────
 # `fui display auto` picks one from the connected screen (an analog input is a crt; a

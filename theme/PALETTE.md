@@ -2,32 +2,32 @@
 # fui palette
 
 Eight editions, each a complete palette named for its one signal colour; three display tiers.
-`fui mode toggle` (SUPER+SHIFT+T) cycles cyan → amber → phosphor → acid → hazard → mono → paper → lab; `fui display` picks the tier.
+`fui mode toggle` (SUPER+SHIFT+T) cycles cyan → amber → phosphor → acid → hazard → mono → paper → lab → ice → chrome → slate → ruby; `fui display` picks the tier.
 Source of truth: [`tokens.toml`](tokens.toml). Design rules: [`DESIGN.md`](DESIGN.md).
 
 ## Editions (lcd baseline)
-| Role | cyan | amber | phosphor | acid | hazard | mono | paper | lab |
-|---|---|---|---|---|---|---|---|---|
-| `void` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#FBFAF7` | `#FFFFFF` |
-| `floor` | `#07090C` | `#0B0906` | `#050A07` | `#080908` | `#0A0A0A` | `#08090A` | `#ECE9E1` | `#F4F6F8` |
-| `panel` | `#0E1217` | `#14110C` | `#0B140F` | `#101210` | `#141414` | `#111214` | `#F7F5EF` | `#FFFFFF` |
-| `raised` | `#181C21` | `#1E1B15` | `#141E19` | `#1A1C1A` | `#1E1E1E` | `#1B1C1E` | `#EDEBE5` | `#F4F4F5` |
-| `well` | `#050608` | `#070604` | `#030605` | `#050605` | `#060606` | `#050606` | `#F2EFE8` | `#FAFBFC` |
-| `rule` | `#232A33` | `#2C2418` | `#1A2B20` | `#252924` | `#2A2A2A` | `#26282B` | `#C9C4B8` | `#D5DBE2` |
-| `rule_hi` | `#36424F` | `#463A27` | `#2A4433` | `#3A4038` | `#404040` | `#3C3F44` | `#8F897C` | `#AEB7C2` |
-| `edge` | `#5C6773` | `#6E6250` | `#56705F` | `#666B60` | `#6B6B6B` | `#676B71` | `#7A766D` | `#7B8692` |
-| `ink` | `#E6EBF0` | `#F2E8D8` | `#DDF5E4` | `#ECEFE6` | `#EDEDED` | `#ECEEF0` | `#121212` | `#0E141A` |
-| `muted` | `#8B96A3` | `#A8977C` | `#86A893` | `#9AA092` | `#9E9E9E` | `#9A9EA4` | `#4D4A44` | `#56616D` |
-| `faint` | `#5C6773` | `#6E6250` | `#56705F` | `#666B60` | `#6B6B6B` | `#676B71` | `#7A766D` | `#7B8692` |
-| `signal` | `#00C2D1` | `#FFB000` | `#3DF58A` | `#C6F23A` | `#F2C230` | `#F4F6F8` | `#B5300A` | `#1F4FE0` |
-| `signal_hi` | `#59D7E1` | `#FFCC59` | `#81F8B3` | `#DAF77F` | `#F7D778` | `#F8F9FA` | `#942708` | `#1941B8` |
-| `signal_dim` | `#062E33` | `#3C2A05` | `#103921` | `#2E3812` | `#382F12` | `#37383A` | `#E1C4B6` | `#C9D5F3` |
-| `on_signal` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#FFFFFF` | `#FFFFFF` |
-| `counter` | `#F2A93B` | `#4FB3BF` | `#F2C230` | `#FF5A36` | `#FFFFFF` | `#E5322D` | `#1F4FE0` | `#C23C0A` |
-| `ok` | `#3DDC97` | `#3DDC97` | `#A8F0C8` | `#3DDC97` | `#3DDC97` | `#3DDC97` | `#1B6E44` | `#1B6E44` |
-| `warn` | `#F2A93B` | `#FF7A3D` | `#F2A93B` | `#F2A93B` | `#FF8A3D` | `#F2A93B` | `#8A5200` | `#8A5200` |
-| `bad` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#B3261E` | `#B3261E` |
-| `info` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#2457C5` | `#0E6E84` |
+| Role | cyan | amber | phosphor | acid | hazard | mono | paper | lab | ice | chrome | slate | ruby |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `void` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#FBFAF7` | `#FFFFFF` | `#D5E3F1` | `#8E98A3` | `#07080D` | `#05070F` |
+| `floor` | `#07090C` | `#0B0906` | `#050A07` | `#080908` | `#0A0A0A` | `#08090A` | `#ECE9E1` | `#F4F6F8` | `#DCE7F2` | `#B4BCC5` | `#121521` | `#0A1122` |
+| `panel` | `#0E1217` | `#14110C` | `#0B140F` | `#101210` | `#141414` | `#111214` | `#F7F5EF` | `#FFFFFF` | `#F3F7FB` | `#E1E5EA` | `#1B2033` | `#111C35` |
+| `raised` | `#181C21` | `#1E1B15` | `#141E19` | `#1A1C1A` | `#1E1E1E` | `#1B1C1E` | `#EDEBE5` | `#F4F4F5` | `#E4ECF5` | `#D0D6DD` | `#262C43` | `#1A2848` |
+| `well` | `#050608` | `#070604` | `#030605` | `#050605` | `#060606` | `#050606` | `#F2EFE8` | `#FAFBFC` | `#FAFCFE` | `#F2F4F7` | `#0E1019` | `#070C19` |
+| `rule` | `#232A33` | `#2C2418` | `#1A2B20` | `#252924` | `#2A2A2A` | `#26282B` | `#C9C4B8` | `#D5DBE2` | `#C4D3E2` | `#B2BBC5` | `#2A3049` | `#1E2D52` |
+| `rule_hi` | `#36424F` | `#463A27` | `#2A4433` | `#3A4038` | `#404040` | `#3C3F44` | `#8F897C` | `#AEB7C2` | `#9DB2C8` | `#8C97A3` | `#3E4666` | `#2F4576` |
+| `edge` | `#5C6773` | `#6E6250` | `#56705F` | `#666B60` | `#6B6B6B` | `#676B71` | `#7A766D` | `#7B8692` | `#6B8197` | `#616C78` | `#6A7496` | `#5970A6` |
+| `ink` | `#E6EBF0` | `#F2E8D8` | `#DDF5E4` | `#ECEFE6` | `#EDEDED` | `#ECEEF0` | `#121212` | `#0E141A` | `#0E1B2A` | `#10161D` | `#E3E7F3` | `#E7EDF8` |
+| `muted` | `#8B96A3` | `#A8977C` | `#86A893` | `#9AA092` | `#9E9E9E` | `#9A9EA4` | `#4D4A44` | `#56616D` | `#46586C` | `#434D58` | `#9AA3C2` | `#9CAAD0` |
+| `faint` | `#5C6773` | `#6E6250` | `#56705F` | `#666B60` | `#6B6B6B` | `#676B71` | `#7A766D` | `#7B8692` | `#6E8094` | `#67727E` | `#6A7496` | `#5970A6` |
+| `signal` | `#00C2D1` | `#FFB000` | `#3DF58A` | `#C6F23A` | `#F2C230` | `#F4F6F8` | `#B5300A` | `#1F4FE0` | `#1460D2` | `#1D5BC9` | `#93A9FF` | `#6FC0FF` |
+| `signal_hi` | `#59D7E1` | `#FFCC59` | `#81F8B3` | `#DAF77F` | `#F7D778` | `#F8F9FA` | `#942708` | `#1941B8` | `#0D4BAA` | `#164AA5` | `#BAC8FF` | `#A3D8FF` |
+| `signal_dim` | `#062E33` | `#3C2A05` | `#103921` | `#2E3812` | `#382F12` | `#37383A` | `#E1C4B6` | `#C9D5F3` | `#CCDDF6` | `#C3D3F0` | `#2A3462` | `#173A66` |
+| `on_signal` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#000000` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | `#0B0D16` | `#04101F` |
+| `counter` | `#F2A93B` | `#4FB3BF` | `#F2C230` | `#FF5A36` | `#FFFFFF` | `#E5322D` | `#1F4FE0` | `#C23C0A` | `#C2410C` | `#B0480C` | `#E8B24A` | `#FFC24D` |
+| `ok` | `#3DDC97` | `#3DDC97` | `#A8F0C8` | `#3DDC97` | `#3DDC97` | `#3DDC97` | `#1B6E44` | `#1B6E44` | `#1B6E44` | `#1B6E44` | `#3DDC97` | `#3DDC97` |
+| `warn` | `#F2A93B` | `#FF7A3D` | `#F2A93B` | `#F2A93B` | `#FF8A3D` | `#F2A93B` | `#8A5200` | `#8A5200` | `#8A5200` | `#855000` | `#F2A93B` | `#F2A93B` |
+| `bad` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#FF5C6C` | `#B3261E` | `#B3261E` | `#B3261E` | `#B3261E` | `#FF5C6C` | `#FF5C6C` |
+| `info` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#7AA7FF` | `#2457C5` | `#0E6E84` | `#6A3FB5` | `#6B3FA0` | `#5CCFE6` | `#B79CFF` |
 
 ## Tier overrides
 | Edition | crt | deep signal (Display P3) |
@@ -40,6 +40,10 @@ Source of truth: [`tokens.toml`](tokens.toml). Design rules: [`DESIGN.md`](DESIG
 | mono | muted `#A6AAAF` · faint `#797D82` · void `#000000` · floor `#000000` | `color(display-p3 0.948 0.966 0.989)` |
 | paper | floor `#C9C6BF` · panel `#D9D8D2` · void `#D9D8D2` · muted `#3B3935` · faint `#615E57` | `color(display-p3 0.675 0.200 0.060)` |
 | lab | floor `#CFD1D3` · panel `#E0E0E0` · void `#E0E0E0` · muted `#363F48` · faint `#5A646E` · edge `#76808C` | `color(display-p3 0.124 0.251 0.938)` |
+| ice | floor `#BBC4CE` · panel `#D6D9DD` · void `#D6D9DD` · muted `#303E4B` · faint `#52606F` | `color(display-p3 0.097 0.343 0.880)` |
+| chrome | floor `#99A0A7` · panel `#C6CACE` · void `#C6CACE` · muted `#2A2F36` · faint `#4D565E` | `color(display-p3 0.100 0.313 0.867)` |
+| slate | muted `#AFB6CF` · faint `#7F87A5` · void `#000000` · floor `#000000` | `color(display-p3 0.588 0.658 0.990)` |
+| ruby | muted `#A6B2D5` · faint `#7084B2` · void `#000000` · floor `#000000` | `color(display-p3 0.498 0.746 0.991)` |
 
 On deep, dark editions use true black (`void`) outside the panels.
 
@@ -62,34 +66,40 @@ Colours 0–15; light editions keep a dark console.
 | mono | `#1B1C1E` `#FF5C6C` `#3DDC97` `#F2A93B` `#7AA7FF` `#B78CFF` `#F4F6F8` `#ECEEF0` `#76797F` `#FF8A95` `#73E6B4` `#F6C172` `#9FC0FF` `#CBACFF` `#F8F9FA` `#F6F6F8` |
 | paper | `#181C21` `#FF5C6C` `#3DDC97` `#F2A93B` `#7AA7FF` `#B78CFF` `#00C2D1` `#E6EBF0` `#6F7984` `#FF8A95` `#73E6B4` `#F6C172` `#9FC0FF` `#CBACFF` `#59D7E1` `#F2F5F8` |
 | lab | `#181C21` `#FF5C6C` `#3DDC97` `#F2A93B` `#7AA7FF` `#B78CFF` `#00C2D1` `#E6EBF0` `#6F7984` `#FF8A95` `#73E6B4` `#F6C172` `#9FC0FF` `#CBACFF` `#59D7E1` `#F2F5F8` |
+| ice | `#181C21` `#FF5C6C` `#3DDC97` `#F2A93B` `#7AA7FF` `#B78CFF` `#00C2D1` `#E6EBF0` `#6F7984` `#FF8A95` `#73E6B4` `#F6C172` `#9FC0FF` `#CBACFF` `#59D7E1` `#F2F5F8` |
+| chrome | `#181C21` `#FF5C6C` `#3DDC97` `#F2A93B` `#7AA7FF` `#B78CFF` `#00C2D1` `#E6EBF0` `#6F7984` `#FF8A95` `#73E6B4` `#F6C172` `#9FC0FF` `#CBACFF` `#59D7E1` `#F2F5F8` |
+| slate | `#262C43` `#FF5C6C` `#3DDC97` `#F2A93B` `#5CCFE6` `#B78CFF` `#93A9FF` `#E3E7F3` `#757E9E` `#FF8A95` `#73E6B4` `#F6C172` `#8ADCED` `#CBACFF` `#BAC8FF` `#F1F3F9` |
+| ruby | `#1A2848` `#FF5C6C` `#3DDC97` `#F2A93B` `#B79CFF` `#B78CFF` `#6FC0FF` `#E7EDF8` `#677CAE` `#FF8A95` `#73E6B4` `#F6C172` `#CBB8FF` `#CBACFF` `#A3D8FF` `#F3F6FC` |
 
 ## Contrast (WCAG 2)
 `theme/build.py --check` fails when a pair drops below its minimum. Every console colour
 (1–15) is also held at 4.5:1 on its background.
 
-| Pair | Min | cyan | amber | phosphor | acid | hazard | mono | paper | lab |
-|---|---|---|---|---|---|---|---|---|---|
-| ink on the floor | 7 | 16.6 | 16.4 | 17.3 | 17.1 | 16.9 | 17.1 | 15.4 | 17.1 |
-| ink on a panel | 7 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 17.2 | 18.5 |
-| ink on a raised row | 7 | 14.3 | 14.2 | 14.8 | 14.7 | 14.2 | 14.7 | 15.7 | 16.9 |
-| ink in a field | 7 | 16.9 | 16.7 | 17.7 | 17.5 | 17.3 | 17.4 | 16.3 | 17.9 |
-| labels on a panel | 4.5 | 6.3 | 6.6 | 7.2 | 7.0 | 6.9 | 7.0 | 8.1 | 6.3 |
-| labels in a field | 4.5 | 6.7 | 7.1 | 7.8 | 7.6 | 7.6 | 7.5 | 7.7 | 6.1 |
-| control edges on a panel | 3 | 3.3 | 3.2 | 3.5 | 3.4 | 3.5 | 3.5 | 4.2 | 3.7 |
-| signal on a panel (focus, rules) | 3 | 8.6 | 10.3 | 13.0 | 14.5 | 11.0 | 17.3 | 5.7 | 6.5 |
-| text on a signal fill | 4.5 | 9.6 | 11.5 | 14.6 | 16.2 | 12.5 | 19.4 | 6.2 | 6.5 |
-| ink on a selected row | 4.5 | 12.1 | 11.3 | 11.2 | 10.7 | 11.3 | 10.1 | 11.4 | 12.6 |
-| ok on a panel | 4.5 | 10.6 | 10.7 | 14.2 | 10.6 | 10.4 | 10.6 | 5.7 | 6.2 |
-| warn on a panel | 4.5 | 9.4 | 7.3 | 9.4 | 9.4 | 7.9 | 9.4 | 5.9 | 6.4 |
-| bad on a panel | 4.5 | 6.3 | 6.3 | 6.2 | 6.3 | 6.1 | 6.2 | 6.0 | 6.5 |
-| info on a panel | 4.5 | 7.9 | 7.9 | 7.8 | 7.9 | 7.7 | 7.9 | 5.9 | 5.9 |
-| text on the alert fill | 4.5 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 6.5 | 6.5 |
-| ink on glass over the floor | 7 | 16.0 | 15.8 | 16.6 | 16.5 | 16.1 | 16.5 | 16.7 | 18.1 |
-| labels on glass over the floor | 4.5 | 6.4 | 6.7 | 7.3 | 7.1 | 7.0 | 7.1 | 7.9 | 6.2 |
-| crt: ink on a panel | 7 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 13.1 | 14.0 |
-| crt: labels on a panel | 7 | 8.1 | 8.1 | 8.0 | 8.0 | 8.0 | 8.0 | 8.1 | 8.1 |
-| crt: labels on glass over the floor | 7 | 8.4 | 8.4 | 8.4 | 8.3 | 8.4 | 8.3 | 7.7 | 7.8 |
-| crt: microtext on a panel | 4.5 | 4.5 | 4.5 | 4.6 | 4.5 | 4.5 | 4.5 | 4.5 | 4.6 |
+| Pair | Min | cyan | amber | phosphor | acid | hazard | mono | paper | lab | ice | chrome | slate | ruby |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ink on the floor | 7 | 16.6 | 16.4 | 17.3 | 17.1 | 16.9 | 17.1 | 15.4 | 17.1 | 13.9 | 9.5 | 14.7 | 16.0 |
+| ink on a panel | 7 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 17.2 | 18.5 | 16.1 | 14.4 | 13.1 | 14.4 |
+| ink on a raised row | 7 | 14.3 | 14.2 | 14.8 | 14.7 | 14.2 | 14.7 | 15.7 | 16.9 | 14.6 | 12.4 | 11.2 | 12.4 |
+| ink in a field | 7 | 16.9 | 16.7 | 17.7 | 17.5 | 17.3 | 17.4 | 16.3 | 17.9 | 16.9 | 16.5 | 15.4 | 16.6 |
+| labels on a panel | 4.5 | 6.3 | 6.6 | 7.2 | 7.0 | 6.9 | 7.0 | 8.1 | 6.3 | 6.8 | 6.8 | 6.5 | 7.3 |
+| labels in a field | 4.5 | 6.7 | 7.1 | 7.8 | 7.6 | 7.6 | 7.5 | 7.7 | 6.1 | 7.1 | 7.8 | 7.6 | 8.4 |
+| control edges on a panel | 3 | 3.3 | 3.2 | 3.5 | 3.4 | 3.5 | 3.5 | 4.2 | 3.7 | 3.7 | 4.2 | 3.5 | 3.5 |
+| signal on a panel (focus, rules) | 3 | 8.6 | 10.3 | 13.0 | 14.5 | 11.0 | 17.3 | 5.7 | 6.5 | 5.4 | 4.9 | 7.2 | 8.6 |
+| text on a signal fill | 4.5 | 9.6 | 11.5 | 14.6 | 16.2 | 12.5 | 19.4 | 6.2 | 6.5 | 5.8 | 6.2 | 8.6 | 9.7 |
+| ink on a selected row | 4.5 | 12.1 | 11.3 | 11.2 | 10.7 | 11.3 | 10.1 | 11.4 | 12.6 | 12.6 | 12.0 | 9.6 | 9.7 |
+| ok on a panel | 4.5 | 10.6 | 10.7 | 14.2 | 10.6 | 10.4 | 10.6 | 5.7 | 6.2 | 5.8 | 4.9 | 9.1 | 9.6 |
+| warn on a panel | 4.5 | 9.4 | 7.3 | 9.4 | 9.4 | 7.9 | 9.4 | 5.9 | 6.4 | 5.9 | 5.3 | 8.1 | 8.5 |
+| bad on a panel | 4.5 | 6.3 | 6.3 | 6.2 | 6.3 | 6.1 | 6.2 | 6.0 | 6.5 | 6.1 | 5.2 | 5.4 | 5.6 |
+| info on a panel | 4.5 | 7.9 | 7.9 | 7.8 | 7.9 | 7.7 | 7.9 | 5.9 | 5.9 | 6.5 | 5.8 | 8.9 | 7.4 |
+| text on the alert fill | 4.5 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 7.0 | 6.5 | 6.5 | 6.5 | 6.5 | 7.0 | 7.0 |
+| ink on glass over the floor | 7 | 16.0 | 15.8 | 16.6 | 16.5 | 16.1 | 16.5 | 16.7 | 18.1 | 15.5 | 12.9 | 13.5 | 14.9 |
+| labels on glass over the floor | 4.5 | 6.4 | 6.7 | 7.3 | 7.1 | 7.0 | 7.1 | 7.9 | 6.2 | 6.5 | 6.1 | 6.7 | 7.5 |
+| ink on the shell (bar, frames) | 4.5 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 17.2 | 18.5 | 10.5 | 8.5 | 8.1 | 6.7 |
+| lit text in a readout well | 4.5 | 9.3 | 11.1 | 14.2 | 15.6 | 12.1 | 18.7 | 5.4 | 6.2 | 10.2 | 9.5 | 13.8 | 14.4 |
+| crt: ink on a panel | 7 | 15.7 | 15.5 | 16.3 | 16.2 | 15.7 | 16.1 | 13.1 | 14.0 | 12.3 | 11.0 | 13.1 | 14.4 |
+| crt: labels on a panel | 7 | 8.1 | 8.1 | 8.0 | 8.0 | 8.0 | 8.0 | 8.1 | 8.1 | 7.7 | 8.2 | 8.0 | 8.0 |
+| crt: labels on glass over the floor | 7 | 8.4 | 8.4 | 8.4 | 8.3 | 8.4 | 8.3 | 7.7 | 7.8 | 7.3 | 7.2 | 8.8 | 8.7 |
+| crt: microtext on a panel | 4.5 | 4.5 | 4.5 | 4.6 | 4.5 | 4.5 | 4.5 | 4.5 | 4.6 | 4.5 | 4.5 | 4.5 | 4.5 |
 
 ## Icons
 One family: Material Design outline glyphs from the Nerd Font. `tests/run.sh` checks the

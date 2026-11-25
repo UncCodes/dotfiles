@@ -1,0 +1,138 @@
+/* fui // WAYBAR · look y2k: the device's chassis
+ * A strip of chrome (a bright lip, the lit face, a dark horizon, a lighter reflection), rounded
+ * ends, still glass enough for the blur behind it. Workspaces are chrome capsules; the current
+ * one is gel with a specular lens. The clock sits in a lit readout that glows. Readouts are
+ * embossed on the chrome and lift into a capsule on hover. Hover answers in 90 ms; nothing
+ * loops. style.css imports this through fui-look.css. */
+
+* {
+  font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 12px;
+  font-feature-settings: "tnum, zero";
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background-color: transparent;
+  background-image:
+    linear-gradient(to bottom, alpha(@chrome_lip, 0.92) 0%, alpha(@shell_hi, 0.86) 8%, alpha(@chrome_mid, 0.84) 46%,
+                    alpha(@chrome_horizon, 0.88) 52%, alpha(@chrome_low, 0.90) 84%, alpha(@chrome_reflect, 0.90) 100%);
+  border: 1px solid @rim;
+  border-radius: 16px;
+  box-shadow: inset 0 1px alpha(#FFFFFF, 0.55), inset 0 -1px alpha(#000000, 0.25);
+  color: @ink;
+  text-shadow: 0 1px @emboss;
+}
+
+/* the badge: the machine's logo and the operator, a chrome capsule; click for the palette */
+#custom-brand {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: @mark;
+  text-shadow: 0 1px alpha(#FFFFFF, 0.6);
+  margin: 4px 6px 4px 4px;
+  padding: 0 13px;
+  border-radius: 99px;
+  border: 1px solid @rim;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.75), alpha(#FFFFFF, 0) 62%),
+    linear-gradient(to bottom, @face_hi, @face_mid 48%, @face_horizon 52%, @face_lo);
+  box-shadow: 0 1px 2px alpha(#000000, 0.35);
+  transition: box-shadow 90ms ease-out;
+}
+#custom-brand:hover { box-shadow: 0 0 0 2px alpha(@signal, 0.45), 0 1px 2px alpha(#000000, 0.35); }
+
+/* workspaces: chrome capsules; the current one is glossy gel */
+#workspaces { padding: 0 2px; }
+#workspaces button {
+  min-width: 24px;
+  margin: 5px 2px;
+  padding: 0 7px;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: @mark;
+  text-shadow: 0 1px alpha(#FFFFFF, 0.55);
+  border: 1px solid alpha(@rim, 0.85);
+  border-radius: 99px;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%),
+    linear-gradient(to bottom, @face_hi, @face_mid 48%, @face_horizon 52%, @face_lo);
+  box-shadow: 0 1px 1px alpha(#000000, 0.3);
+  transition: box-shadow 90ms ease-out, background-image 90ms ease-out;
+}
+#workspaces button:hover { box-shadow: 0 0 0 2px alpha(@signal, 0.40), 0 1px 1px alpha(#000000, 0.3); }
+#workspaces button.active, #workspaces button.focused {
+  color: @on_gel;
+  text-shadow: none;
+  border-color: @gel_lo;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.85), alpha(#FFFFFF, 0) 58%),
+    radial-gradient(ellipse at 50% 100%, alpha(@gel_hi, 0.75), alpha(@gel_hi, 0) 60%),
+    linear-gradient(to bottom, @gel_hi, @gel_mid 48%, @signal 52%, @gel_lo);
+  box-shadow: 0 0 6px alpha(@signal, 0.55), 0 1px 1px alpha(#000000, 0.3);
+}
+#workspaces button.urgent { color: @on_bad; background-image: none; background-color: @bad; }
+
+/* the focused window, embossed */
+#window { color: @ink; padding: 0 14px; font-weight: 600; }
+window#waybar.empty #window { color: @muted; }
+
+/* readouts: embossed on the chrome; hover lifts each into a capsule */
+#mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #battery, #language,
+#custom-sound, #custom-mode, #custom-notify, #tray, #custom-power, #custom-rec {
+  color: @ink;
+  padding: 0 8px;
+  margin: 5px 0;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 11px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  transition: background-image 90ms ease-out, box-shadow 90ms ease-out;
+}
+#cpu.warning, #memory.warning, #battery.warning { color: @warn; }
+#cpu.critical, #memory.critical, #battery.critical { color: @bad; }
+#pulseaudio.muted { color: @muted; }
+#custom-updates.pending { color: @signal; }
+#custom-rec { color: @on_bad; background-color: @bad; text-shadow: none; margin: 6px 4px; padding: 0 9px; }
+#custom-power { padding: 0 12px 0 10px; font-size: 13px; margin-right: 4px; }
+#custom-power:hover, #custom-mode:hover, #custom-sound:hover, #custom-notify:hover, #battery:hover,
+#cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #mpris:hover, #custom-updates:hover {
+  color: @mark;
+  text-shadow: 0 1px alpha(#FFFFFF, 0.55);
+  border-color: alpha(@rim, 0.85);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%),
+    linear-gradient(to bottom, @face_hi, @face_mid 48%, @face_horizon 52%, @face_lo);
+}
+#tray > .needs-attention { background-color: @bad; }
+
+/* the clock: a lit readout pressed into the chrome, glowing with its own light */
+#clock {
+  font-family: "DSEG14 Classic", "JetBrainsMono Nerd Font", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: @readout_ink;
+  text-shadow: 0 0 6px alpha(@readout_ink, 0.75);
+  margin: 4px 4px;
+  padding: 0 13px;
+  border-radius: 6px;
+  border: 1px solid alpha(#000000, 0.6);
+  background-image:
+    radial-gradient(ellipse at 50% 120%, alpha(@readout_ink, 0.18), alpha(@readout_ink, 0) 70%),
+    linear-gradient(to bottom, shade(@readout, 0.7), @readout 55%, mix(@readout, @readout_ink, 0.10));
+  box-shadow: inset 0 2px 4px alpha(#000000, 0.7), 0 1px alpha(#FFFFFF, 0.45);
+}
+
+/* tooltips: a small rounded pane of glass with a soft shadow */
+tooltip {
+  background-color: alpha(@raised, 0.94);
+  border: 1px solid @rim;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px alpha(#000000, 0.35);
+}
+tooltip label { color: @ink; text-shadow: none; font-family: "JetBrainsMono Nerd Font", monospace; }

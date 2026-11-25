@@ -32,6 +32,32 @@
 @define-color fui_on_bad #000000;
 @define-color fui_white #FFFFFF;
 @define-color fui_black #000000;
+@define-color fui_shell #0B140F;
+@define-color fui_shell_hi #141E19;
+@define-color fui_readout #030605;
+@define-color fui_readout_ink #3DF58A;
+@define-color fui_readout_dim rgba(61, 245, 138, 0.141);
+@define-color fui_sheen rgba(255, 255, 255, 0.141);
+@define-color fui_shade rgba(0, 0, 0, 0.451);
+@define-color fui_chrome_lip #959A98;
+@define-color fui_chrome_mid #0F1814;
+@define-color fui_chrome_horizon #0A130E;
+@define-color fui_chrome_low #0A120D;
+@define-color fui_chrome_reflect #0F1813;
+@define-color fui_shell_lo #0A120E;
+@define-color fui_rim #040806;
+@define-color fui_tray_top #060A08;
+@define-color fui_tray_low #080F0B;
+@define-color fui_gel_hi #94FABF;
+@define-color fui_gel_mid #50F696;
+@define-color fui_gel_lo #2BAC61;
+@define-color fui_on_gel #000000;
+@define-color fui_face_hi #CBCECC;
+@define-color fui_face_mid #3E4642;
+@define-color fui_face_horizon #101914;
+@define-color fui_face_lo #545A57;
+@define-color fui_mark #030504;
+@define-color fui_emboss rgba(0, 0, 0, 0.549);
 @define-color fui_void_crt #000000;
 @define-color fui_floor_crt #000000;
 @define-color fui_panel_crt #0B140F;
@@ -40,6 +66,8 @@
 @define-color fui_faint_crt #6C8374;
 @define-color fui_glass_crt rgba(11, 20, 15, 0.722);
 @define-color fui_glass_well_crt rgba(3, 6, 5, 0.600);
+@define-color fui_shell_crt #0B140F;
+@define-color fui_shell_hi_crt #141E19;
 @define-color fui_void_deep #000000;
 
 /* ── the base theme's named colours ── */

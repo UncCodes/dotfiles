@@ -8,6 +8,13 @@ signal running along the contours). Eight colour **editions** (cyan, amber, phos
 mono, paper, lab), each drawn for three display **tiers**: a tube (`crt`), a backlit panel
 (`lcd`) and a deep-black OLED / HDR panel (`deep`).
 
+A second **look** sits beside it, one key away (`SUPER+CTRL+T`): **y2k**, the owned device of
+the millennium. Windows in a chrome chassis (a bright lip, the lit face, a dark horizon, a
+lighter reflection), chrome capsule buttons, glossy gel on the primary action and the
+selection, the clock in a glowing readout, a ribbon of light drifting over a haze behind
+everything, and the music player wearing a skin drawn from the edition. Four editions: ice,
+chrome, slate and ruby. Switching back returns to the instrument exactly as it was.
+
 ![backdrop](hypr/.config/hypr/wallpaper.png)
 
 Design rules: [`theme/DESIGN.md`](theme/DESIGN.md) · colours and contrast:
@@ -52,7 +59,9 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 
 | Command | Does |
 |---|---|
-| `fui mode toggle` / `pick` / `<edition>` | the next edition (`SUPER+SHIFT+T`, or click it in the bar) · pick one from a list (`SUPER+ALT+T`) · set one |
+| `fui mode toggle` / `pick` / `<edition>` | the next edition in this look (`SUPER+SHIFT+T`, or click it in the bar) · pick any edition from a list (`SUPER+ALT+T`) · set one |
+| `fui look toggle` / `pick` / `instrument` / `y2k` | switch looks (`SUPER+CTRL+T`); each look comes back to the edition you last used in it |
+| `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
 | `fui wallpaper toggle` | the survey backdrop live (traces running along the contours) or still (`SUPER+SHIFT+W`); it follows the edition |
@@ -92,6 +101,8 @@ When something looks wrong, run `fui doctor` and send its output.
 | Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet: a glass panel in the edition over its survey field); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
+| Music | Audacious, with a classic player skin generated per edition (a chrome shell, round transport orbs with a gel play button, glowing segment digits, an analyser, capsule faders, an equaliser and a playlist; flat panels and hairlines in the instrument editions); EasyEffects for a system equaliser; Shortwave for internet radio |
+| The y2k look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with capsule workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK headers in chrome, capsule buttons, gel selections; a welcome-screen lock; pill tabs in the terminal; a ribbon-of-light backdrop that moves (seamless 56 s loop); the start page as a small device |
 
 ## Startup
 
@@ -130,6 +141,14 @@ reload what's running. The palette model is shared by every script
 ([`theme/palette.py`](theme/palette.py)); the backdrop is a seeded survey field
 ([`theme/survey.py`](theme/survey.py)), rendered per edition, tier and screen size into
 `~/.cache/fui` by `fui wallpaper`.
+
+**Looks.** Every edition belongs to a look (`look = "y2k"` in its table; instrument when it
+names none), and `[look.*]` holds what a look changes beyond colour: radii, the window frame,
+shadows, motion curves and the backdrop. `fui mode` also points the `fui-look.*` links (the
+bar, notices, OSD and launcher layers, and the lock screen's layout) at the edition's look;
+the GTK theme, kitty's tabs and the Hyprland frame read the look from the generated files.
+The y2k backdrop is [`theme/ribbon.py`](theme/ribbon.py); the player skin is
+[`theme/make-skin.py`](theme/make-skin.py).
 
 Not reachable by a theme: apps that draw their own UI (Blender, games). They still get the
 window frame, fonts and the dark / light preference.

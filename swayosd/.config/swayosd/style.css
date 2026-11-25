@@ -1,19 +1,8 @@
 /* fui // SWAYOSD: volume and brightness on screen
  * A small flat plate with the signal stripe: an icon and a segment meter in the signal.
- * Colours: fui-colors.css (the edition), fui-tier.css (the display tier). */
+ * Colours: fui-colors.css (the edition), fui-tier.css (the display tier).
+ *   fui-look.css  the look (look-<instrument|y2k>.css), over base.css */
 @import url("fui-colors.css");
 @import url("fui-tier.css");
-
-window#osd {
-  background-color: @glass;
-  border: 1px solid @rule_hi;
-  border-radius: 4px;
-  box-shadow: inset 3px 0 @signal;
-}
-window#osd #container { margin: 12px 18px 12px 20px; }
-window#osd image, window#osd label { color: @ink; font-family: "JetBrainsMono Nerd Font", monospace; }
-window#osd progressbar, window#osd segmentedprogress { min-height: 4px; min-width: 200px; background: transparent; border: none; }
-window#osd trough, window#osd segment { min-height: 6px; border-radius: 0; border: none; background: @rule; }
-window#osd segment { margin: 0 1px; }
-window#osd progress, window#osd segment.active { min-height: 6px; border-radius: 0; border: none; background: @signal; }
-window#osd progressbar:disabled, window#osd image:disabled { opacity: 0.5; }
+@import url("base.css");
+@import url("fui-look.css");

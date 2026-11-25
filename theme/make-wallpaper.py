@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Draw the fui backdrop: the survey field on the edition's ground.
+"""Draw the fui backdrop for the edition's look: the survey field (instrument) or the ribbon
+of light (y2k, theme/ribbon.py).
+
+The instrument backdrop is described below.
 
 The survey (theme/survey.py: a topographic map of a seeded terrain) is mapped onto the
 screen scaled to cover, centred, enlarged 1.1x, fading from the top of the screen to the
@@ -28,7 +31,8 @@ from PIL import Image, ImageChops, ImageDraw
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from survey import OPACITY, WIDTH, length, survey, walk  # noqa: E402
-from palette import EDS, E, T, edition, is_dark  # noqa: E402
+from palette import EDS, LOOK, E, T, edition, is_dark, look_of  # noqa: E402
+from ribbon import RibbonScene  # noqa: E402
 
 HYPR = HERE.parent / "hypr/.config/hypr"
 
@@ -56,7 +60,14 @@ def ground(ed, tier):
     return T(ed, tier)["void"]
 
 
-class Scene:
+def Scene(mode, W, H, tier="lcd"):
+    """The edition's backdrop: its look names it (tokens.toml [look.*] backdrop)."""
+    if LOOK.get(look_of(mode), {}).get("backdrop") == "ribbon":
+        return RibbonScene(mode, W, H, tier)
+    return SurveyScene(mode, W, H, tier)
+
+
+class SurveyScene:
     def __init__(self, mode, W, H, tier="lcd"):
         c = E(mode)
         self.W, self.H = W, H
@@ -157,11 +168,15 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd"):
          "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "animation",
          "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
         stdin=subprocess.PIPE)
+    moving = getattr(scene, "frame", None)           # the ribbon draws whole frames
     for n in range(int(seconds * fps)):
         t = n / fps
-        frame = base.copy()
-        for route in routes:
-            scene.trace(frame, route, t)
+        if moving:
+            frame = moving(t)
+        else:
+            frame = base.copy()
+            for route in routes:
+                scene.trace(frame, route, t)
         ff.stdin.write(frame.convert("RGB").tobytes())
     ff.stdin.close()
     return ff.wait()

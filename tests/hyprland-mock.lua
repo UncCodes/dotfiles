@@ -23,7 +23,10 @@ local function walk(t, path)
         local p = path .. "." .. tostring(k)
         if type(v) == "table" then walk(v, p)
         elseif type(v) == "string" and v:find("rgba") then
-            assert(v:match("^rgba%(%x%x%x%x%x%x%x%x%)$"), "bad colour at " .. p .. ": " .. v)
+            -- one colour, or a gradient: colours then an optional angle ("rgba(..) rgba(..) 45deg")
+            for tok in v:gmatch("%S+") do
+                assert(tok:match("^rgba%(%x%x%x%x%x%x%x%x%)$") or tok:match("^%d+deg$"), "bad colour at " .. p .. ": " .. v)
+            end
         end
     end
 end

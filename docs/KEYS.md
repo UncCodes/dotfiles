@@ -30,8 +30,9 @@ SUPER is the Windows key. `SUPER+/` shows this list on screen; `fui keys --text`
 | `` SUPER+Escape `` | lock |
 | `` SUPER+X `` | power menu |
 | `` SUPER+SHIFT+E `` | quit Hyprland |
-| `` SUPER+SHIFT+T `` | edition: the next one (cyan → amber → ... → lab) |
+| `` SUPER+SHIFT+T `` | edition: the next one in this look (cyan → … → lab, or ice → … → ruby) |
 | `` SUPER+ALT+T `` | edition: pick one from a list |
+| `` SUPER+CTRL+T `` | look: instrument ↔ y2k (back to the edition last used in it) |
 | `` SUPER+SHIFT+D `` | display tier: auto, crt, lcd or deep |
 | `` SUPER+SHIFT+W `` | live / still backdrop |
 | `` SUPER+SHIFT+C `` | screen finish (vignette) on / off; lcd and deep only |

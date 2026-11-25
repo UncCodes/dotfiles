@@ -8,6 +8,8 @@
 @define-color faint @faint_crt;
 @define-color glass @glass_crt;
 @define-color glass_well @glass_well_crt;
+@define-color shell @shell_crt;
+@define-color shell_hi @shell_hi_crt;
 window#waybar { border-width: 2px; box-shadow: inset 4px 0 @signal; }
 #custom-brand { border-right-width: 2px; }
 #clock { border-left-width: 2px; border-right-width: 2px; }

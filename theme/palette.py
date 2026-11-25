@@ -13,11 +13,13 @@ TOK = tomllib.loads((HERE / "tokens.toml").read_text())
 EDS = TOK["meta"]["editions"]
 TIERS = TOK["meta"]["tiers"]
 RENAMED = TOK["meta"].get("renamed", {})
+LOOKS = TOK["meta"].get("looks", ["instrument"])
+LOOK = TOK.get("look", {})
 GL = TOK["glass"]
 
 ROLES = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint",
          "signal", "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info"]
-CRT_SWAP = ["void", "floor", "panel", "edge", "muted", "faint", "glass", "glass_well"]   # roles crt replaces
+CRT_SWAP = ["void", "floor", "panel", "edge", "muted", "faint", "glass", "glass_well", "shell", "shell_hi"]   # roles crt replaces
 DEEP_SWAP = ["void"]
 
 
@@ -25,6 +27,15 @@ def edition(name):
     """A saved edition name, with names from earlier versions mapped to today's."""
     name = RENAMED.get(name, name)
     return name if name in EDS else EDS[0]
+
+
+def look_of(ed):
+    """The look an edition belongs to (instrument when it names none)."""
+    return TOK["edition"][ed].get("look", "instrument")
+
+
+def editions_of(look):
+    return [e for e in EDS if look_of(e) == look]
 
 
 # ── colour helpers ──────────────────────────────────────────────────────
@@ -111,6 +122,38 @@ def E(ed):
     p["bad_dim"] = mix(p["bad"], p["floor"], 0.80)
     p["on_bad"] = best_on(p["bad"])
     p["white"], p["black"] = "#FFFFFF", "#000000"
+    # material roles: y2k editions define the chassis and the LCD; the others derive them
+    p["shell"] = e.get("shell", p["panel"])
+    p["shell_hi"] = e.get("shell_hi", p["raised"])
+    p["readout"] = e.get("readout", p["well"])
+    p["readout_ink"] = e.get("readout_ink", p["signal"])
+    p["readout_dim"] = alpha(p["readout_ink"], 0.14)
+    p["sheen"] = alpha("#FFFFFF", 0.14 if dark else 0.70)    # a bevel's lit edge
+    p["shade"] = alpha("#000000", 0.45 if dark else 0.18)    # ...and its shadow edge
+    # the y2k materials, as gradient stops (theme/make-skin.py draws the same ones):
+    # chrome: a bright lip, the lit upper face, a dark horizon, a lighter reflection below
+    sh, hi = p["shell"], p["shell_hi"]
+    p["chrome_lip"] = mix(hi, "#FFFFFF", 0.55)
+    p["chrome_mid"] = mix(sh, hi, 0.45)
+    p["chrome_horizon"] = mix(sh, "#000000", 0.05)
+    p["chrome_low"] = mix(sh, "#000000", 0.12)
+    p["chrome_reflect"] = mix(sh, hi, 0.40)
+    p["shell_lo"] = mix(sh, "#000000", 0.10)
+    p["rim"] = mix(sh, "#000000", 0.62)                       # the dark edge around every part
+    p["tray_top"] = mix(sh, "#000000", 0.50)                  # a recess pressed into the shell
+    p["tray_low"] = mix(sh, "#000000", 0.24)
+    # gel: glossy glass in the signal, lit at the top, a horizon at the middle, deep below
+    p["gel_hi"] = mix(p["signal"], "#FFFFFF", 0.45)
+    p["gel_mid"] = mix(p["signal"], "#FFFFFF", 0.10)
+    p["gel_lo"] = mix(p["signal"], "#000000", 0.30)
+    p["on_gel"] = p["on_signal"]
+    # the face of a chrome button
+    p["face_hi"] = mix(hi, "#FFFFFF", 0.78)
+    p["face_mid"] = mix(hi, "#FFFFFF", 0.18)
+    p["face_horizon"] = mix(sh, hi, 0.50)
+    p["face_lo"] = mix(sh, "#FFFFFF", 0.30)
+    p["mark"] = mix(sh, "#000000", 0.74)                      # text and glyphs printed on chrome
+    p["emboss"] = alpha("#000000", 0.55) if dark else alpha("#FFFFFF", 0.65)   # a text shadow that lifts type off chrome
     return p
 
 

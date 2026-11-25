@@ -176,3 +176,31 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 - One signal at a time; status is never colour alone.
 - No flashing; no emulated tube effects on a real tube.
 - No text on the backdrop.
+
+## Looks
+
+The desktop has two looks on one core. They share the roles, the display tiers, the safety
+floors, glass, the icon family and every behaviour; they differ in what the machine is.
+
+- **instrument** (this document): an instrument for a trained operator. Eight editions.
+- **y2k**: the owned device of the millennium (1997–2005: skinned media players, console
+  menus, late-1990s sleeve design). Four editions: `ice` and `chrome` (light), `slate` and
+  `ruby` (dark). `fui look` switches; `SUPER+CTRL+T`.
+
+What y2k changes, each with a job:
+
+| Material | Job | Where |
+|---|---|---|
+| Chrome (a bright lip, the lit face, a dark horizon, a lighter reflection; `chrome_*` roles) | the device's chassis | window frames (a 4 px gradient border), the bar, headers, title strips |
+| Chrome capsules (`face_*`, text in `mark`) | pressable | buttons, workspaces, the badge, hovered readouts |
+| Gel (`gel_*`, text in `on_gel`), with a specular lens | the primary action, the selection, the current workspace | suggested buttons, selected rows, the active workspace |
+| Readouts (`readout`, `readout_ink`), glowing | live values | the bar's clock, the lock screen's time, the OSD level, the player |
+| One soft shadow | floating | windows, menus, tooltips; never between flat panels |
+
+Motion in y2k: expo-out glides (`0.16, 1, 0.3, 1`) and a pop with about 5% overshoot for
+windows and pop-ups; presses answer at once; the only thing that moves at rest is the
+backdrop's ribbon (a 56 s seamless loop with a glint along its spine).
+
+Material roles exist in every edition (instrument editions derive them from their panels),
+so a component can always resolve them. Contrast is checked for `ink` on the shell and lit
+text in a readout, as for every other pair.

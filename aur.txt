@@ -1,2 +1,4 @@
 # AUR packages, installed by install.sh with yay (skipped when yay is missing).
 mpvpaper      # plays the live wallpaper; without it the still image is used
+ttf-silkscreen # the y2k look's pixel caps (title bars, tiny labels)
+ttf-dseg       # the y2k look's segment digits (the bar's clock, the lock screen's readout)

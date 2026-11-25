@@ -1,0 +1,45 @@
+/* fui // ROFI · look y2k: the launcher is a small device
+ * A rounded window in a chrome chassis; its title strip is chrome (a bright lip, the lit face,
+ * a dark horizon, a lighter reflection); the search field is a pill pressed into the panel;
+ * the selected row is glossy gel in the signal. Imported last by config.rasi. */
+
+window {
+  border: 4px solid;
+  border-color: @chrome-mid;
+  border-radius: 14px;
+}
+
+titlebar {
+  border: 0 0 1px 0;
+  border-color: @rim;
+  border-radius: 10px 10px 0 0;
+  background-color: @shell;
+  background-image: linear-gradient(to bottom, @chrome-lip, @shell-hi, @chrome-mid, @chrome-horizon, @chrome-low, @chrome-reflect);
+  padding: 9px 16px;
+}
+textbox-title { text-color: @ink; }
+textbox-code { text-color: @ink; }
+
+well { border: 0; padding: 14px; }
+
+inputbar {
+  border: 1px solid;
+  border-color: @edge;
+  border-radius: 99px;
+  padding: 7px 16px;
+  background-color: @well;
+}
+
+element {
+  border: 1px solid;
+  border-color: transparent;
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+element selected.normal, element selected.active {
+  border-color: @gel-lo;
+  background-color: @signal;
+  background-image: linear-gradient(to bottom, @gel-hi, @gel-mid, @signal, @gel-lo);
+  text-color: @on-gel;
+}
+element normal.active, element alternate.active { text-color: @signal; }
