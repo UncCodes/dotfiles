@@ -81,8 +81,15 @@ ink at 7:1 on every surface, labels and status at 4.5:1, control edges and the s
 bar moves one pixel within its box (a four-step drift); after 5 minutes the screen blanks;
 the lock screen's clock moves a little every minute. On lcd these steps do nothing.
 
-An LCD on a VGA cable also reports an analog input, so `auto` calls it a tube: pin
+A DisplayPort or HDMI output that sends no EDID is taken for an adapter to VGA, and so a
+tube too. An LCD on a VGA cable also reports an analog input, so `auto` calls it a tube: pin
 `fui display lcd` for it.
+
+A screen behind such an adapter only gets the kernel's fallback modes (60 Hz, up to
+1024x768), which the boot splash and the login screen take. `fui setup boot` hands the
+kernel the mode the desktop runs at (`video=<output>:<WxH@R>` on the kernel command line),
+so all three match. The login screen keeps the tier's safe inset on a tube and steps its
+type down on a screen of 800 lines or fewer.
 
 ## Type: three voices on screen
 

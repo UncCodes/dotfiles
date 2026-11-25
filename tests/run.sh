@@ -287,7 +287,13 @@ t "the login screen follows the look, and styles only ReGreet's two panels" bash
   done
   grep -q "(instrument)" /tmp/fui-gre-cyan/greeter/regreet.css && ! grep -q "chrome capsules" /tmp/fui-gre-cyan/greeter/regreet.css &&
   grep -q "(y2k)" /tmp/fui-gre-slate/greeter/regreet.css && grep -q "border-radius: 99px" /tmp/fui-gre-slate/greeter/regreet.css &&
-  grep -q "Welcome to" /tmp/fui-gre-slate/greeter/regreet.toml' _ "$DOTS"
+  grep -q "Welcome to" /tmp/fui-gre-slate/greeter/regreet.toml &&
+  ! grep -q "safe inset" /tmp/fui-gre-slate/greeter/regreet.css || { echo "no inset expected on an 800x600 lcd"; exit 1; }
+  # on a tube at 1024x768 (a 17-inch CRT behind an adapter) nothing touches an edge, and the type steps down
+  rm -rf /tmp/fui-gre-crt && python3 "$1/theme/make-boot.py" --edition slate --tier crt --size 1024x768 /tmp/fui-gre-crt >/dev/null &&
+  grep -q "the safe inset (23 px)" /tmp/fui-gre-crt/greeter/regreet.css &&
+  grep -q "a short screen" /tmp/fui-gre-crt/greeter/regreet.css &&
+  grep -q "Inter 10" /tmp/fui-gre-crt/greeter/regreet.toml' _ "$DOTS"
 if command -v nvim >/dev/null; then
   t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
 fi

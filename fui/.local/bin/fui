@@ -316,7 +316,8 @@ cmd_skin() {
 # ── display: the tier (crt, lcd, deep) ──────────────────────────────────
 # A tube, a backlit panel, or an OLED / HDR / wide-gamut panel. `auto` reads the connected
 # screens: an analog input is a tube (crt), a 10-bit or HDR output is deep, anything else is
-# lcd. An LCD on a VGA cable also reports analog: pin `fui display lcd` for that.
+# lcd. A digital output with no EDID is an adapter to VGA, so a tube too. An LCD on a VGA
+# cable reports analog as well: pin `fui display lcd` for that.
 detect_tier() {   # prints "<tier>|<reason>"
   local c name st byte
   for c in /sys/class/drm/card*-*; do
@@ -329,6 +330,10 @@ detect_tier() {   # prints "<tier>|<reason>"
     if [ -s "$c/edid" ]; then
       byte=$(od -An -t u1 -j 20 -N 1 "$c/edid" 2>/dev/null | tr -d ' ')
       if [ -n "$byte" ] && [ $((byte & 128)) = 0 ]; then echo "crt|$name reports an analog input"; return 0; fi
+    else
+      # a digital output that hears nothing back: almost always an adapter to VGA (a DP or
+      # HDMI to VGA dongle doesn't pass the screen's EDID through), and so, most often, a tube
+      echo "crt|$name sends no EDID (an adapter to VGA)"; return 0
     fi
   done
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
@@ -1497,6 +1502,31 @@ setup_firefox() {
   done <<< "$profs"
 }
 
+boot_modes() {   # video=<output>:<WxH@R> on the kernel command line for every screen without an EDID
+  [ -f /etc/kernel/cmdline ] || return 0
+  local want out mode c args
+  want=$(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    for m in json.load(sys.stdin):
+        print(m["name"], "%dx%d@%d" % (m["width"], m["height"], round(m["refreshRate"])))
+except Exception:
+    pass')
+  [ -n "$want" ] || { echo "  screen modes: open a Hyprland session to carry its modes to boot"; return 0; }
+  args=$(cat /etc/kernel/cmdline)
+  while read -r out mode; do
+    c=$(ls -d /sys/class/drm/card*-"$out" 2>/dev/null | head -1)
+    [ -n "$c" ] && [ ! -s "$c/edid" ] || continue
+    args=$(printf '%s\n' "$args" | sed -E "s/ ?video=$out:[^ ]*//g")
+    args="$args video=$out:$mode"
+    echo "  boot mode: $out at $mode (it sends no EDID)"
+  done <<< "$want"
+  if [ "$args" != "$(cat /etc/kernel/cmdline)" ]; then
+    [ -f /etc/kernel/cmdline.fui-backup ] || sudo cp /etc/kernel/cmdline /etc/kernel/cmdline.fui-backup
+    printf '%s\n' "$args" | sudo tee /etc/kernel/cmdline >/dev/null
+  fi
+}
+
 setup_boot() {
   echo "${I_session-■} boot splash, login screen and consoles"
   have python3 || { echo "  python3 is needed"; return 1; }
@@ -1521,6 +1551,11 @@ setup_boot() {
   else
     echo "  /etc/kernel/cmdline not found: add 'quiet splash' to your boot entry by hand"
   fi
+  # a screen behind an adapter to VGA sends no EDID, so the kernel only offers its fallback
+  # modes (60 Hz, up to 1024x768) and the splash and the login screen take the first one.
+  # Hand the kernel the mode the desktop runs at, so all three match (and a tube doesn't
+  # flicker at 60 Hz when the desktop runs it faster).
+  boot_modes
   # rebuild the boot images so they carry the splash
   if have reinstall-kernels; then sudo reinstall-kernels && echo "  boot images rebuilt (reinstall-kernels)"
   elif have dracut-rebuild; then sudo dracut-rebuild && echo "  boot images rebuilt (dracut-rebuild)"

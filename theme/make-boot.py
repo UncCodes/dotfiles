@@ -203,7 +203,7 @@ def plyrgb(c):
     return f"{r / 255:.3f}, {g / 255:.3f}, {b / 255:.3f}"
 
 
-def greeter_css(C, ed):
+def greeter_css(C, ed, tier="lcd", H=1080):
     """ReGreet (GTK4) in the edition's look.
 
     ReGreet's widgets (src/gui/templates.rs): the sign-in panel is `frame.background` (a grid
@@ -218,7 +218,30 @@ frame:not(.background) {{ background: none; border: none; box-shadow: none; padd
 frame.background > grid > label {{ color: {C['ink']}; }}
 .error, label.error {{ color: {C['bad']}; }}
 """
-    return base + (greeter_y2k(C, ed) if look_of(ed) == "y2k" else greeter_instrument(C))
+    return base + (greeter_y2k(C, ed) if look_of(ed) == "y2k" else greeter_instrument(C)) + greeter_fit(look_of(ed), tier, H)
+
+
+def greeter_fit(look, tier, H):
+    """The screen the login screen lands on. On a tube, nothing touches an edge: the clock and
+    the Reboot / Power Off row keep the tier's safe inset (the glass curves and the edges
+    overscan), and the clock becomes a whole plate instead of hanging from the top edge. On a
+    short screen (768 lines and under, a 17-inch tube at 1024x768) the type and the controls
+    step down so the panel doesn't crowd it."""
+    out = ""
+    inset = round(H * TOK["tier"][tier]["inset"])
+    if inset:
+        r = LOOK["y2k"]["shell"] if look == "y2k" else 4
+        out += f"""/* ── a tube: the safe inset ({inset} px) ── */
+frame.widget-clock {{ margin-top: {inset}px; border-top-width: 1px; border-radius: {r}px; }}
+overlay > box {{ margin-bottom: {inset}px; }}
+"""
+    if H <= 800:
+        out += """/* ── a short screen ── */
+window, window.background { font-size: 10pt; }
+frame.widget-clock label { font-size: 24px; }
+entry, password-entry, button, combobox button { min-height: 28px; }
+"""
+    return out
 
 
 def greeter_instrument(C):
@@ -389,7 +412,7 @@ def main(argv):
 
     # the login screen: greetd runs ReGreet in cage on the first console
     WALL.render_still(ed, gre / "background.png", W, H, tier)
-    (gre / "regreet.css").write_text(greeter_css(C, ed))
+    (gre / "regreet.css").write_text(greeter_css(C, ed, tier, H))
     dark = is_dark(ed)
     scheme = TOK["desktop"]["dark" if dark else "light"]
     greeting = f"Welcome to {HOST}" if look_of(ed) == "y2k" else f"{ic('auth')}  {HOST.upper()} · {NOTICE}"
@@ -401,7 +424,7 @@ fit = "Cover"
 [GTK]
 application_prefer_dark_theme = {str(dark).lower()}
 cursor_theme_name = "{TOK['desktop']['cursor_theme']}"
-font_name = "{F['ui']} 11"
+font_name = "{F['ui']} {10 if H <= 800 else 11}"
 icon_theme_name = "{scheme['icon_theme']}"
 theme_name = "{scheme['gtk_base']}"
 

@@ -127,7 +127,9 @@ shots cyan crt; shots cyan deep; shots paper crt
 pkill -x waybar; pkill -x swaync
 # ReGreet lists the users through AccountsService on the system bus, which a container lacks
 if [ ! -S /run/dbus/system_bus_socket ]; then sudo mkdir -p /run/dbus && sudo dbus-daemon --system --fork; fi
-sudo sh -c '/usr/lib/accounts-daemon >/dev/null 2>&1 &'; sleep 2
+# (and AccountsService asks polkit), and D-Bus can't start either in a container: run them here
+[ -x /usr/lib/polkit-1/polkitd ] && sudo sh -c '/usr/lib/polkit-1/polkitd --no-debug >/dev/null 2>&1 &'
+sudo sh -c "/usr/lib/accounts-daemon >'$OUT/accounts-daemon.log' 2>&1 &"; sleep 3
 for m in cyan paper slate chrome; do greeter "$m"; done
 timeout 30 "$FUI" display lcd >/dev/null; timeout 30 "$FUI" mode cyan --quiet
 pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
