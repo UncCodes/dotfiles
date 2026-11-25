@@ -4,7 +4,7 @@
 # Runs after `install.sh --ci` (GitHub Actions does it; see .github/workflows/check.yml).
 # X11 shots under Xvfb: GTK3 and GTK4 widget factories, qt6ct, rofi, kitty, and the Firefox
 # start page, in every edition. Then it tries a headless Hyprland session (waybar, the
-# wallpaper, windows, the launcher) and screenshots that with grim.
+# wallpaper, windows, the launcher, the login screen) and screenshots that with grim.
 # Writes ~/preview/*.png. Never fails the build: a shot that can't be taken is skipped.
 set -u
 OUT="$HOME/preview"; mkdir -p "$OUT"
@@ -110,8 +110,23 @@ shots() {   # <edition> <tier>
   snap "$tag-launcher" 3; pkill -x rofi
   kill "$WF" 2>/dev/null
 }
+greeter() {   # <edition>: the login screen (ReGreet in demo mode, with the files make-boot.py writes)
+  local m="$1" G="$TMPD/greeter-$1"
+  timeout 30 "$FUI" mode "$m" --quiet
+  timeout 120 python3 "$DOTFILES_DIR/theme/make-boot.py" --edition "$m" --size 1280x800 "$G" >"$OUT/greeter-$m.log" 2>&1 ||
+    { echo "  no shot: $m-greeter (make-boot.py)"; return; }
+  sed -i "s|/usr/share/fui/greeter/background.png|$G/greeter/background.png|" "$G/greeter/regreet.toml"
+  timeout 40 env GDK_BACKEND=wayland regreet --demo --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" \
+    >>"$OUT/greeter-$m.log" 2>&1 &
+  local pid=$!
+  snap "$m-greeter" 8
+  kill "$pid" 2>/dev/null
+}
 for m in $EDITIONS; do shots "$m" lcd; done
 shots cyan crt; shots cyan deep; shots paper crt
+pkill -x waybar; pkill -x swaync
+regreet --help >"$OUT/regreet-help.log" 2>&1
+for m in cyan paper slate chrome; do greeter "$m"; done
 timeout 30 "$FUI" display lcd >/dev/null; timeout 30 "$FUI" mode cyan --quiet
 pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
 EOS

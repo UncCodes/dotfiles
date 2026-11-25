@@ -35,7 +35,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
         run: |
-          pacman -S --noconfirm --needed xorg-server-xvfb imagemagick gtk3-demos gtk4-demos sway
+          pacman -S --noconfirm --needed xorg-server-xvfb imagemagick gtk3-demos gtk4-demos sway greetd-regreet
           sudo -u tester -H env DOTFILES_DIR=/home/tester/.dotfiles \
             bash /home/tester/.dotfiles/tests/preview.sh
           mkdir -p preview && cp -r /home/tester/preview/. preview/
