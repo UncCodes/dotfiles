@@ -276,6 +276,16 @@ t "boot splash, login screen and consoles render (and the splash animates its tr
     [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
   done
   grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
+t "the login screen follows the look, and styles only ReGreet's two panels" bash -c '
+  for e in cyan slate; do
+    rm -rf "/tmp/fui-gre-$e" && python3 "$1/theme/make-boot.py" --edition "$e" --size 800x600 "/tmp/fui-gre-$e" >/dev/null || exit 1
+    css="/tmp/fui-gre-$e/greeter/regreet.css"
+    grep -q "frame:not(.background) { background: none; border: none" "$css" || { echo "$e: the notice frame is styled as a panel"; exit 1; }
+    grep -q "frame.widget-clock" "$css" || { echo "$e: no clock rules"; exit 1; }
+  done
+  grep -q "(instrument)" /tmp/fui-gre-cyan/greeter/regreet.css && ! grep -q "chrome capsules" /tmp/fui-gre-cyan/greeter/regreet.css &&
+  grep -q "(y2k)" /tmp/fui-gre-slate/greeter/regreet.css && grep -q "border-radius: 99px" /tmp/fui-gre-slate/greeter/regreet.css &&
+  grep -q "Welcome to" /tmp/fui-gre-slate/greeter/regreet.toml' _ "$DOTS"
 if command -v nvim >/dev/null; then
   t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
 fi

@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from palette import EDS, TOK, T, alpha, console, edition, is_dark  # noqa: E402
+from palette import EDS, LOOK, TOK, T, alpha, console, edition, is_dark, contrast, look_of  # noqa: E402
 from survey import walk  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("make_wallpaper", HERE / "make-wallpaper.py")
@@ -204,34 +204,148 @@ def plyrgb(c):
 
 
 def greeter_css(C, ed):
-    """ReGreet (GTK4): a glass panel in the edition over its survey field."""
-    i = lambda n: ic(n)  # noqa: E731
-    return f"""/* fui // the login screen (ReGreet), edition {ed}. Made by theme/make-boot.py. */
+    """ReGreet (GTK4) in the edition's look.
+
+    ReGreet's widgets (src/gui/templates.rs): the sign-in panel is `frame.background` (a grid
+    with 15 px margins: the greeting, User and Session rows, Cancel and Login); the clock is
+    `frame.background.widget-clock`, hung from the top edge; the notice bar sits in a plain
+    `frame` above the Reboot and Power Off buttons (`button.destructive-action`). Only the two
+    `.background` frames are panels: the plain one must stay invisible."""
+    base = f"""/* fui // the login screen (ReGreet), edition {ed} ({look_of(ed)}). Made by theme/make-boot.py. */
 window, window.background {{ background-color: {C['floor']}; color: {C['ink']}; font-family: "{F['ui']}", "{F['mono']}"; }}
 picture {{ opacity: 1; }}
-frame, frame > border {{
+frame:not(.background) {{ background: none; border: none; box-shadow: none; padding: 0; }}
+frame.background > grid > label {{ color: {C['ink']}; }}
+.error, label.error {{ color: {C['bad']}; }}
+"""
+    return base + (greeter_y2k(C, ed) if look_of(ed) == "y2k" else greeter_instrument(C))
+
+
+def greeter_instrument(C):
+    """A glass panel with the signal stripe, hairline fields, the clock in the brand face."""
+    return f"""frame.background {{
   background-color: {alpha(C['panel'], 0.80)}; border: 1px solid {C['rule_hi']}; border-radius: 4px;
-  box-shadow: inset 3px 0 {C['signal']}; padding: 20px 24px;
+  box-shadow: inset 3px 0 {C['signal']}; padding: 4px 8px;
 }}
-label {{ color: {C['ink']}; }}
-label.title, .title {{ font-family: "{F['brand']}"; letter-spacing: 2px; }}
-label.dim-label, .dim-label {{ color: {C['muted']}; }}
-entry, password-entry, dropdown > button, combobox > box > button, button {{
+frame.widget-clock {{ box-shadow: none; padding: 6px 24px; }}
+frame.widget-clock label {{ font-family: "{F['brand']}"; font-size: 30px; color: {C['ink']}; }}
+entry, password-entry, combobox button, button {{
   background-color: {C['well']}; color: {C['ink']}; border: 1px solid {C['edge']}; border-radius: 2px;
-  box-shadow: none; min-height: 32px;
+  box-shadow: none; min-height: 32px; background-image: none;
 }}
 entry:focus-within, password-entry:focus-within {{ border-color: {C['signal']}; box-shadow: inset 0 0 0 1px {C['signal']}; }}
 button:hover {{ background-color: {C['raised']}; border-color: {C['signal']}; }}
 button.suggested-action {{ background-color: {C['signal']}; color: {C['on_signal']}; border-color: {C['signal']}; font-weight: 700; }}
 button.suggested-action:hover {{ background-color: {C['signal_hi']}; }}
 button.destructive-action {{ background-color: transparent; color: {C['bad']}; border-color: {C['bad']}; }}
-popover > contents, popover.menu > contents {{ background-color: {C['panel']}; border: 1px solid {C['rule_hi']}; border-top: 2px solid {C['signal']}; border-radius: 4px; }}
-row:selected, modelbutton:hover {{ background-color: {C['signal_dim']}; box-shadow: inset 3px 0 {C['signal']}; }}
-.error, label.error {{ color: {C['bad']}; }}
-infobar, infobar > revealer > box {{ background-color: {C['bad_dim']}; color: {C['ink']}; border-radius: 2px; }}
-/* the clock */
-.clock, label.clock {{ font-family: "{F['brand']}"; font-size: 40px; color: {C['ink']}; }}
-/* icons come from the Nerd Font: {i('lock')} {i('operator')} {i('session')} */
+popover > contents {{ background-color: {C['panel']}; border: 1px solid {C['rule_hi']}; border-top: 2px solid {C['signal']}; border-radius: 4px; }}
+popover modelbutton:hover, popover row:selected {{ background-color: {C['signal_dim']}; box-shadow: inset 3px 0 {C['signal']}; }}
+infobar > revealer > box {{ background-color: {C['bad_dim']}; color: {C['ink']}; border-radius: 2px; }}
+"""
+
+
+def greeter_y2k(C, ed):
+    """The welcome screen of an owned device: a rounded shell under a chrome title strip that
+    carries the greeting, fields pressed into the shell as pills, chrome capsule buttons, gel on
+    Login, the clock in a lit readout hung from the top edge."""
+    L = LOOK["y2k"]
+    sh = L["shadow_dark"] if is_dark(ed) else L["shadow_light"]
+    # the greeting on the strip: whichever of ink and the maker's mark reads better on its face,
+    # embossed the other way
+    title = max((C["ink"], C["mark"]), key=lambda c: contrast(c, C["chrome_mid"]))
+    title_emboss = alpha("#000000", 0.5) if title == C["ink"] else alpha(C["face_hi"], 0.7)
+    r = L["shell"]
+    lens = "radial-gradient(ellipse at 50% 0%, alpha(white, {a}), alpha(white, 0) 62%)"
+    # the title strip is the top 50 px of the panel: the greeting's row (15 px margin, the
+    # label, 15 px below it); a lit lip, the face, the horizon, a lighter reflection. The lip
+    # is kept short so the greeting (15-34 px) sits on the face and below it, never on the lit band
+    strip = (f"linear-gradient(to bottom, {C['chrome_lip']} 0px, {C['shell_hi']} 2px, {C['chrome_mid']} 13px, {C['chrome_mid']} 24px, "
+             f"{C['chrome_horizon']} 26px, {C['chrome_low']} 44px, {C['chrome_reflect']} 49px, {C['rim']} 49px, "
+             f"{C['rim']} 50px, transparent 50px)")
+    body = f"linear-gradient(to bottom, {C['shell_hi']}, {C['shell']} 90px, {C['shell']} 70%, {C['shell_lo']})"
+    face = (f"{lens.format(a=0.6)}, linear-gradient(to bottom, {C['face_hi']}, {C['face_mid']} 48%, "
+            f"{C['face_horizon']} 52%, {C['face_lo']})")
+    face_hover = (f"{lens.format(a=0.85)}, linear-gradient(to bottom, {C['face_hi']}, {C['face_hi']} 30%, "
+                  f"{C['face_horizon']} 52%, {C['face_mid']})")
+    pressed = f"linear-gradient(to bottom, {C['face_horizon']}, {C['face_mid']})"
+    gel = (f"{lens.format(a=0.85)}, linear-gradient(to bottom, {C['gel_hi']}, {C['gel_mid']} 48%, "
+           f"{C['signal']} 52%, {C['gel_lo']})")
+    ease = "cubic-bezier({}, {}, {}, {})".format(*L["glide"])
+    drop = f"0 {L['shadow_y']}px {L['shadow_blur']}px alpha(black, {sh})"
+    lcd = L["font_lcd"]
+    return f"""/* ── the shell ── */
+frame.background {{
+  background-color: {C['shell']};
+  background-image: {strip}, {body};
+  border: 1px solid {C['rim']}; border-radius: {r}px; padding: 0 6px 4px;
+  box-shadow: {drop}, inset 0 1px {C['sheen']};
+}}
+/* the greeting rides the title strip, embossed */
+frame.background > grid > label:first-child {{ color: {title}; text-shadow: 0 1px {title_emboss}; }}
+frame.background > grid > label {{ color: {C['ink']}; text-shadow: 0 1px {C['emboss']}; }}
+
+/* ── the clock: a lit readout hung from the top edge ── */
+frame.widget-clock {{
+  background-color: {C['readout']}; background-image: linear-gradient(to bottom, alpha(white, 0.07), alpha(white, 0) 45%);
+  border: 1px solid {C['rim']}; border-top-width: 0; border-radius: 0 0 {r}px {r}px; padding: 8px 26px 10px;
+  box-shadow: {drop}, inset 0 -1px {C['sheen']}, inset 0 0 0 3px {C['shell']}, inset 0 0 0 4px {C['rim']};
+}}
+frame.widget-clock label {{
+  font-family: "{lcd}", "{F['mono']}"; font-size: 30px; color: {C['readout_ink']};
+  text-shadow: 0 0 6px {alpha(C['readout_ink'], 0.65)}, 0 0 1px {C['readout_ink']};
+}}
+
+/* ── fields: pills pressed into the shell ── */
+entry, password-entry {{
+  background-color: {C['well']}; color: {C['ink']}; caret-color: {C['signal']};
+  border: 1px solid {C['rim']}; border-radius: 99px; min-height: 34px; padding: 0 14px;
+  box-shadow: inset 0 2px 3px alpha(black, 0.35), 0 1px {C['sheen']};
+}}
+entry:focus-within, password-entry:focus-within {{
+  box-shadow: inset 0 2px 3px alpha(black, 0.35), 0 0 0 2px {alpha(C['signal'], 0.55)};
+}}
+password-entry text, entry text {{ background: none; }}
+
+/* ── buttons: chrome capsules; the toggles are round ── */
+button, combobox button {{
+  background-color: transparent; background-image: {face};
+  color: {C['mark']}; text-shadow: 0 1px {alpha(C['face_hi'], 0.6)};
+  border: 1px solid {C['rim']}; border-radius: 99px; min-height: 32px; padding: 0 16px;
+  box-shadow: 0 1px 2px alpha(black, 0.35);
+  transition: box-shadow 90ms {ease};
+}}
+combobox button {{ padding: 0 12px 0 16px; }}
+button image, combobox button arrow {{ color: {C['mark']}; -gtk-icon-shadow: none; }}
+button:hover {{ background-image: {face_hover}; box-shadow: 0 0 0 2px {alpha(C['signal'], 0.40)}, 0 1px 2px alpha(black, 0.35); }}
+button:active, button:checked {{ background-image: {pressed}; box-shadow: inset 0 2px 3px alpha(black, 0.40); }}
+button:disabled {{ background-image: none; background-color: {alpha(C['face_mid'], 0.5)}; color: {alpha(C['mark'], 0.5)}; box-shadow: none; }}
+grid > button {{ min-width: 32px; padding: 0; }}
+button.suggested-action {{
+  background-image: {gel}; border-color: {C['gel_lo']}; color: {C['on_gel']}; text-shadow: none; font-weight: 700;
+  box-shadow: 0 0 8px {alpha(C['signal'], 0.5)}, 0 1px 2px alpha(black, 0.35);
+}}
+button.suggested-action:hover {{ background-image: {gel}; box-shadow: 0 0 12px {alpha(C['signal'], 0.7)}, 0 1px 2px alpha(black, 0.35); }}
+button.suggested-action:active {{ box-shadow: inset 0 2px 3px alpha(black, 0.40); }}
+/* Reboot and Power Off: capsules like the rest; the danger shows on hover */
+button.destructive-action {{ min-width: 96px; }}
+button.destructive-action:hover {{ box-shadow: 0 0 0 2px {alpha(C['bad'], 0.55)}, 0 1px 2px alpha(black, 0.35); }}
+
+/* ── the lists that drop from User and Session ── */
+popover > contents {{
+  background-color: {C['shell']}; background-image: linear-gradient(to bottom, {C['shell_hi']}, {C['shell']} 24px);
+  border: 1px solid {C['rim']}; border-radius: {L['radius']}px; padding: 4px; box-shadow: {drop};
+}}
+popover modelbutton, popover row {{ color: {C['ink']}; border-radius: 99px; padding: 4px 12px; }}
+popover modelbutton:hover, popover row:hover, popover row:selected {{
+  background-image: {gel}; color: {C['on_gel']}; text-shadow: none;
+}}
+
+/* ── the notice: a small readout ── */
+infobar > revealer > box {{
+  background-color: {C['readout']}; color: {C['readout_ink']}; border: 1px solid {C['rim']};
+  border-radius: {L['radius']}px; box-shadow: inset 0 2px 3px alpha(black, 0.5);
+}}
+infobar.error > revealer > box {{ color: {C['bad']}; }}
 """
 
 
@@ -278,6 +392,7 @@ def main(argv):
     (gre / "regreet.css").write_text(greeter_css(C, ed))
     dark = is_dark(ed)
     scheme = TOK["desktop"]["dark" if dark else "light"]
+    greeting = f"Welcome to {HOST}" if look_of(ed) == "y2k" else f"{ic('auth')}  {HOST.upper()} · {NOTICE}"
     (gre / "regreet.toml").write_text(f"""# fui // the login screen (ReGreet), edition {ed}. Made by theme/make-boot.py.
 [background]
 path = "/usr/share/fui/greeter/background.png"
@@ -295,7 +410,7 @@ reboot = ["systemctl", "reboot"]
 poweroff = ["systemctl", "poweroff"]
 
 [appearance]
-greeting_msg = "{ic('auth')}  {HOST.upper()} · {NOTICE}"
+greeting_msg = "{greeting}"
 
 [widget.clock]
 format = "%H:%M"
