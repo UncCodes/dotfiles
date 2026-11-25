@@ -8,6 +8,8 @@
 @define-color fui_faint @fui_faint_crt;
 @define-color fui_glass @fui_glass_crt;
 @define-color fui_glass_well @fui_glass_well_crt;
+@define-color fui_glass_window @fui_glass_window_crt;
+@define-color fui_glass_view @fui_glass_view_crt;
 @define-color fui_shell @fui_shell_crt;
 @define-color fui_shell_hi @fui_shell_hi_crt;
 window.csd { box-shadow: 0 0 0 2px @fui_rule_hi; }

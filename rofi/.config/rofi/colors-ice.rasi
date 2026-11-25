@@ -23,6 +23,8 @@
   info: #6A3FB5FF;
   glass: #F3F7FBB8;
   glass-well: #FAFCFE99;
+  glass-window: #DCE7F2D1;
+  glass-view: #FAFCFED1;
   arc: #46586C3D;
   bead: #46586C59;
   packet: #1460D2CC;
@@ -64,6 +66,8 @@
   faint-crt: #52606FFF;
   glass-crt: #D6D9DDB8;
   glass-well-crt: #FAFCFE99;
+  glass-window-crt: #BBC4CED1;
+  glass-view-crt: #FAFCFED1;
   shell-crt: #B8CCE0FF;
   shell-hi-crt: #F4F9FFFF;
   void-deep: #D5E3F1FF;

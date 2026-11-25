@@ -116,7 +116,10 @@ greeter() {   # <edition>: the login screen (ReGreet in demo mode, with the file
   timeout 120 python3 "$DOTFILES_DIR/theme/make-boot.py" --edition "$m" --size 1280x800 "$G" >"$OUT/greeter-$m.log" 2>&1 ||
     { echo "  no shot: $m-greeter (make-boot.py)"; return; }
   sed -i "s|/usr/share/fui/greeter/background.png|$G/greeter/background.png|" "$G/greeter/regreet.toml"
-  timeout 40 env GDK_BACKEND=wayland regreet --demo --logs "$G/regreet.log" --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" \
+  # an empty config home: on the machine ReGreet runs as the greeter user, who has no
+  # ~/.config/gtk-4.0/gtk.css (the desktop's theme would outrank the login screen's CSS)
+  mkdir -p "$G/cfg"
+  timeout 40 env GDK_BACKEND=wayland XDG_CONFIG_HOME="$G/cfg" regreet --demo --logs "$G/regreet.log" --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" \
     >>"$OUT/greeter-$m.log" 2>&1 &
   local pid=$!
   snap "$m-greeter" 8
@@ -132,6 +135,16 @@ if [ ! -S /run/dbus/system_bus_socket ]; then sudo mkdir -p /run/dbus && sudo db
 [ -x /usr/lib/polkit-1/polkitd ] && sudo sh -c '/usr/lib/polkit-1/polkitd --no-debug >/dev/null 2>&1 &'
 sudo sh -c "/usr/lib/accounts-daemon >'$OUT/accounts-daemon.log' 2>&1 &"; sleep 3
 for m in cyan paper slate chrome; do greeter "$m"; done
+greeter_crt() {   # the login screen on a 17-inch tube: 1024x768, crt tier
+  local G="$TMPD/greeter-crt"
+  timeout 120 python3 "$DOTFILES_DIR/theme/make-boot.py" --edition slate --tier crt --size 1024x768 "$G" >"$OUT/greeter-crt.log" 2>&1 || return
+  sed -i "s|/usr/share/fui/greeter/background.png|$G/greeter/background.png|" "$G/greeter/regreet.toml"; mkdir -p "$G/cfg"
+  swaymsg output HEADLESS-1 resolution 1024x768 >/dev/null 2>&1
+  timeout 40 env GDK_BACKEND=wayland XDG_CONFIG_HOME="$G/cfg" regreet --demo --logs "$G/regreet.log" --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" >>"$OUT/greeter-crt.log" 2>&1 &
+  local pid=$!; snap "slate-crt-greeter" 8; kill "$pid" 2>/dev/null
+  swaymsg output HEADLESS-1 resolution 1280x800 >/dev/null 2>&1
+}
+greeter_crt
 timeout 30 "$FUI" display lcd >/dev/null; timeout 30 "$FUI" mode cyan --quiet
 pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
 EOS

@@ -565,6 +565,7 @@ scale = [4, 8, 12, 16, 24, 32, 48, 64]
 [glass]
 panel = 0.72
 well  = 0.60
+window = 0.82   # an application window's own background (GTK): the text stays solid, the blur shows through
 
 [opacity]
 window_active   = 0.92

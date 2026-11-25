@@ -8,6 +8,8 @@
 @define-color faint @faint_crt;
 @define-color glass @glass_crt;
 @define-color glass_well @glass_well_crt;
+@define-color glass_window @glass_window_crt;
+@define-color glass_view @glass_view_crt;
 @define-color shell @shell_crt;
 @define-color shell_hi @shell_hi_crt;
 window#osd { border-width: 2px; box-shadow: inset 4px 0 @signal; }

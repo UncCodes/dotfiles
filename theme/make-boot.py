@@ -203,6 +203,13 @@ def plyrgb(c):
     return f"{r / 255:.3f}, {g / 255:.3f}, {b / 255:.3f}"
 
 
+# ReGreet's clock: a frame.background hung from the top edge. Newer ReGreet classes it
+# widget-clock; the released one (0.5) doesn't, so it is also picked out by its place in the
+# overlay (the background picture, the sign-in panel, then the clock).
+CLOCK = "frame.widget-clock, overlay > frame.background:nth-child(3)"
+CLOCK_LABEL = "frame.widget-clock label, overlay > frame.background:nth-child(3) label"
+
+
 def greeter_css(C, ed, tier="lcd", H=1080):
     """ReGreet (GTK4) in the edition's look.
 
@@ -232,14 +239,14 @@ def greeter_fit(look, tier, H):
     if inset:
         r = LOOK["y2k"]["shell"] if look == "y2k" else 4
         out += f"""/* ── a tube: the safe inset ({inset} px) ── */
-frame.widget-clock {{ margin-top: {inset}px; border-top-width: 1px; border-radius: {r}px; }}
+{CLOCK} {{ margin-top: {inset}px; border-top-width: 1px; border-radius: {r}px; }}
 overlay > box {{ margin-bottom: {inset}px; }}
 """
     if H <= 800:
-        out += """/* ── a short screen ── */
-window, window.background { font-size: 10pt; }
-frame.widget-clock label { font-size: 24px; }
-entry, password-entry, button, combobox button { min-height: 28px; }
+        out += f"""/* ── a short screen ── */
+window, window.background {{ font-size: 10pt; }}
+{CLOCK_LABEL} {{ font-size: 24px; }}
+entry, password-entry, button, combobox button {{ min-height: 28px; }}
 """
     return out
 
@@ -250,8 +257,8 @@ def greeter_instrument(C):
   background-color: {alpha(C['panel'], 0.80)}; border: 1px solid {C['rule_hi']}; border-radius: 4px;
   box-shadow: inset 3px 0 {C['signal']}; padding: 4px 8px;
 }}
-frame.widget-clock {{ box-shadow: none; padding: 6px 24px; }}
-frame.widget-clock label {{ font-family: "{F['brand']}"; font-size: 30px; color: {C['ink']}; }}
+{CLOCK} {{ box-shadow: none; padding: 6px 24px; }}
+{CLOCK_LABEL} {{ font-family: "{F['brand']}"; font-size: 30px; color: {C['ink']}; }}
 entry, password-entry, combobox button, button {{
   background-color: {C['well']}; color: {C['ink']}; border: 1px solid {C['edge']}; border-radius: 2px;
   box-shadow: none; min-height: 32px; background-image: none;
@@ -296,6 +303,7 @@ def greeter_y2k(C, ed):
     ease = "cubic-bezier({}, {}, {}, {})".format(*L["glide"])
     drop = f"0 {L['shadow_y']}px {L['shadow_blur']}px alpha(black, {sh})"
     lcd = L["font_lcd"]
+    cr = L["control"] + 1                               # the controls' radius: fields, lists, rows
     return f"""/* ── the shell ── */
 frame.background {{
   background-color: {C['shell']};
@@ -308,20 +316,20 @@ frame.background > grid > label:first-child {{ color: {title}; text-shadow: 0 1p
 frame.background > grid > label {{ color: {C['ink']}; text-shadow: 0 1px {C['emboss']}; }}
 
 /* ── the clock: a lit readout hung from the top edge ── */
-frame.widget-clock {{
+{CLOCK} {{
   background-color: {C['readout']}; background-image: linear-gradient(to bottom, alpha(white, 0.07), alpha(white, 0) 45%);
   border: 1px solid {C['rim']}; border-top-width: 0; border-radius: 0 0 {r}px {r}px; padding: 8px 26px 10px;
   box-shadow: {drop}, inset 0 -1px {C['sheen']}, inset 0 0 0 3px {C['shell']}, inset 0 0 0 4px {C['rim']};
 }}
-frame.widget-clock label {{
+{CLOCK_LABEL} {{
   font-family: "{lcd}", "{F['mono']}"; font-size: 30px; color: {C['readout_ink']};
   text-shadow: 0 0 6px {alpha(C['readout_ink'], 0.65)}, 0 0 1px {C['readout_ink']};
 }}
 
-/* ── fields: pills pressed into the shell ── */
+/* ── fields: pressed into the shell, with the controls' small radius (fields hold content) ── */
 entry, password-entry {{
   background-color: {C['well']}; color: {C['ink']}; caret-color: {C['signal']};
-  border: 1px solid {C['rim']}; border-radius: 99px; min-height: 34px; padding: 0 14px;
+  border: 1px solid {C['rim']}; border-radius: {cr}px; min-height: 34px; padding: 0 12px;
   box-shadow: inset 0 2px 3px alpha(black, 0.35), 0 1px {C['sheen']};
 }}
 entry:focus-within, password-entry:focus-within {{
@@ -329,7 +337,8 @@ entry:focus-within, password-entry:focus-within {{
 }}
 password-entry text, entry text {{ background: none; }}
 
-/* ── buttons: chrome capsules; the toggles are round ── */
+/* ── buttons: standalone push buttons are chrome capsules; the User and Session lists hold
+      content, so they take the fields' radius; the icon-only toggles are round ── */
 button, combobox button {{
   background-color: transparent; background-image: {face};
   color: {C['mark']}; text-shadow: 0 1px {alpha(C['face_hi'], 0.6)};
@@ -337,12 +346,12 @@ button, combobox button {{
   box-shadow: 0 1px 2px alpha(black, 0.35);
   transition: box-shadow 90ms {ease};
 }}
-combobox button {{ padding: 0 12px 0 16px; }}
+combobox button {{ padding: 0 10px 0 12px; border-radius: {cr}px; }}
 button image, combobox button arrow {{ color: {C['mark']}; -gtk-icon-shadow: none; }}
 button:hover {{ background-image: {face_hover}; box-shadow: 0 0 0 2px {alpha(C['signal'], 0.40)}, 0 1px 2px alpha(black, 0.35); }}
 button:active, button:checked {{ background-image: {pressed}; box-shadow: inset 0 2px 3px alpha(black, 0.40); }}
 button:disabled {{ background-image: none; background-color: {alpha(C['face_mid'], 0.5)}; color: {alpha(C['mark'], 0.5)}; box-shadow: none; }}
-grid > button {{ min-width: 32px; padding: 0; }}
+grid > button {{ min-width: 32px; padding: 0; border-radius: 99px; }}
 button.suggested-action {{
   background-image: {gel}; border-color: {C['gel_lo']}; color: {C['on_gel']}; text-shadow: none; font-weight: 700;
   box-shadow: 0 0 8px {alpha(C['signal'], 0.5)}, 0 1px 2px alpha(black, 0.35);
@@ -358,7 +367,7 @@ popover > contents {{
   background-color: {C['shell']}; background-image: linear-gradient(to bottom, {C['shell_hi']}, {C['shell']} 24px);
   border: 1px solid {C['rim']}; border-radius: {L['radius']}px; padding: 4px; box-shadow: {drop};
 }}
-popover modelbutton, popover row {{ color: {C['ink']}; border-radius: 99px; padding: 4px 12px; }}
+popover modelbutton, popover row {{ color: {C['ink']}; border-radius: {cr}px; padding: 4px 12px; }}
 popover modelbutton:hover, popover row:hover, popover row:selected {{
   background-image: {gel}; color: {C['on_gel']}; text-shadow: none;
 }}

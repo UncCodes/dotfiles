@@ -9,6 +9,8 @@
   faint: @faint-crt;
   glass: @glass-crt;
   glass-well: @glass-well-crt;
+  glass-window: @glass-window-crt;
+  glass-view: @glass-view-crt;
   shell: @shell-crt;
   shell-hi: @shell-hi-crt;
   chrome-strip: @chrome-strip-crt;

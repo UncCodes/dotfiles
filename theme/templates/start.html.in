@@ -146,7 +146,7 @@
     transition: box-shadow 90ms cubic-bezier(.16, 1, .3, 1); }
   html[data-look="y2k"] button:hover { box-shadow: 0 0 14px color-mix(in srgb, var(--signal) 70%, transparent), 0 1px 2px rgba(0, 0, 0, .3); }
   html[data-look="y2k"] button:active { background: linear-gradient(to bottom, var(--gel-lo), var(--signal)); }
-  html[data-look="y2k"] .rows a { border-left: 0; border-radius: 8px; background: none; transition: box-shadow 90ms ease-out; }
+  html[data-look="y2k"] .rows a { border-left: 0; border-radius: 5px; background: none; transition: box-shadow 90ms ease-out; }
   html[data-look="y2k"] .rows a:hover { background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 60%),
       linear-gradient(to bottom, var(--face-hi), var(--face-mid) 48%, var(--face-horizon) 52%, var(--face-lo));
     color: var(--mark); box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 0 0 1px var(--rim); }
@@ -179,8 +179,8 @@
   <span class="logo" aria-hidden="true">__LOGO__</span>
   <div><div class="name">__HOST__</div><div class="division">__OS__</div></div>
   <div class="status">
-    <span class="ro">{{i_edition}}EDITION<b>__EDITION__</b></span><span class="ro">{{i_lcd}}DISPLAY<b>__DISPLAY__</b></span>
-    <span class="ro">{{i_operator}}OPERATOR<b>__USER__</b></span><span class="ro">{{i_node}}NODE<b>__HOST__</b></span>
+    <span class="ro">EDITION<b>__EDITION__</b></span><span class="ro">DISPLAY<b>__DISPLAY__</b></span>
+    <span class="ro">OPERATOR<b>__USER__</b></span><span class="ro">NODE<b>__HOST__</b></span>
   </div>
 </header>
 <main>
@@ -206,18 +206,18 @@
     </div>
   </section>
   <section class="panel">
-    <div class="plate"><h2>{{i_clock}}Local time</h2><span class="code">CLK-03</span></div>
+    <div class="plate"><h2>Local time</h2><span class="code">CLK-03</span></div>
     <div class="body">
       <div class="frame">
         <div class="clock" id="clock" aria-live="off">00:00<small>:00</small></div>
         <div class="date" id="date"></div>
       </div>
-      <div class="meter" aria-label="share of the day elapsed">{{i_timer}}DAY <span class="seg" id="seg"></span> <b id="pct">0%</b></div>
-      <div class="meta"><span class="ro">{{i_calendar}}ISO<b id="iso"></b></span><span class="ro">{{i_shift}}SHIFT<b id="shift"></b></span></div>
+      <div class="meter" aria-label="share of the day elapsed">DAY <span class="seg" id="seg"></span> <b id="pct">0%</b></div>
+      <div class="meta"><span class="ro">ISO<b id="iso"></b></span><span class="ro">SHIFT<b id="shift"></b></span></div>
     </div>
   </section>
 </main>
-<footer><span>{{i_info}}{{notice}}</span><span>{{i_kernel}}KERNEL __KERNEL__</span></footer>
+<footer><span>{{notice}}</span><span>KERNEL __KERNEL__</span></footer>
 <script>
   (function () {
     var N = 12, pad = function (n) { return (n < 10 ? "0" : "") + n; };

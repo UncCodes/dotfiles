@@ -315,9 +315,9 @@ def gtk_css(v, ed):
 @define-color accent_color {c('signal')};
 @define-color accent_bg_color {c('signal')};
 @define-color accent_fg_color {c('on_signal')};
-@define-color window_bg_color {c('floor')};
+@define-color window_bg_color {c('glass_window')};
 @define-color window_fg_color {c('ink')};
-@define-color view_bg_color {c('well')};
+@define-color view_bg_color {c('glass_view')};
 @define-color view_fg_color {c('ink')};
 @define-color headerbar_bg_color {c('panel')};
 @define-color headerbar_fg_color {c('ink')};
@@ -345,8 +345,10 @@ def gtk_css(v, ed):
 @define-color error_bg_color {c('bad')};
 @define-color borders {c('rule')};
 
-/* ── the floor: windows are flat panels with a hairline; no drop shadows ── */
-window, window.background {{ background-color: {c('floor')}; color: {c('ink')}; }}
+/* ── the floor: windows are panels of glass with a hairline; no drop shadows. The window's own
+      background lets the compositor's blur through (glass_window); the text stays solid ── */
+window, window.background {{ background-color: {c('glass_window')}; color: {c('ink')}; }}
+.view, textview text, iconview, treeview.view, list, listview, columnview, gridview {{ background-color: {c('glass_view')}; }}
 {'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {r}px; box-shadow: 0 0 0 {hair}px {c('rule_hi')}; }}
 
 /* ── header plates: panel, a hairline below, the signal stripe at the left ── */
@@ -512,6 +514,14 @@ def gtk_y2k(v, ed):
     focus_sel = "entry:focus, spinbutton:focus" if gtk3 else "entry:focus-within, spinbutton:focus-within"
     title = "headerbar .title, headerbar label.title" if gtk3 else "headerbar .title, windowtitle .title"
     ease = "cubic-bezier({}, {}, {}, {})".format(*L["glide"])
+    # standalone text buttons (in a dialog's action area, a header bar's text button, a lone
+    # suggested action); icon-only buttons: circular ones, header bar icons, window controls
+    capsule = ("dialog .dialog-action-area > button, headerbar > button.text-button, button.suggested-action:not(.image-button)"
+               if gtk3 else
+               "dialog .dialog-action-area > button, headerbar > button.text-button, button.pill, button.suggested-action:not(.image-button)")
+    orb = ("button.circular, headerbar button.image-button, headerbar button.titlebutton"
+           if gtk3 else
+           "button.circular, headerbar button.image-button, windowcontrols > button, button.osd.image-button")
     return f"""
 /* ── the y2k look: an owned device. Chrome headers (a bright lip, the lit face, a dark horizon,
       a lighter reflection), chrome capsule buttons, gel on the primary action and the
@@ -527,7 +537,7 @@ headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to b
 button {{
   background-image: {face};
   border: 1px solid {c('rim')};
-  border-radius: 99px;
+  border-radius: {cr + 1}px;
   color: {c('mark')};
   text-shadow: 0 1px alpha(#FFFFFF, 0.55);
   box-shadow: 0 1px 2px alpha(#000000, 0.30);
@@ -546,22 +556,30 @@ button.suggested-action, button.default {{
 button.suggested-action:hover {{ background-image: {gel}; box-shadow: 0 0 10px alpha({c('signal')}, 0.65), 0 1px 2px alpha(#000000, 0.30); }}
 button.suggested-action:active {{ background-image: {gel_flat}; box-shadow: inset 0 2px 3px alpha(#000000, 0.35); }}
 button.destructive-action {{ background-image: none; border-color: {c('bad')}; color: {c('bad')}; text-shadow: none; }}
-.linked > button {{ border-radius: 0; }}
-.linked > button:first-child {{ border-top-left-radius: 99px; border-bottom-left-radius: 99px; }}
-.linked > button:last-child {{ border-top-right-radius: 99px; border-bottom-right-radius: 99px; }}
-entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{ border-radius: {cr + 2}px; box-shadow: {well}; }}
+/* curves: a capsule only for a standalone text button and the primary action; a circle only
+   for an icon-only button; joined parts (linked groups, an entry's buttons, spin buttons)
+   meet square and round only their outer corners, at the controls' radius */
+{capsule} {{ border-radius: 99px; }}
+{orb} {{ border-radius: 99px; min-width: 24px; min-height: 24px; padding: 4px; }}
+.linked > button, .linked > entry, .linked > combobox > box > button, spinbutton > button {{ border-radius: 0; }}
+.linked > :first-child, .linked > :first-child > box > button {{ border-top-left-radius: {cr + 1}px; border-bottom-left-radius: {cr + 1}px; }}
+.linked > :last-child, .linked > :last-child > box > button, spinbutton > button:last-child {{ border-top-right-radius: {cr + 1}px; border-bottom-right-radius: {cr + 1}px; }}
+.linked.vertical > button {{ border-radius: 0; }}
+.linked.vertical > :first-child {{ border-radius: {cr + 1}px {cr + 1}px 0 0; }}
+.linked.vertical > :last-child {{ border-radius: 0 0 {cr + 1}px {cr + 1}px; }}
+entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{ border-radius: {cr + 1}px; box-shadow: {well}; }}
 {focus_sel} {{ box-shadow: {well}, 0 0 0 2px alpha({c('signal')}, 0.45); }}
 check {{ border-radius: 4px; background-image: {face}; border-color: {c('rim')}; }}
 radio {{ border-radius: 99px; background-image: {face}; border-color: {c('rim')}; }}
 check:checked, check:indeterminate, radio:checked {{ background-image: {gel}; border-color: {c('gel_lo')}; color: {c('on_gel')}; }}
 frame > border, .frame, list.boxed-list, .boxed-list, .card {{ border-radius: {r}px; }}
 row:selected, list row:selected, treeview.view:selected {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: 6px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
 }}
 row:selected label, list row:selected label {{ color: {c('on_gel')}; }}
 {pop} {{ border: 1px solid {c('rim')}; border-radius: {r}px; box-shadow: 0 {L['shadow_y']}px {L['shadow_blur']}px alpha(#000000, {sh}); }}
 menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu row:hover {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: 6px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
 }}
 tooltip, tooltip.background {{ border-radius: {r}px; border-color: {c('rim')}; box-shadow: 0 4px 12px alpha(#000000, 0.30); }}
 progressbar trough, levelbar trough {{ min-height: 10px; border-radius: 99px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.6); border: 1px solid alpha(#000000, 0.5); }}
@@ -574,8 +592,12 @@ switch:checked {{ background-image: {gel}; border-color: {c('gel_lo')}; }}
 switch slider {{ border-radius: 99px; background-image: {face}; border: 1px solid {c('rim')}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
 scrollbar slider {{ border-radius: 99px; min-width: 8px; min-height: 8px; background-image: {face}; border: 1px solid {c('rim')}; }}
 notebook > header tab:checked, tabbar tab:selected {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: 99px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
 }}
+notebook > header.top tab:checked {{ border-radius: {cr + 1}px {cr + 1}px 0 0; }}
+notebook > header.bottom tab:checked {{ border-radius: 0 0 {cr + 1}px {cr + 1}px; }}
+notebook > header.left tab:checked {{ border-radius: {cr + 1}px 0 0 {cr + 1}px; }}
+notebook > header.right tab:checked {{ border-radius: 0 {cr + 1}px {cr + 1}px 0; }}
 """
 
 

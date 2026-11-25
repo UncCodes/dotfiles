@@ -9,6 +9,8 @@
   --fui-faint: var(--fui-faint-crt);
   --fui-glass: var(--fui-glass-crt);
   --fui-glass-well: var(--fui-glass-well-crt);
+  --fui-glass-window: var(--fui-glass-window-crt);
+  --fui-glass-view: var(--fui-glass-view-crt);
   --fui-shell: var(--fui-shell-crt);
   --fui-shell-hi: var(--fui-shell-hi-crt);
   --fui-hair: 2px;

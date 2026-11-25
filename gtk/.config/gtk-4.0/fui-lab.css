@@ -25,6 +25,8 @@
 @define-color fui_info #0E6E84;
 @define-color fui_glass rgba(255, 255, 255, 0.722);
 @define-color fui_glass_well rgba(250, 251, 252, 0.600);
+@define-color fui_glass_window rgba(244, 246, 248, 0.820);
+@define-color fui_glass_view rgba(250, 251, 252, 0.820);
 @define-color fui_arc rgba(86, 97, 109, 0.239);
 @define-color fui_bead rgba(86, 97, 109, 0.349);
 @define-color fui_packet rgba(31, 79, 224, 0.800);
@@ -66,6 +68,8 @@
 @define-color fui_faint_crt #5A646E;
 @define-color fui_glass_crt rgba(224, 224, 224, 0.722);
 @define-color fui_glass_well_crt rgba(250, 251, 252, 0.600);
+@define-color fui_glass_window_crt rgba(207, 209, 211, 0.820);
+@define-color fui_glass_view_crt rgba(250, 251, 252, 0.820);
 @define-color fui_shell_crt #FFFFFF;
 @define-color fui_shell_hi_crt #F4F4F5;
 @define-color fui_void_deep #FFFFFF;
@@ -74,9 +78,9 @@
 @define-color accent_color @fui_signal;
 @define-color accent_bg_color @fui_signal;
 @define-color accent_fg_color @fui_on_signal;
-@define-color window_bg_color @fui_floor;
+@define-color window_bg_color @fui_glass_window;
 @define-color window_fg_color @fui_ink;
-@define-color view_bg_color @fui_well;
+@define-color view_bg_color @fui_glass_view;
 @define-color view_fg_color @fui_ink;
 @define-color headerbar_bg_color @fui_panel;
 @define-color headerbar_fg_color @fui_ink;
@@ -104,8 +108,10 @@
 @define-color error_bg_color @fui_bad;
 @define-color borders @fui_rule;
 
-/* ── the floor: windows are flat panels with a hairline; no drop shadows ── */
-window, window.background { background-color: @fui_floor; color: @fui_ink; }
+/* ── the floor: windows are panels of glass with a hairline; no drop shadows. The window's own
+      background lets the compositor's blur through (glass_window); the text stays solid ── */
+window, window.background { background-color: @fui_glass_window; color: @fui_ink; }
+.view, textview text, iconview, treeview.view, list, listview, columnview, gridview { background-color: @fui_glass_view; }
 window.csd { border-radius: 4px; box-shadow: 0 0 0 1px @fui_rule_hi; }
 
 /* ── header plates: panel, a hairline below, the signal stripe at the left ── */

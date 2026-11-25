@@ -23,6 +23,8 @@
   --fui-info: #5CCFE6;
   --fui-glass: rgba(27, 32, 51, 0.722);
   --fui-glass-well: rgba(14, 16, 25, 0.600);
+  --fui-glass-window: rgba(18, 21, 33, 0.820);
+  --fui-glass-view: rgba(14, 16, 25, 0.820);
   --fui-arc: rgba(154, 163, 194, 0.200);
   --fui-bead: rgba(154, 163, 194, 0.278);
   --fui-packet: rgba(147, 169, 255, 0.800);
@@ -64,6 +66,8 @@
   --fui-faint-crt: #7F87A5;
   --fui-glass-crt: rgba(27, 32, 51, 0.722);
   --fui-glass-well-crt: rgba(14, 16, 25, 0.600);
+  --fui-glass-window-crt: rgba(0, 0, 0, 0.820);
+  --fui-glass-view-crt: rgba(14, 16, 25, 0.820);
   --fui-shell-crt: #39415E;
   --fui-shell-hi-crt: #8C96B8;
   --fui-void-deep: #000000;

@@ -19,7 +19,7 @@ GL = TOK["glass"]
 
 ROLES = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint",
          "signal", "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info"]
-CRT_SWAP = ["void", "floor", "panel", "edge", "muted", "faint", "glass", "glass_well", "shell", "shell_hi"]   # roles crt replaces
+CRT_SWAP = ["void", "floor", "panel", "edge", "muted", "faint", "glass", "glass_well", "glass_window", "glass_view", "shell", "shell_hi"]   # roles crt replaces
 DEEP_SWAP = ["void"]
 
 
@@ -116,6 +116,8 @@ def E(ed):
     dark = is_dark(ed)
     p["glass"] = alpha(p["panel"], GL["panel"])
     p["glass_well"] = alpha(p["well"], GL["well"])
+    p["glass_window"] = alpha(p["floor"], GL.get("window", 1.0))
+    p["glass_view"] = alpha(p["well"], GL.get("window", 1.0))
     p["arc"] = alpha(p["muted"], 0.20 if dark else 0.24)     # the backdrop's contour lines
     p["bead"] = alpha(p["muted"], 0.28 if dark else 0.35)    # ...and its survey stations
     p["packet"] = alpha(p["signal"], 0.80)                   # live data travelling it
@@ -164,6 +166,8 @@ def T(ed, tier):
         p.update(TOK["edition"][ed]["crt"])
         p["glass"] = alpha(p["panel"], GL["panel"])           # glass on a tube too, over its darker panel
         p["glass_well"] = alpha(p["well"], GL["well"])
+        p["glass_window"] = alpha(p["floor"], GL.get("window", 1.0))
+        p["glass_view"] = alpha(p["well"], GL.get("window", 1.0))
     elif tier == "deep":
         p["void"] = TOK["edition"][ed]["deep"].get("void", p["void"])
     return p

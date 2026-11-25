@@ -45,7 +45,7 @@ window#waybar {
 }
 #custom-brand:hover { box-shadow: 0 0 0 2px alpha(@signal, 0.45), 0 1px 2px alpha(#000000, 0.35); }
 
-/* workspaces: chrome capsules; the current one is glossy gel */
+/* workspaces: a row of chrome keys (a set, so keycaps, not capsules); the current one is glossy gel */
 #workspaces { padding: 0 2px; }
 #workspaces button {
   min-width: 24px;
@@ -57,7 +57,7 @@ window#waybar {
   color: @mark;
   text-shadow: 0 1px alpha(#FFFFFF, 0.55);
   border: 1px solid alpha(@rim, 0.85);
-  border-radius: 99px;
+  border-radius: 5px;
   background-image:
     radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%),
     linear-gradient(to bottom, @face_hi, @face_mid 48%, @face_horizon 52%, @face_lo);
@@ -81,7 +81,7 @@ window#waybar {
 #window { color: @ink; padding: 0 14px; font-weight: 600; }
 window#waybar.empty #window { color: @muted; }
 
-/* readouts: embossed on the chrome; hover lifts each into a capsule */
+/* readouts: embossed on the chrome; hover lifts each onto a small chrome key */
 #mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #battery, #language,
 #custom-sound, #custom-mode, #custom-notify, #tray, #custom-power, #custom-rec {
   color: @ink;
@@ -89,7 +89,7 @@ window#waybar.empty #window { color: @muted; }
   margin: 5px 0;
   font-family: "JetBrainsMono Nerd Font", monospace;
   font-size: 11px;
-  border-radius: 99px;
+  border-radius: 5px;
   border: 1px solid transparent;
   transition: background-image 90ms ease-out, box-shadow 90ms ease-out;
 }

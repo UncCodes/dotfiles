@@ -39,7 +39,7 @@
 
   // the focused window: its app in tracked capitals, then its title
   "hyprland/window": {
-    "format": "<span alpha='70%'>󰖯</span> <span alpha='60%' size='small' letter_spacing='1600'>{class}</span>  {title}",
+    "format": "<span alpha='60%' size='small' letter_spacing='1600'>{class}</span>  {title}",
     "max-length": 70,
     "separate-outputs": true
   },
@@ -85,9 +85,9 @@
   },
 
   "network": {
-    "format-ethernet": "<span alpha='70%'>󰈀</span> ETH",
+    "format-ethernet": "ETH",
     "format-wifi": "<span alpha='70%'>󰤨</span> {signalStrength:02}%",
-    "format-disconnected": "<span alpha='70%'>󰖪</span> OFFLINE",
+    "format-disconnected": "OFFLINE",
     "tooltip-format": "{essid} {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
     "interval": 5,
     "on-click": "~/.local/bin/fui tui nmtui",
@@ -97,7 +97,7 @@
   // a segment meter (meters.jsonc: rounded down, never more than the true value) and the number
   "pulseaudio": {
     "format": "<span alpha='70%'>󰕾</span> {icon} {volume:02}%",
-    "format-muted": "<span alpha='70%'>󰖁</span> ░░░░░ MUTE",
+    "format-muted": "<span alpha='70%'>󰖁</span> MUTE",
     "on-click": "~/.local/bin/fui tui wiremix",
     "on-click-middle": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
@@ -107,7 +107,7 @@
   // shown only where there is a battery; WARN and LOW are words, not just a colour
   "battery": {
     "format": "<span alpha='70%'>󰁹</span> {icon} {capacity:02}%",
-    "format-charging": "<span alpha='70%'>󰂄</span> {icon} {capacity:02}% CHG",
+    "format-charging": "<span alpha='70%'>󰂄</span> {icon} {capacity:02}%",
     "format-warning": "<span alpha='70%'>󰁹</span> <span alpha='60%' size='small' letter_spacing='1600'>WARN</span> {icon} {capacity:02}%",
     "format-critical": "<span alpha='70%'>󰁹</span> <span alpha='60%' size='small' letter_spacing='1600'>LOW</span> {icon} {capacity:02}%",
     "states": { "warning": 20, "critical": 10 },
@@ -156,8 +156,8 @@
 
   // the clock in the brand voice, the date small beside it (24-hour; ISO in the alternate view)
   "clock": {
-    "format": "<span alpha='70%%'>󰅐</span> {:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
-    "format-alt": "<span alpha='70%%'>󰭧</span> {:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",
+    "format": "{:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",
+    "format-alt": "{:%H:%M:%S  <span alpha='60%%' size='small' letter_spacing='1600'>%Y-%m-%d</span>}",
     "interval": 1,
     "tooltip-format": "<tt>{calendar}</tt>",
     "calendar": {
