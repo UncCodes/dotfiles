@@ -99,3 +99,9 @@ adw-gtk-theme
 fontconfig
 python
 pciutils      # lspci: graphics detection
+
+# boot and sign-in (fui setup boot turns them on)
+plymouth       # the boot splash
+greetd         # the login service on the first console
+greetd-regreet # the graphical login screen (GTK4)
+cage           # the kiosk compositor the login screen runs in

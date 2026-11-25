@@ -148,7 +148,7 @@ Every code names a real panel and stays stable:
 | Terminal (kitty) and console tools | the edition's console: 16 colours mapped from the roles (light editions keep a dark console); shell colours are ANSI numbers so everything follows it |
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
 | Start page | masthead (the distribution's logo, the host, the OS), bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
-| Boot (Plymouth), consoles | the distribution's logo, the host and the OS over the survey field with a 4 px progress line; the console palette and a sign-in banner with the notice |
+| Boot (Plymouth), sign-in (greetd + ReGreet), consoles | the splash fades in the edition's survey field and the machine's logo, host and OS while traces of signal run along the contours, with a 4 px progress line; then the login screen, a glass panel in the edition over the same field; the console palette and a sign-in banner with the notice |
 | Backdrop | the survey field: a topographic map of a terrain each edition seeds differently, contour hairlines with every fifth an index contour strung with survey stations, and traces (lit stretches of contour, bright at the head) running along the lines when live; floor on lcd, true black on deep and crt. No text |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
@@ -160,9 +160,12 @@ glitches or blinks faster than once a second.
 
 ## Sound
 
-Crisp synthetic cues (`make-sounds.py`): a dry tick for toggles and volume, two notes up a
-fifth for a notice, an ascending arpeggio at sign-in and its mirror at sign-out, two even
-pulses for attention, a falling third for an error. `fui sound off` silences them.
+Deep, spacious cues (`make-sounds.py`, all original synthesis): slow detuned pads over a
+sub-bass, glassy FM bells with long tails and soft filtered air, placed in a wide stereo hall.
+Sign-in is a sub swell, a warm A major 9 pad, a breath and four rising bells; sign-out lets the
+bells fall away; a notice is two bells a fifth apart; toggles and volume are a soft cursor
+blip; an edition change is a whoosh and a bloom; attention is two round low bells; an error is
+a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silences them.
 
 ## Don't
 

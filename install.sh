@@ -266,5 +266,6 @@ if [ "$failed" = 1 ]; then
   exit 1
 fi
 echo "Done. Log out and back in (SUPER+SHIFT+E); on tty1 Hyprland starts on its own."
+echo "For the animated boot splash and the graphical login screen: fui setup boot"
 echo "SUPER+/ lists every key · SUPER+Space the command palette · fui doctor checks the machine."
 exit 0

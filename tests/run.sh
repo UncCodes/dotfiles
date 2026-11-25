@@ -185,6 +185,15 @@ t "the lock clock moves only on crt and deep" bash -c 'f="$HOME/.local/bin/fui"
 t "the alert takeover links on and off" bash -c 'f="$HOME/.local/bin/fui"
   "$f" alert on FAULT test >/dev/null 2>&1; [ "$(readlink "$HOME/.config/waybar/fui-alert.css")" = alert-on.css ] && [ "$("$f" alert status)" = on ] &&
   "$f" alert off >/dev/null 2>&1; [ "$(readlink "$HOME/.config/waybar/fui-alert.css")" = alert-off.css ] && [ "$("$f" alert status)" = off ]'
+t "a second wallpaper change never waits on the first (the backdrop follows the edition)" bash -c '
+  fake=$(mktemp -d); printf "#!/bin/bash\nwhile :; do sleep 1; done\n" > "$fake/swaybg"; chmod +x "$fake/swaybg"
+  f="$HOME/.local/bin/fui"
+  PATH="$fake:$PATH" "$f" mode amber --quiet
+  PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the first change did not finish"; exit 1; }
+  PATH="$fake:$PATH" "$f" mode phosphor --quiet
+  PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the second change hung"; exit 1; }
+  ls "${XDG_CACHE_HOME:-$HOME/.cache}"/fui/still-phosphor-* >/dev/null || { echo "no phosphor still"; exit 1; }
+  pkill -x swaybg; rm -rf "$fake"'
 t "idle steps do nothing on lcd" bash -c 'f="$HOME/.local/bin/fui"; "$f" display lcd >/dev/null; "$f" idle dim && "$f" idle wake; r=$?; "$f" display auto >/dev/null; exit $r'
 t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
 t "the fui sound theme is installed" test -f "$HOME/.local/share/sounds/fui/stereo/desktop-login.oga"
@@ -200,7 +209,12 @@ t "the data face carries every glyph the bar and shell use (█ ░ ■ ▌ ⏻ 
 t "no institution's name anywhere the operator looks" bash -c '! grep -rIl "FUI SYSTEMS\|WORKSTATION DIVISION" "$1" --exclude-dir=.git --exclude-dir=tests --exclude=CYBERCORE.md' _ "$DOTS"
 t "fui brand names the machine (host · OS · operator)" bash -c '"$HOME/.local/bin/fui" brand | grep -q "$(cat /etc/hostname 2>/dev/null || uname -n)"'
 t "the bar badge shows the distribution logo and the operator" bash -c '"$HOME/.local/bin/fui" brand --badge | grep -q "Nerd Font.*  $(id -un)$"'
-t "boot splash renders" python3 "$DOTS/theme/make-boot.py" /tmp/fui-boot-test
+t "boot splash, login screen and consoles render (and the splash animates its traces)" bash -c '
+  rm -rf /tmp/fui-boot-test && python3 "$1/theme/make-boot.py" --edition amber --size 1024x768 /tmp/fui-boot-test &&
+  for f in plymouth/fui.script plymouth/background.png plymouth/dot.png greeter/config.toml greeter/regreet.toml greeter/regreet.css greeter/background.png console/issue; do
+    [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
+  done
+  grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
 if command -v nvim >/dev/null; then
   t "Neovim config loads (plugins install)" bash -c 'timeout 300 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; timeout 60 nvim --headless -c "lua if vim.g.colors_name ~= [[fui]] then os.exit(1) end; require([[telescope]])" -c qa'
 fi

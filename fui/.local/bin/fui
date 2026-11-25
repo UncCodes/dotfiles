@@ -14,7 +14,7 @@
 #   fui updates | brand                              count pending package updates · the machine's name and OS
 #   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
-#   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]
+#   fui setup [gpu|audio|bluetooth|firmware|system|firefox|boot|all] [--yes]   (boot: splash + login screen)
 #   fui help
 set -u
 # shellcheck disable=SC2154  # the I_* icon variables come from icons.sh (generated)
@@ -31,7 +31,9 @@ SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 
 have()   { command -v "$1" >/dev/null 2>&1; }
 upper()  { echo "$1" | tr '[:lower:]' '[:upper:]'; }
-detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1; else "$@" >/dev/null 2>&1 & fi; }
+# run in the background, detached; lock files (fds 7-9) are never handed to the child, or a
+# long-lived program would hold a lock and block every later call
+detach() { if have setsid; then setsid -f "$@" >/dev/null 2>&1 7>&- 8>&- 9>&-; else "$@" >/dev/null 2>&1 7>&- 8>&- 9>&- & fi; }
 die()    { echo "fui: $*" >&2; exit 1; }
 t3()     { if have timeout; then timeout 3 "$@"; else "$@"; fi; }   # calls to services that may not be running
 note()   { have notify-send && t3 notify-send -t 2200 -a fui ${3:+-i "$3"} "$1" "${2:-}"; return 0; }   # title body [icon name]
@@ -436,6 +438,20 @@ cmd_lockclock() {
 # theme/make-wallpaper.py into ~/.cache/fui/. Live: traces run along the contours, played by
 # mpvpaper. Still: swaybg with the PNG (also shown while the loop renders); before the still
 # exists, the edition's ground colour.
+# Stop every other `fui wallpaper` run (including ones an older version left waiting on a
+# lock), but not this one or the subshells it is running.
+wallpaper_takeover() {
+  local pid ppid
+  for pid in $(pgrep -f "fui wallpaper" 2>/dev/null); do
+    [ "$pid" = "$$" ] && continue
+    ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ "$ppid" = "$$" ] && continue
+    kill "$pid" 2>/dev/null
+  done
+  rm -f "$CACHE/.wallpaper.lock"
+  return 0
+}
+
 cmd_wallpaper() {
   mkdir -p "$STATE" "$CACHE"
   local pref
@@ -475,11 +491,11 @@ else:
 ' "$CFG/fui/tokens.json" "$mode" "$tier" 2>/dev/null)
   ground="${ground:-#07090C}"
 
-  # one instance at a time: a newer call (an edition change) takes over from an older one
-  exec 9>"$CACHE/.wallpaper.lock"
+  # A newer call (an edition change) takes over from an older one: stop it, its renderer and
+  # its players. (No lock: the players would inherit it and block every later call; that
+  # kept the wallpaper from following the edition.)
+  wallpaper_takeover
   pkill -f "make-wallpaper.py" 2>/dev/null
-  have flock && flock 9
-
   pkill -x mpvpaper 2>/dev/null
   pkill -x swaybg 2>/dev/null
   if [ -s "$still" ]; then detach swaybg -i "$still" -m fill; else detach swaybg -c "$ground"; fi
@@ -508,7 +524,7 @@ else:
   fi
 
   # -p pauses the loop while a fullscreen window hides the wallpaper
-  mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0" ALL "$video" >"$CACHE/mpvpaper.log" 2>&1
+  mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0" ALL "$video" >"$CACHE/mpvpaper.log" 2>&1 7>&- 8>&- 9>&-
   sleep 1.5
   if pgrep -x mpvpaper >/dev/null; then
     pkill -x swaybg
@@ -628,9 +644,9 @@ bar_start() {
     for _ in $(seq 40); do pgrep -x waybar >/dev/null || break; sleep 0.05; done
     pkill -9 -x waybar 2>/dev/null
     if have setsid; then
-      setsid -f waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 8>&-
+      setsid -f waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&-
     else
-      waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 8>&- &
+      waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&- &
     fi
   ) 8>"$CACHE/.bar.lock"
 }
@@ -1206,6 +1222,11 @@ for m in json.load(sys.stdin):
   else
     info "boot splash not set up: fui setup boot"
   fi
+  if systemctl is-enabled --quiet greetd.service 2>/dev/null && grep -q regreet /etc/greetd/config.toml 2>/dev/null; then
+    ok "login screen: greetd + ReGreet"
+  else
+    info "no login screen yet (the machine boots to a text prompt): fui setup boot"
+  fi
   local prof themed=0
   while IFS= read -r prof; do [ -e "$prof/chrome/userChrome.css" ] && themed=1; done < <(firefox_profiles)
   [ "$themed" = 1 ] && ok "Firefox is themed" || info "Firefox not themed yet: fui setup firefox (after opening Firefox once)"
@@ -1371,14 +1392,19 @@ setup_firefox() {
 }
 
 setup_boot() {
-  echo "${I_session-■} boot splash and console"
+  echo "${I_session-■} boot splash, login screen and consoles"
   have python3 || { echo "  python3 is needed"; return 1; }
-  sudo pacman -S --needed --noconfirm plymouth terminus-font >/dev/null || return 1
-  local tmp; tmp=$(mktemp -d)
-  python3 "$DOTS/theme/make-boot.py" "$tmp" || { echo "  couldn't render the splash"; rm -rf "$tmp"; return 1; }
+  sudo pacman -S --needed --noconfirm plymouth terminus-font greetd greetd-regreet cage >/dev/null || return 1
+  local tmp ed tier w h
+  tmp=$(mktemp -d); ed=$(current_mode); tier=$(current_tier)
+  read -r w h < <(screen_size)
+  python3 "$DOTS/theme/make-boot.py" --edition "$ed" --tier "$tier" --size "${w:-1920}x${h:-1080}" "$tmp" ||
+    { echo "  couldn't render the splash and login screen"; rm -rf "$tmp"; return 1; }
+
+  # the splash: the survey field fading in, traces running along it
   sudo rm -rf /usr/share/plymouth/themes/fui
   sudo mkdir -p /usr/share/plymouth/themes/fui && sudo cp -r "$tmp/plymouth/." /usr/share/plymouth/themes/fui/ || return 1
-  sudo plymouth-set-default-theme fui && echo "  splash: fui"
+  sudo plymouth-set-default-theme fui && echo "  splash: fui ($ed)"
   # kernel command line: quiet boot with the splash
   if [ -f /etc/kernel/cmdline ]; then
     if ! grep -qw splash /etc/kernel/cmdline; then
@@ -1396,6 +1422,25 @@ setup_boot() {
   else echo "  rebuild your initramfs to include the splash"; fi
   # boot menu hidden unless a key is held (systemd-boot)
   have bootctl && sudo bootctl set-timeout 0 >/dev/null 2>&1 && echo "  boot menu: hidden (hold Space while booting to show it)"
+
+  # the login screen: greetd runs ReGreet (in cage) on the first console, so the machine boots
+  # straight into a graphical sign-in instead of a text prompt
+  [ -f /etc/greetd/config.toml ] && [ ! -f /etc/greetd/config.toml.fui-backup ] &&
+    sudo cp /etc/greetd/config.toml /etc/greetd/config.toml.fui-backup
+  sudo install -Dm644 "$tmp/greeter/config.toml" /etc/greetd/config.toml
+  sudo install -Dm644 "$tmp/greeter/regreet.toml" /etc/greetd/regreet.toml
+  sudo install -Dm644 "$tmp/greeter/regreet.css" /etc/greetd/regreet.css
+  sudo install -Dm644 "$tmp/greeter/background.png" /usr/share/fui/greeter/background.png
+  # the greeter runs as its own user: the brand face must be a system font
+  sudo install -Dm644 "$DOTS/fui/.local/share/fonts/fui/Michroma-Regular.ttf" /usr/share/fonts/fui/Michroma-Regular.ttf 2>/dev/null &&
+    sudo fc-cache -f >/dev/null 2>&1
+  local dm
+  dm=$(systemctl show -p Id --value display-manager.service 2>/dev/null)
+  if [ -n "$dm" ] && [ "$dm" != greetd.service ] && [ "$dm" != display-manager.service ]; then
+    sudo systemctl disable "$dm" >/dev/null 2>&1 && echo "  $dm turned off (greetd replaces it)"
+  fi
+  sudo systemctl enable greetd.service >/dev/null 2>&1 && echo "  login screen: greetd + ReGreet ($ed)"
+
   # text consoles: the console palette, a clean font, the sign-in banner
   sudo install -m 644 "$tmp/console/issue" /etc/issue
   sudo install -m 644 "$tmp/console/vtrgb" /etc/vtrgb
@@ -1408,7 +1453,7 @@ setup_boot() {
   fi
   echo "  consoles: console palette, Terminus 18, sign-in banner"
   rm -rf "$tmp"
-  echo "  reboot to see it: systemctl reboot"
+  echo "  reboot to see it: systemctl reboot (fui setup boot again after changing the edition restyles it)"
 }
 
 cmd_setup() {

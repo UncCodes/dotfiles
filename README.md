@@ -24,7 +24,9 @@ Design rules: [`theme/DESIGN.md`](theme/DESIGN.md) · colours and contrast:
 2. Start the installer, choose **Online**, pick **No Desktop**.
 3. At the end the installer runs the script inside the new system: packages, links, zsh.
 4. Reboot, log in on the console, and Hyprland starts. Then run `fui setup all` for the
-   graphics driver, audio, Bluetooth, firmware, system services and Firefox.
+   graphics driver, audio, Bluetooth, firmware, system services and Firefox, and
+   `fui setup boot` for the animated boot splash and the graphical login screen (from then
+   on the machine boots straight into a sign-in, never a text prompt).
 
 ### On an existing install
 
@@ -66,7 +68,7 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui update` · `fui updates` | update the dotfiles · count pending package updates (also in the bar) |
 | `fui version` · `fui rollback [version]` | the installed version · go back to an earlier one if an update misbehaves (`fui update` returns to the newest) |
 | `fui doctor` / `--fix` | check graphics, audio, network, packages, fonts, links, the look (edition, tier, one bar running); fix what it can |
-| `fui setup gpu` / `audio` / `bluetooth` / `firmware` / `system` / `firefox` / `boot` / `all` | machine setup (`boot`: the splash and the consoles; not part of `all`) |
+| `fui setup gpu` / `audio` / `bluetooth` / `firmware` / `system` / `firefox` / `boot` / `all` | machine setup (`boot`: the animated splash, the login screen and the consoles; not part of `all`) |
 
 When something looks wrong, run `fui doctor` and send its output.
 
@@ -86,8 +88,8 @@ When something looks wrong, run `fui doctor` and send its output.
 | Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
 | Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
-| Sound | crisp synthetic cues as a sound theme: the sign-in arpeggio, notice tones, ticks, alerts |
-| Boot | a Plymouth splash (the masthead over the survey field, a 4 px progress line), the console palette and a sign-in banner |
+| Sound | deep, spacious cues as a sound theme: a sub-bass swell, a warm pad and glass bells at sign-in, glass bells for notices, soft blips for toggles, all in a stereo hall |
+| Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet: a glass panel in the edition over its survey field); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
 
