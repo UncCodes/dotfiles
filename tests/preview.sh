@@ -116,7 +116,7 @@ greeter() {   # <edition>: the login screen (ReGreet in demo mode, with the file
   timeout 120 python3 "$DOTFILES_DIR/theme/make-boot.py" --edition "$m" --size 1280x800 "$G" >"$OUT/greeter-$m.log" 2>&1 ||
     { echo "  no shot: $m-greeter (make-boot.py)"; return; }
   sed -i "s|/usr/share/fui/greeter/background.png|$G/greeter/background.png|" "$G/greeter/regreet.toml"
-  timeout 40 env GDK_BACKEND=wayland regreet --demo --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" \
+  timeout 40 env GDK_BACKEND=wayland regreet --demo --logs "$G/regreet.log" --config "$G/greeter/regreet.toml" --style "$G/greeter/regreet.css" \
     >>"$OUT/greeter-$m.log" 2>&1 &
   local pid=$!
   snap "$m-greeter" 8
@@ -125,7 +125,9 @@ greeter() {   # <edition>: the login screen (ReGreet in demo mode, with the file
 for m in $EDITIONS; do shots "$m" lcd; done
 shots cyan crt; shots cyan deep; shots paper crt
 pkill -x waybar; pkill -x swaync
-regreet --help >"$OUT/regreet-help.log" 2>&1
+# ReGreet lists the users through AccountsService on the system bus, which a container lacks
+if [ ! -S /run/dbus/system_bus_socket ]; then sudo mkdir -p /run/dbus && sudo dbus-daemon --system --fork; fi
+sudo sh -c '/usr/lib/accounts-daemon >/dev/null 2>&1 &'; sleep 2
 for m in cyan paper slate chrome; do greeter "$m"; done
 timeout 30 "$FUI" display lcd >/dev/null; timeout 30 "$FUI" mode cyan --quiet
 pkill -x waybar; pkill -x swaync; pkill -x swaybg; pkill -f sway-bin
