@@ -92,7 +92,7 @@ hl.env("XCURSOR_SIZE", tostring(T.cursor.size))
 hl.env("XCURSOR_THEME", T.cursor.theme)
 hl.env("HYPRCURSOR_SIZE", tostring(T.cursor.size))
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
-hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")                    -- Qt5 apps read qt5ct, Qt6 apps qt6ct: one look
 -- No GTK_THEME: it would pin one theme. GTK picks it up from gsettings (below, and fui mode).
 
 -- ── autostart ───────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ hl.config({
             enabled = true,
             font_family = T.font.mono,
             font_size = 11,
-            height = 18,
+            height = 20,
             gradients = true,
             rounding = LK.control or 2,
             render_titles = true,
@@ -195,6 +195,9 @@ hl.config({
         background_color         = rgba(tier == "lcd" and C.floor or C.void),
         font_family              = T.font.mono,
     },
+
+    -- X11 apps draw at their own scale instead of being stretched (no blur on a scaled screen)
+    xwayland = { force_zero_scaling = true },
 
     input = {
         kb_layout  = "us,ara",
@@ -263,8 +266,8 @@ hl.bind(k("slash"), hl.dsp.exec_cmd(fui .. "keys"))                             
 hl.bind(k("B"), hl.dsp.exec_cmd(browser))                                        -- browser
 hl.bind(k("E"), hl.dsp.exec_cmd(fileManager))                                    -- file manager
 hl.bind(k("Y"), hl.dsp.exec_cmd(fui .. "tui yazi"))                              -- files in the terminal
-hl.bind(k("A"), hl.dsp.exec_cmd(fui .. "tui wiremix"))                           -- audio mixer
-hl.bind(k("SHIFT + N"), hl.dsp.exec_cmd(fui .. "tui nmtui"))                     -- network
+hl.bind(k("A"), hl.dsp.exec_cmd("pavucontrol"))                                  -- audio mixer
+hl.bind(k("SHIFT + N"), hl.dsp.exec_cmd("nm-connection-editor"))                 -- network connections
 hl.bind(k("N"), hl.dsp.exec_cmd("swaync-client -t -sw"))                         -- notifications and control centre
 hl.bind(k("period"), hl.dsp.exec_cmd("rofi -modi emoji -show emoji"))            -- emoji
 hl.bind(k("SHIFT + V"), hl.dsp.exec_cmd(fui .. "clipboard"))                     -- clipboard history

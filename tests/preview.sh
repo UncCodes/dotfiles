@@ -2,7 +2,7 @@
 # fui // preview: screenshots of the real apps, for design review
 #
 # Runs after `install.sh --ci` (GitHub Actions does it; see .github/workflows/check.yml).
-# X11 shots under Xvfb: GTK3 and GTK4 widget factories, qt6ct, rofi, kitty, and the Firefox
+# X11 shots under Xvfb: GTK3 and GTK4 widget factories, qt6ct, rofi, kitty, the audio mixer and the Firefox
 # start page, in every edition. Then it tries a headless Hyprland session (waybar, the
 # wallpaper, windows, the launcher, the login screen) and screenshots that with grim.
 # Writes ~/preview/*.png. Never fails the build: a shot that can't be taken is skipped.
@@ -31,7 +31,7 @@ shot_x() {   # shot_x <name> <seconds> <command...>: run a program, screenshot t
 }
 
 EDITIONS=$(python3 -c 'import tomllib,sys; print(" ".join(tomllib.load(open(sys.argv[1],"rb"))["meta"]["editions"]))' "$DOTFILES_DIR/theme/tokens.toml")
-light() { case "$1" in paper|lab) return 0 ;; *) return 1 ;; esac; }
+light() { [ "$(python3 -c 'import tomllib,sys; print(tomllib.load(open(sys.argv[1],"rb"))["edition"][sys.argv[2]]["scheme"])' "$DOTFILES_DIR/theme/tokens.toml" "$1")" = light ]; }
 T 30 "$FUI" display lcd
 for m in $EDITIONS; do
   T 30 "$FUI" mode "$m" --quiet
@@ -43,6 +43,10 @@ for m in $EDITIONS; do
   shot_x "$m-rofi" 3 rofi -config "$HOME/.config/rofi/config.rasi" -show drun
   T 90 firefox --headless --window-size=1280,800 --screenshot "$OUT/$m-start.png" "file://$HOME/.local/share/fui/start.html" \
     >/dev/null 2>&1 && echo "  shot $m-start" || echo "  no shot: $m-start"
+done
+for m in cyan paper slate; do   # a settings app: the audio mixer, in the edition's GTK theme
+  T 30 "$FUI" mode "$m" --quiet
+  shot_x "$m-audio" 6 env GDK_BACKEND=x11 pavucontrol
 done
 T 30 "$FUI" mode cyan --quiet
 for tier in crt deep; do   # the start page on the other two tiers

@@ -645,6 +645,13 @@ def qt():
           f"icon_theme={D['dark']['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
           f"[Fonts]\nfixed=\"{fixed}\"\ngeneral=\"{font}\"\n\n"
           f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui-{EDS[0]}.qss\n")
+    # Qt5 apps (qt5ct) read the same colour scheme and sheet; only the font strings differ
+    font5, fixed5 = f"{F['ui']},{F['size']},-1,5,50,0,0,0,0,0", f"{F['mono']},{F['size']},-1,5,50,0,0,0,0,0"
+    write("theme/templates/qt5ct.conf.in",
+          f"{banner()}[Appearance]\ncolor_scheme_path=@HOME@/.config/qt6ct/colors/fui-{EDS[0]}.conf\ncustom_palette=true\n"
+          f"icon_theme={D['dark']['icon_theme']}\nstandard_dialogs=xdgdesktopportal\nstyle=Fusion\n\n"
+          f"[Fonts]\nfixed=\"{fixed5}\"\ngeneral=\"{font5}\"\n\n"
+          f"[Interface]\nstylesheets=@HOME@/.config/qt6ct/qss/fui-{EDS[0]}.qss\n")
     for ed in EDS:
         p = E(ed)
         # QPalette roles in qt6ct order: WindowText Button Light Midlight Dark Mid Text BrightText ButtonText
@@ -781,7 +788,7 @@ def shell_env():
     termcap = {"LESS_TERMCAP_mb": esc("1;33"), "LESS_TERMCAP_md": esc("1;36"), "LESS_TERMCAP_me": esc("0"),
                "LESS_TERMCAP_so": esc("30;46"), "LESS_TERMCAP_se": esc("0"), "LESS_TERMCAP_us": esc("4;34"),
                "LESS_TERMCAP_ue": esc("0")}
-    session = {"QT_QPA_PLATFORMTHEME": "qt6ct", "XCURSOR_THEME": D["cursor_theme"], "XCURSOR_SIZE": str(D["cursor_size"]),
+    session = {"QT_QPA_PLATFORMTHEME": "qt5ct", "XCURSOR_THEME": D["cursor_theme"], "XCURSOR_SIZE": str(D["cursor_size"]),
                "ELECTRON_OZONE_PLATFORM_HINT": "auto", "FUI_THEME_DIR": "$HOME/.config/fui"}
     lines = [banner(), "# Sourced by ~/.zshrc and ~/.zprofile. Colours are ANSI numbers: they follow the console.\n"]
     lines += [f"export {k}=\"{v}\"\n" for k, v in session.items()]

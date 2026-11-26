@@ -90,16 +90,14 @@
     "format-disconnected": "OFFLINE",
     "tooltip-format": "{essid} {ifname}  {ipaddr}/{cidr}\n↓ {bandwidthDownBits}  ↑ {bandwidthUpBits}",
     "interval": 5,
-    "on-click": "~/.local/bin/fui tui nmtui",
-    "on-click-right": "nm-connection-editor"
+    "on-click": "nm-connection-editor"
   },
 
   // a segment meter (meters.jsonc: rounded down, never more than the true value) and the number
   "pulseaudio": {
     "format": "<span alpha='70%'>󰕾</span> {icon} {volume:02}%",
     "format-muted": "<span alpha='70%'>󰖁</span> MUTE",
-    "on-click": "~/.local/bin/fui tui wiremix",
-    "on-click-middle": "pavucontrol",
+    "on-click": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "scroll-step": 5
   },

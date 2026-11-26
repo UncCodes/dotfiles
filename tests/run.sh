@@ -97,6 +97,20 @@ t "one corner language: boxy (no pills or circles but radios and LEDs; panels 4 
   [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
 t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
   ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests"' _ "$DOTS"
+t "one tool per job: settings open windowed apps, not terminal screens (no nmtui, wiremix, bluetui)" bash -c '
+  ! git -C "$1" grep -n -E "nmtui|wiremix|bluetui" -- hypr waybar swaync labwc theme/labwc.py packages.txt aur.txt fui/.local/bin/fui \
+      | grep -v "RETIRED=\|tui <command>"' _ "$DOTS"
+t "one Qt platform theme everywhere (qt5ct: Qt5 and Qt6 apps share the colours and sheet)" bash -c '
+  grep -q "QT_QPA_PLATFORMTHEME\", \"qt5ct\"" "$1/hypr/.config/hypr/hyprland.lua" &&
+  grep -qx "QT_QPA_PLATFORMTHEME=qt5ct" "$1/labwc/.config/labwc/environment" &&
+  grep -qx "QT_QPA_PLATFORMTHEME=qt5ct" "$1/fui/.config/environment.d/60-fui.conf" &&
+  grep -q "qt6ct/colors/fui-" "$1/theme/templates/qt5ct.conf.in"' _ "$DOTS"
+t "spacing on the 4 px scale (gaps, space scale)" python3 -c '
+import tomllib, sys
+t = tomllib.load(open(sys.argv[1], "rb")); g = t["geometry"]
+bad = [k for k in ("gaps_in", "gaps_out", "bar", "radius", "control") if g[k] % 2 or (k.startswith("gaps") and g[k] % 4)]
+bad += [v for v in t["space"]["scale"] if v % 4]
+assert not bad, bad' "$DOTS/theme/tokens.toml"
 t "the bar meters round down (100 icons, full only at 99 and up)" python3 -c '
 import json, re, sys
 m = json.loads(re.sub(r"^\s*//.*$", "", open(sys.argv[1]).read(), flags=re.M))

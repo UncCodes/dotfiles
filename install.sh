@@ -183,8 +183,9 @@ machine_files() {
 toolkit_files() {
   # Qt needs absolute asset paths, so its config is rendered for this $HOME
   # (real files, not links; qt6ct may rewrite its own conf)
-  mkdir -p "$HOME/.config/qt6ct/qss"
+  mkdir -p "$HOME/.config/qt6ct/qss" "$HOME/.config/qt5ct"
   sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/qt6ct.conf.in" > "$HOME/.config/qt6ct/qt6ct.conf" || return 1
+  sed "s|@HOME@|$HOME|g" "$DOTS/theme/templates/qt5ct.conf.in" > "$HOME/.config/qt5ct/qt5ct.conf" || return 1   # Qt5: the same files
   local q
   for q in "$DOTS"/theme/templates/fui-*.qss.in; do
     sed "s|@HOME@|$HOME|g" "$q" > "$HOME/.config/qt6ct/qss/$(basename "$q" .in)" || return 1
@@ -201,7 +202,8 @@ toolkit_files() {
     for mime in text/html x-scheme-handler/http x-scheme-handler/https application/xhtml+xml; do xdg-mime default firefox.desktop "$mime"; done
     xdg-mime default org.pwmt.zathura.desktop application/pdf
     for mime in image/png image/jpeg image/gif image/webp image/bmp image/tiff; do xdg-mime default imv.desktop "$mime"; done
-    for mime in video/mp4 video/x-matroska video/webm video/quicktime audio/mpeg audio/flac audio/ogg; do xdg-mime default mpv.desktop "$mime"; done
+    for mime in video/mp4 video/x-matroska video/webm video/quicktime; do xdg-mime default mpv.desktop "$mime"; done
+    for mime in audio/mpeg audio/flac audio/ogg audio/x-wav audio/mp4 audio/x-vorbis+ogg audio/opus; do xdg-mime default audacious.desktop "$mime"; done
     xdg-mime default thunar.desktop inode/directory
   fi 2>/dev/null
   return 0

@@ -94,9 +94,10 @@ When something looks wrong, run `fui doctor` and send its output.
 | Lock screen | authentication: the distribution's logo, the host and the OS, a large clock, operator and kernel, a passphrase field, the notice |
 | Apps | GTK3, GTK4 / libadwaita and Qt6 in all eight editions, including apps installed later |
 | Terminal | the edition's console (light editions keep a dark one); zsh, starship, fastfetch (the workstation's asset sheet), btop, Neovim, git, mpv, zathura, imv and satty on the same palette |
-| Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
+| Terminal tools | yazi, lazygit, gdu, nvtop, cava, tealdeer, glow, zoxide |
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
-| Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
+| Apps by default | zathura (PDF), imv (images), mpv (video), Audacious (music), satty (annotation), Thunar (files) |
+| System settings | windowed apps in the edition's GTK theme, one per job: Network (nm-connection-editor, plus the tray icon for Wi-Fi and VPN; `SUPER+SHIFT+N`, click the bar), Audio (pavucontrol; `SUPER+A`, click VOL), Bluetooth (blueman, after `fui setup bluetooth`); all three are in the palette. `fui doctor` offers to remove tools they replaced |
 | Sound | deep, spacious cues as a sound theme: a sub-bass swell, a warm pad and glass bells at sign-in, glass bells for notices, soft blips for toggles, all in a stereo hall |
 | Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet in the look: a boxy shell with a chrome title strip, pressed-in fields, a gel Login key and the clock in a lit readout, over the edition's backdrop; run `fui setup boot` again after changing edition); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |

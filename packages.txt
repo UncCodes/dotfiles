@@ -14,6 +14,7 @@ xdg-desktop-portal-gtk
 qt5-wayland
 qt6-wayland
 qt6ct
+qt5ct          # Qt5 apps get the same colours and sheet as Qt6 ones
 qt6-svg
 
 # desktop surfaces
@@ -29,9 +30,9 @@ libnotify
 kitty
 thunar
 gvfs
-networkmanager           # nmtui: network setup (SUPER+SHIFT+N)
-network-manager-applet
-pavucontrol
+networkmanager
+network-manager-applet   # the tray icon (Wi-Fi, VPN, passwords) and connection editor (SUPER+SHIFT+N)
+pavucontrol              # the audio mixer (SUPER+A, click VOL)
 playerctl
 pipewire
 pipewire-pulse
@@ -63,7 +64,6 @@ libsecret
 # terminal tools (TUIs)
 yazi          # files            SUPER+Y, `y` in the shell
 lazygit       # git
-wiremix       # audio mixer      SUPER+A, click VOL
 gdu           # disk usage
 nvtop         # GPU monitor
 cava          # audio visualiser

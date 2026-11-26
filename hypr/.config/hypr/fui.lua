@@ -37,7 +37,7 @@ return {
   curves = { glide = { 0.16, 1.0, 0.3, 1.0 }, pop = { 0.3, 1.25, 0.6, 1.0 } },
   desktop = { dark = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" }, light = { gtk_base = "adw-gtk3", icon_theme = "Papirus-Light", scheme = "prefer-light" } },
   cursor = { theme = "Adwaita", size = 24 },
-  geometry = { radius = 4, control = 2, header = 34, bar = 32, gaps_in = 6, gaps_out = 14, focus = 2, bracket = 0.12, meter = 5 },
+  geometry = { radius = 4, control = 2, header = 34, bar = 32, gaps_in = 8, gaps_out = 16, focus = 2, bracket = 0.12, meter = 5 },
   opacity = { window_active = 0.92, window_inactive = 0.86 },
   blur = { size = 7, passes = 3, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
   screen = { scanline = 0.0, vignette = 0.1, on = false },
