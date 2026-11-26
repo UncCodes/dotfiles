@@ -119,7 +119,7 @@ hl.on("hyprland.start", function()
     -- the dropdown terminal waits, hidden, on its special workspace (SUPER+`)
     hl.exec_cmd(terminal .. " --class fui-drop", { workspace = "special:drop silent" })
     hl.exec_cmd(fui .. "sound login")                      -- the sign-in tone (fui sound off to silence)
-    hl.exec_cmd(fui .. "layout")                           -- the startup layout (~/.config/fui/layout.conf)
+    hl.exec_cmd(fui .. "layout")                           -- the startup layout (~/.config/fui/layout.conf), or the showcase (fui showcase on)
 end)
 
 -- ── look ────────────────────────────────────────────────────────────────
@@ -247,6 +247,19 @@ hl.window_rule({ name = "fui-small-tools",
 -- picture-in-picture: small, pinned, bottom right
 hl.window_rule({ name = "fui-pip", match = { title = "^Picture-in-Picture$" },
     float = true, pin = true, size = "monitor_w*0.26 monitor_h*0.26", move = "monitor_w*0.72 monitor_h*0.70" })
+-- the skinned music player is a fixed-size device: it floats, never tiles
+hl.window_rule({ name = "fui-player", match = { class = "^audacious$" }, float = true })
+-- the showcase (fui showcase): a composed scene for screenshots, every pane placed by share of
+-- the screen so it frames the same at any size; the bar and the gaps stay clear
+for _, p in ipairs({
+    { "fetch", "monitor_w*0.015 monitor_h*0.075", "monitor_w*0.355 monitor_h*0.44" },
+    { "code",  "monitor_w*0.015 monitor_h*0.535", "monitor_w*0.355 monitor_h*0.445" },
+    { "btop",  "monitor_w*0.385 monitor_h*0.075", "monitor_w*0.60 monitor_h*0.50" },
+    { "cava",  "monitor_w*0.385 monitor_h*0.595", "monitor_w*0.355 monitor_h*0.385" },
+}) do
+    hl.window_rule({ name = "fui-show-" .. p[1], match = { class = "^fui-show-" .. p[1] .. "$" },
+        float = true, move = p[2], size = p[3] })
+end
 
 -- ── glass under the bar, launcher, notifications and OSD (not on a tube) ─
 if TI.glass then
