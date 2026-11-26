@@ -40,10 +40,11 @@
   sheen: #FFFFFF24;
   shade: #00000073;
   chrome-lip: #D1D1D2FF;
-  chrome-mid: #6F7072FF;
-  chrome-horizon: #4A4B4DFF;
-  chrome-low: #454647FF;
-  chrome-reflect: #6C6D6EFF;
+  chrome-top: #6C6D6EFF;
+  chrome-mid: #595A5CFF;
+  chrome-horizon: #464749FF;
+  chrome-low: #3D3E3FFF;
+  chrome-reflect: #5B5C5EFF;
   shell-lo: #464749FF;
   rim: #1E1E1FFF;
   tray-top: #272828FF;
@@ -57,6 +58,9 @@
   face-horizon: #737476FF;
   face-lo: #838485FF;
   mark: #141515FF;
+  mark-off: #585859FF;
+  source: #212224FF;
+  chrome-ink-off: #CFD1D3FF;
   emboss: #0000008C;
   void-crt: #000000FF;
   floor-crt: #000000FF;
@@ -75,8 +79,8 @@
   font-mono: "JetBrainsMono Nerd Font 10";
   font-label: "JetBrainsMono Nerd Font Bold 9";
   font-brand: "Michroma 10";
-  chrome-strip: linear-gradient(to bottom, #D1D1D2FF, #98999AFF, #6F7072FF, #6F7072FF, #4A4B4DFF, #454647FF, #454647FF, #454647FF, #6C6D6EFF);
-  chrome-strip-crt: linear-gradient(to bottom, #D1D1D2FF, #98999AFF, #6F7072FF, #6F7072FF, #4A4B4DFF, #454647FF, #454647FF, #454647FF, #6C6D6EFF);
+  chrome-strip: linear-gradient(to bottom, #D1D1D2FF, #6C6D6EFF, #595A5CFF, #595A5CFF, #464749FF, #3D3E3FFF, #3D3E3FFF, #3D3E3FFF, #5B5C5EFF);
+  chrome-strip-crt: linear-gradient(to bottom, #D1D1D2FF, #6C6D6EFF, #595A5CFF, #595A5CFF, #464749FF, #3D3E3FFF, #3D3E3FFF, #3D3E3FFF, #5B5C5EFF);
   gel-face: linear-gradient(to bottom, #F9FAFBFF, #F5F7F9FF, #F4F6F8FF, #ABACAEFF, #ABACAEFF);
   frame: 1px solid;
   rule-top: 1px 0 0 0;

@@ -90,15 +90,16 @@ t "the look has its layer for the bar, notices, OSD, launcher and lock screen" b
            rofi/.config/rofi/look.rasi hypr/.config/hypr/lock-look.conf; do
     [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
   done' _ "$DOTS"
-t "one corner language: boxy (no pills or circles but radios and LEDs; panels 4 px at most)" bash -c '
-  ! grep -nE "border-radius: *(99|[5-9]|[1-9][0-9])px" "$1"/waybar/.config/waybar/look.css "$1"/swaync/.config/swaync/look.css \
+t "corners: round outer shells (18 px at most), boxy parts (no pills or circles but radios and LEDs)" bash -c '
+  ! grep -nE "border-radius: *(99|19|[2-9][0-9])px" "$1"/waybar/.config/waybar/look.css "$1"/swaync/.config/swaync/look.css \
       "$1"/swayosd/.config/swayosd/look.css "$1"/rofi/.config/rofi/look.rasi "$1"/theme/templates/start.html.in &&
-  ! grep -nE "rounding = ([5-9]|[1-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
+  grep -q "border-radius: 18px" "$1"/waybar/.config/waybar/look.css &&
+  ! grep -nE "rounding = (19|[2-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
   [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
 t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
   ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests" | grep -v "RETIRED="' _ "$DOTS"
-t "one tool per job: settings open windowed apps, not terminal screens (no nmtui, wiremix, bluetui)" bash -c '
-  ! git -C "$1" grep -n -E "nmtui|wiremix|bluetui" -- hypr waybar swaync labwc theme/labwc.py packages.txt aur.txt fui/.local/bin/fui \
+t "one tool per job: windowed settings apps, one file manager, one monitor (no nmtui, wiremix, bluetui, yazi, nvtop)" bash -c '
+  ! git -C "$1" grep -n -i -E "nmtui|wiremix|bluetui|yazi|nvtop" -- hypr waybar swaync labwc kitty zsh theme/labwc.py packages.txt aur.txt fui/.local/bin/fui \
       | grep -v "RETIRED=\|tui <command>"' _ "$DOTS"
 t "one Qt platform theme everywhere (qt5ct: Qt5 and Qt6 apps share the colours and sheet)" bash -c '
   grep -q "QT_QPA_PLATFORMTHEME\", \"qt5ct\"" "$1/hypr/.config/hypr/hyprland.lua" &&
@@ -111,6 +112,17 @@ t = tomllib.load(open(sys.argv[1], "rb")); g = t["geometry"]
 bad = [k for k in ("gaps_in", "gaps_out", "bar", "radius", "control") if g[k] % 2 or (k.startswith("gaps") and g[k] % 4)]
 bad += [v for v in t["space"]["scale"] if v % 4]
 assert not bad, bad' "$DOTS/theme/tokens.toml"
+t "display auto tells a panel from a tube on an analog input (the EDID range limits)" bash -c '
+  d=$(mktemp -d); python3 - "$d" <<PY
+import sys
+def edid(vmax):
+    e = bytearray(128); e[0:8] = bytes([0, 255, 255, 255, 255, 255, 255, 0]); e[18] = 1; e[19] = 3; e[20] = 0x0E
+    e[72:90] = bytes([0, 0, 0, 0xFD, 0, 50, vmax, 30, 96, 15, 0, 10, 32, 32, 32, 32, 32, 32])
+    return e
+open(sys.argv[1] + "/crt", "wb").write(edid(160)); open(sys.argv[1] + "/lcd", "wb").write(edid(76))
+PY
+  eval "$(sed -n "/^analog_kind()/,/^}/p" "$1/fui/.local/bin/fui")"
+  [ "$(analog_kind "$d/crt")" = crt ] && [ "$(analog_kind "$d/lcd")" = lcd ]' _ "$DOTS"
 t "the bar meters round down (100 icons, full only at 99 and up)" python3 -c '
 import json, re, sys
 m = json.loads(re.sub(r"^\s*//.*$", "", open(sys.argv[1]).read(), flags=re.M))
@@ -143,6 +155,13 @@ t "every package exists in the official repos" bash -c '
 
 wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the install provides
   python3 -c "import PIL" 2>/dev/null || { echo "  [skip] wallpaper renders (no Pillow)"; return; }
+  t "the cursor theme builds: Xcursor files at 24, 32 and 48 px, the busy ones animated, every alias linked" bash -c '
+    d=$(mktemp -d) && python3 "$1/theme/make-cursor.py" --edition ruby "$d" >/dev/null &&
+    for c in default pointer text wait progress crosshair not-allowed move ns-resize ew-resize nwse-resize nesw-resize left_ptr hand2 xterm watch; do
+      [ "$(head -c 4 "$d/cursors/$c")" = Xcur ] || { echo "no cursor $c"; exit 1; }
+    done
+    python3 -c "import struct,sys; n = struct.unpack(\"<I\", open(sys.argv[1], \"rb\").read()[12:16])[0]; sys.exit(0 if n == 24 else 1)" "$d/cursors/wait" &&
+    grep -q "Inherits=Adwaita" "$d/index.theme"' _ "$DOTS"
   t "still wallpaper renders (cyan lcd, amber deep, paper crt), a different survey per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" /tmp/fui-test.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition amber /tmp/fui-test-amber.png 320 180 &&

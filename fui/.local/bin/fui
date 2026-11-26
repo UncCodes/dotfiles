@@ -2,6 +2,7 @@
 # fui // one command for the desktop.
 #
 #   fui mode [toggle|pick|<edition>|apply|status]    the edition (toggle: the next one; pick: from a list)
+#   fui cursor [apply|status]                        the pointer: chrome with a gel inset, drawn from the edition
 #   fui skin [apply|status]                          the music player's skin, drawn from the edition (Audacious)
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
 #   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
@@ -203,7 +204,9 @@ cmd_mode() {
   tier_links "$(current_tier)"
   alert_links "$(cat "$STATE/alert" 2>/dev/null || echo off)"
   render_startpage
-  cmd_skin apply --quiet
+  if in_session; then detach "$SELF" skin apply --quiet   # drawing a skin takes seconds: never hold the change up
+  else cmd_skin apply --quiet; fi
+  if in_session; then detach "$SELF" cursor apply; else cmd_cursor apply; fi
   # links from earlier versions, which no longer exist in the repo (the two looks became one)
   rm -f "$CFG/waybar/fui-look.css" "$CFG/swaync/fui-look.css" "$CFG/swayosd/fui-look.css" "$CFG/rofi/fui-look.rasi" \
         "$CFG/hypr/fui-look-lock.conf" "$STATE"/edition-instrument "$STATE"/edition-y2k 2>/dev/null
@@ -275,29 +278,80 @@ cmd_skin() {
   return 0
 }
 
+# ── cursor: chrome with a gel inset, in the edition ─────────────────────
+# theme/make-cursor.py draws the theme (under a second); ~/.local/share/icons/fui points at the
+# current edition's, and the compositor is told to load it again.
+cmd_cursor() {
+  local ed dir link="$HOME/.local/share/icons/fui" size
+  ed=$(current_mode); dir="$HOME/.local/share/icons/fui-cursors-$ed"; size=$(tok desktop.cursor_size)
+  case "${1:-apply}" in
+    apply) ;;
+    status) echo "edition $ed · cursors $(readlink "$link" 2>/dev/null || echo none)"; return 0 ;;
+    *) die "usage: fui cursor [apply|status]" ;;
+  esac
+  if [ ! -f "$dir/cursors/default" ] || [ "$CFG/fui/tokens.json" -nt "$dir/cursors/default" ]; then
+    python3 "$DOTS/theme/make-cursor.py" --edition "$ed" "$dir" >/dev/null 2>&1 || return 0
+  fi
+  mkdir -p "${link%/*}"; ln -sfn "$dir" "$link"
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl setcursor fui "${size:-24}" >/dev/null 2>&1
+  return 0
+}
+
 # ── display: the tier (crt, lcd, deep) ──────────────────────────────────
 # A tube, a backlit panel, or an OLED / HDR / wide-gamut panel. `auto` reads the connected
-# screens: an analog input is a tube (crt), a 10-bit or HDR output is deep, anything else is
-# lcd. A digital output with no EDID is an adapter to VGA, so a tube too. An LCD on a VGA
-# cable reports analog as well: pin `fui display lcd` for that.
+# screens: a 10-bit or HDR output is deep; a tube is crt; anything else is lcd. A screen on an
+# analog input (VGA) is told apart by what it can scan: a tube's range runs past 85 Hz, a
+# panel's stops at about 75 (the EDID's range limits). A digital output with no EDID at all
+# is an adapter to VGA with nothing to read, taken for a tube: pin `fui display lcd` if it's
+# a panel. The screens are read again whenever one is plugged in or out (fui watch).
+analog_kind() {   # analog_kind <edid file>: "crt", "lcd" or "" (unknown) from the range limits
+  python3 - "$1" <<'PY' 2>/dev/null
+import sys
+e = open(sys.argv[1], "rb").read()
+if len(e) < 128:
+    sys.exit()
+for off in (54, 72, 90, 108):
+    d = e[off:off + 18]
+    if d[0:3] == b"\0\0\0" and d[3] == 0xFD:          # display range limits
+        vmax = d[6] + (255 if d[4] & 0x02 else 0)          # EDID 1.4 may add 255
+        print("crt" if vmax >= 85 else "lcd")
+        break
+PY
+}
+screens_now() {   # the connected outputs and their EDIDs, as one line (changes when a screen does)
+  local c
+  for c in /sys/class/drm/card*-*; do
+    [ "$(cat "$c/status" 2>/dev/null)" = connected ] || continue
+    printf '%s:%s ' "${c##*/}" "$(cksum < "$c/edid" 2>/dev/null | cut -d' ' -f1)"
+  done
+}
 detect_tier() {   # prints "<tier>|<reason>"
-  local c name st byte
+  local c name st byte kind crt="" lcd=""
   for c in /sys/class/drm/card*-*; do
     [ -r "$c/status" ] || continue
     st=$(cat "$c/status" 2>/dev/null); [ "$st" = connected ] || continue
     name="${c##*/}"; name="${name#card*-}"
-    case "$name" in
-      VGA-*|DVI-A-*) echo "crt|$name is an analog output"; return 0 ;;
-    esac
     if [ -s "$c/edid" ]; then
       byte=$(od -An -t u1 -j 20 -N 1 "$c/edid" 2>/dev/null | tr -d ' ')
-      if [ -n "$byte" ] && [ $((byte & 128)) = 0 ]; then echo "crt|$name reports an analog input"; return 0; fi
+      if [ -n "$byte" ] && [ $((byte & 128)) = 0 ]; then         # an analog input
+        kind=$(analog_kind "$c/edid")
+        case "$kind" in
+          lcd) lcd="$name is a panel on an analog input (its refresh tops out under 85 Hz)" ;;
+          *) crt="${crt:-$name reports an analog input$([ "$kind" = crt ] && echo " that scans past 85 Hz (a tube)")}" ;;
+        esac
+      else
+        lcd="${lcd:-$name is a digital panel}"
+      fi
     else
-      # a digital output that hears nothing back: almost always an adapter to VGA (a DP or
-      # HDMI to VGA dongle doesn't pass the screen's EDID through), and so, most often, a tube
-      echo "crt|$name sends no EDID (an adapter to VGA)"; return 0
+      case "$name" in
+        eDP-*|LVDS-*|DSI-*) lcd="${lcd:-$name is a built-in panel}" ;;   # a laptop's own screen
+        *) crt="${crt:-$name sends no EDID (an adapter to VGA; pin lcd if it is a panel)}" ;;
+      esac
     fi
   done
+  # a tube anywhere wins: the safe inset, 2 px strokes and protection keep it legible, and
+  # they cost a panel little
+  [ -n "$crt" ] && { echo "crt|$crt"; return 0; }
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     local deep
     deep=$(hyprctl -j monitors 2>/dev/null | python3 -c '
@@ -314,7 +368,7 @@ except Exception:
 ' 2>/dev/null)
     [ -n "$deep" ] && { echo "deep|$deep"; return 0; }
   fi
-  echo "lcd|a standard panel"
+  echo "lcd|${lcd:-a standard panel}"
 }
 
 current_tier() {   # the tier in use (resolved by fui display)
@@ -377,13 +431,13 @@ cmd_display() {
       return 0 ;;
     pick)
       local pick
-      pick=$(printf '%s  auto      read the screen\n%s  crt       a tube: 2 px lines, black floor, safe inset, no effects\n%s  lcd       a backlit panel: 1 px hairlines\n%s  deep      OLED / HDR: true black, a soft halo on the focused window\n' \
+      pick=$(printf '%s  auto      read the screen\n%s  crt       a tube: 2 px lines, black floor, safe inset, no effects\n%s  lcd       a backlit panel: 1 px hairlines\n%s  deep      OLED / HDR: true black outside the panels\n' \
           "${I_auto-}" "${I_crt-}" "${I_lcd-}" "${I_deep-}" |
         rofi_window "${I_display-}  DISPLAY TIER" "DSP-07" -dmenu -i -p "SET" -no-custom -lines 4 -format i) || return 0
       case "$pick" in 0) pref=auto ;; 1) pref=crt ;; 2) pref=lcd ;; 3) pref=deep ;; *) return 0 ;; esac ;;
     toggle) case "$pref" in auto) pref=crt ;; crt) pref=lcd ;; lcd) pref=deep ;; *) pref=auto ;; esac ;;
     auto|crt|lcd|deep) pref="$1" ;;
-    apply|start) ;;
+    apply|start|screens) ;;          # screens: a screen was plugged in or out (fui watch)
     *) die "usage: fui display [auto|crt|lcd|deep|toggle|pick|apply|status]" ;;
   esac
   echo "$pref" > "$STATE/display"
@@ -401,9 +455,9 @@ cmd_display() {
   [ "${1:-}" = apply ] && return 0
   # at sign-in: reload only if the screen changed since the last session
   [ "${1:-}" = start ] && [ "$t" = "$before" ] && return 0
-  restart_services
+  restart_services                   # the bar takes the new screen's size too
   in_session && detach "$SELF" wallpaper start
-  [ "${1:-}" = start ] || note "DISPLAY TIER" "$t ($reason)" video-display
+  [ "${1:-}" = start ] || note "DISPLAY TIER" "$t ($reason) · SUPER+SHIFT+D to change" video-display
   return 0
 }
 
@@ -444,7 +498,7 @@ cmd_watch() {
   mkdir -p "$CACHE"
   exec 7>"$CACHE/.watch.lock"
   if have flock; then flock -n 7 || return 0; fi            # already watching
-  local low hot b cap st t max reason
+  local low hot b cap st t max reason screens seen=""
   low=$(tok safety.battery_alert); low="${low:-5}"
   hot=$(tok safety.heat_alert); hot="${hot:-95}"
   while :; do
@@ -466,7 +520,16 @@ cmd_watch() {
     elif [ "$(cat "$STATE/alert-source" 2>/dev/null)" = watch ]; then
       cmd_alert off
     fi
-    sleep 60
+    # the screens: every 3 s for a minute (reading a few sysfs files); a change re-reads the
+    # tier and resizes the bar and the wallpaper for the new screen
+    for _ in $(seq 20); do
+      screens=$(screens_now)
+      if [ "$screens" != "$seen" ]; then
+        [ -n "$seen" ] && { sleep 2; cmd_display screens; }     # let the compositor set the screen up first
+        seen=$(screens_now)
+      fi
+      sleep 3
+    done
   done
 }
 
@@ -736,9 +799,16 @@ else:
   return 0
 }
 
-# Render every edition's backdrop ahead of time, at idle priority, one at a time: the stills
-# first (a second each), then the loops, the current edition and the next ones in the cycle first.
+# Render backdrops ahead of time, at idle priority, one at a time: every edition's still, then
+# the loops of this edition and the next.
 # One warm-up at a time; a foreground run that needs a file being warmed waits for it.
+on_battery() {      # true when running on a battery that is discharging
+  local b
+  for b in /sys/class/power_supply/BAT*; do
+    [ "$(cat "$b/status" 2>/dev/null)" = Discharging ] && return 0
+  done
+  return 1
+}
 wallpaper_warm() {
   have flock || return 0
   exec 8>"$CACHE/.warm.lock"
@@ -754,9 +824,14 @@ wallpaper_warm() {
     if [ "$m" = "$cur" ] || [ -n "$eds" ]; then eds="$eds $m"; else after="$after $m"; fi
   done
   eds="$eds$after"
+  # stills for every edition (under a second each); loops only for this edition and the next
+  # one in the cycle (SUPER+SHIFT+T), and only on mains power: a loop costs minutes of CPU, and
+  # an edition picked from the list shows its still until its loop is drawn
+  local next; next=$(echo "$eds" | awk '{print $2}')
   for kind in still live; do
-    [ "$kind" = live ] && { [ "$pref" = still ] || ! have mpvpaper || ! have ffmpeg; } && break
+    [ "$kind" = live ] && { [ "$pref" = still ] || ! have mpvpaper || ! have ffmpeg || on_battery; } && break
     for m in $eds; do
+      [ "$kind" = live ] && [ "$m" != "$cur" ] && [ "$m" != "$next" ] && continue
       scene=$(backdrop_of "$m")
       out=$(wp_file "$kind" "$scene" "$m" "$tier" "$size" "$key")
       [ -s "$out" ] && continue
@@ -857,13 +932,16 @@ cmd_sound() {
 # its margins: the crt safe inset, plus the burn-in drift step on crt and deep. Every
 # start goes through one lock and waits for the old bar to exit, so two can never run.
 bar_start() {
-  local dir="$CFG/waybar" w h config inset drift dx=0 dy=0 cfg="$CACHE/bar.jsonc"
+  local dir="$CFG/waybar" w h config style inset drift dx=0 dy=0 cfg="$CACHE/bar.jsonc"
   mkdir -p "$CACHE"
   (
     if have flock; then flock 8; fi
     read -r w h < <(screen_size)
     config="$dir/config.jsonc"
-    [ "${w:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ] && config="$dir/config-compact.jsonc"
+    style="$dir/style.css"
+    if [ "${w:-1920}" -lt 1400 ] && [ -e "$dir/config-compact.jsonc" ]; then
+      config="$dir/config-compact.jsonc"; [ -e "$dir/style-compact.css" ] && style="$dir/style-compact.css"
+    fi
     inset=$(cat "$STATE/inset" 2>/dev/null); inset="${inset:-0}"
     if protected; then
       drift=$(cat "$STATE/drift" 2>/dev/null || echo 0)
@@ -892,9 +970,9 @@ PY
     for _ in $(seq 40); do pgrep -x waybar >/dev/null || break; sleep 0.05; done
     pkill -9 -x waybar 2>/dev/null
     if have setsid; then
-      setsid -f waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&-
+      setsid -f waybar -c "$cfg" -s "$style" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&-
     else
-      waybar -c "$cfg" -s "$dir/style.css" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&- &
+      waybar -c "$cfg" -s "$style" >"$CACHE/waybar.log" 2>&1 7>&- 8>&- 9>&- &
     fi
   ) 8>"$CACHE/.bar.lock"
 }
@@ -957,7 +1035,7 @@ cmd_palette() {   # every action in one window; each row is "icon|label|command"
     "${I_clipboard-}|Clipboard|$SELF clipboard"
     "${I_emoji-}|Emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
     "${I_calculator-}|Calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
-    "${I_files-}|Files|$SELF tui yazi"
+    "${I_files-}|Files|thunar"
     "${I_network-}|Network|nm-connection-editor"
     "${I_audio-}|Audio|pavucontrol"
     "${I_bluetooth-}|Bluetooth|blueman-manager"
@@ -1293,7 +1371,7 @@ fix_gpu() { cmd_setup gpu; }
 fix_bar() { bar_start; }
 fix_mako() { pkill -x mako; sudo pacman -Rns --noconfirm mako; pgrep -x swaync >/dev/null || detach swaync; }
 # packages an earlier version installed whose job another one does now: one tool per job
-RETIRED="wiremix:pavucontrol bluetui:blueman ttf-silkscreen:Michroma ttf-dseg:Michroma"
+RETIRED="wiremix:pavucontrol bluetui:blueman ttf-silkscreen:Michroma ttf-dseg:Michroma yazi:thunar nvtop:btop"
 retired_installed() { local r; for r in $RETIRED; do pacman -Qq "${r%%:*}" >/dev/null 2>&1 && printf '%s ' "${r%%:*}"; done; }
 # shellcheck disable=SC2086
 fix_retired() { local p; p=$(retired_installed); [ -n "$p" ] && sudo pacman -Rns --noconfirm $p; }
@@ -1727,6 +1805,9 @@ setup_boot() {
   sudo install -Dm644 "$tmp/greeter/regreet.toml" /etc/greetd/regreet.toml
   sudo install -Dm644 "$tmp/greeter/regreet.css" /etc/greetd/regreet.css
   sudo install -Dm644 "$tmp/greeter/background.png" /usr/share/fui/greeter/background.png
+  # the greeter's pointer: the edition's cursors, as a system theme
+  python3 "$DOTS/theme/make-cursor.py" --edition "$ed" "$tmp/cursors" >/dev/null 2>&1 &&
+    sudo rm -rf /usr/share/icons/fui && sudo mkdir -p /usr/share/icons/fui && sudo cp -a "$tmp/cursors/." /usr/share/icons/fui/
   # the greeter runs as its own user: the brand face must be a system font
   sudo install -Dm644 "$DOTS/fui/.local/share/fonts/fui/Michroma-Regular.ttf" /usr/share/fonts/fui/Michroma-Regular.ttf 2>/dev/null &&
     sudo fc-cache -f >/dev/null 2>&1
@@ -1775,6 +1856,7 @@ sub="${1:-help}"
 case "$sub" in
   mode)      cmd_mode "$@" ;;
   skin)      cmd_skin "$@" ;;
+  cursor)    cmd_cursor "$@" ;;
   display)   cmd_display "$@" ;;
   alert)     cmd_alert "$@" ;;
   watch)     cmd_watch "$@" ;;

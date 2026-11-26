@@ -1,0 +1,9 @@
+/* fui // WAYBAR · the compact bar (screens narrower than 1400 px): a 32 px capsule, the type a
+ * step smaller than the standard bar's. style-compact.css loads this after style.css. */
+window#waybar { border-radius: 16px; }
+* { font-size: 12px; }
+#custom-brand { font-size: 12px; }
+#workspaces button, #clock, #taskbar button,
+#mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #battery, #language,
+#custom-sound, #custom-mode, #custom-notify, #tray, #custom-rec { font-size: 11px; }
+#custom-power { font-size: 13px; }

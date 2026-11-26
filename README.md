@@ -62,7 +62,7 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, and every edition's loop is rendered ahead of time, so an edition change plays at once |
+| `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, every edition's still and the loops of this edition and the next are rendered ahead of time (loops only on mains power), so the next edition plays at once |
 | `fui wallpaper pick` | which backdrop: each edition its own, or one for all: survey (contours, traces running along them), ribbon (a sheaf of light lines), helix (two braided strands), orbit (a gyroscope of rings), fibre (a fibre-optic lamp) or mesh (a wireframe landscape) |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
@@ -94,7 +94,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Lock screen | authentication: the distribution's logo, the host and the OS, a large clock, operator and kernel, a passphrase field, the notice |
 | Apps | GTK3, GTK4 / libadwaita and Qt6 in all eight editions, including apps installed later |
 | Terminal | the edition's console (light editions keep a dark one); zsh, starship, fastfetch (the workstation's asset sheet), btop, Neovim, git, mpv, zathura, imv and satty on the same palette |
-| Terminal tools | yazi, lazygit, gdu, nvtop, cava, tealdeer, glow, zoxide |
+| Terminal tools | lazygit, gdu, cava, tealdeer, glow, zoxide (one tool per job: files are Thunar, system and GPU monitoring btop) |
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
 | Apps by default | zathura (PDF), imv (images), mpv (video), Audacious (music), satty (annotation), Thunar (files) |
 | System settings | windowed apps in the edition's GTK theme, one per job: Network (nm-connection-editor, plus the tray icon for Wi-Fi and VPN; `SUPER+SHIFT+N`, click the bar), Audio (pavucontrol; `SUPER+A`, click VOL), Bluetooth (blueman, after `fui setup bluetooth`); all three are in the palette. `fui doctor` offers to remove tools they replaced |
@@ -103,7 +103,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
 | Music | Audacious, with a classic player skin generated per edition (a chrome shell, square transport keys with a gel play key, glowing segment digits, an analyser, boxy faders, an equaliser and a playlist); EasyEffects for a system equaliser; Shortwave for internet radio |
-| The look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with key-shaped workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK and Qt headers in chrome, chrome keys, gel selections; a welcome-screen lock; slanted tabs in the terminal; backdrops that move (seamless 56 s loops); the start page as a small device. Every corner is boxy: 4 px panels, 2 px controls |
+| The look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with key-shaped workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK and Qt headers in chrome, chrome keys, gel selections; a welcome-screen lock; slanted tabs in the terminal; backdrops that move (seamless 56 s loops); the start page as a small device; a cursor theme drawn per edition (chrome with a gel inset; `fui cursor`). From the 2007 desktops: unified window headers (one smooth fall of light), a deep soft shadow under the focused window, source-list sidebars. The device's outer shells are round (the bar a capsule; the launcher, console, OSD, lock and login panels); everything on them is boxy: 4 px panels and windows, 2 px keys |
 
 ## Startup
 

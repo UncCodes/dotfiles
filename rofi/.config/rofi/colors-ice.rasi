@@ -40,6 +40,7 @@
   sheen: #FFFFFFB2;
   shade: #0000002E;
   chrome-lip: #FAFCFFFF;
+  chrome-top: #F4F9FFFF;
   chrome-mid: #D3E0EEFF;
   chrome-horizon: #AFC2D5FF;
   chrome-low: #A2B4C5FF;
@@ -57,6 +58,9 @@
   face-horizon: #D6E2F0FF;
   face-lo: #CDDBE9FF;
   mark: #30353AFF;
+  mark-off: #898E93FF;
+  source: #DDE8F7FF;
+  chrome-ink-off: #576472FF;
   emboss: #FFFFFFA6;
   void-crt: #D6D9DDFF;
   floor-crt: #BBC4CEFF;

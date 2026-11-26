@@ -13,8 +13,7 @@
 @define-color fui_shell @fui_shell_crt;
 @define-color fui_shell_hi @fui_shell_hi_crt;
 .csd decoration, decoration { box-shadow: 0 0 0 2px @fui_rule_hi; }
-headerbar, .titlebar { border-bottom-width: 2px;
-  background-image: linear-gradient(to right, @fui_signal 0px, @fui_signal 4px, transparent 4px); }
+headerbar, .titlebar { border-bottom-width: 2px; }
 button, entry, spinbutton:not(.vertical), .entry, switch, check, radio { border-width: 2px; }
 separator { min-height: 2px; min-width: 2px; }
 frame > border, .frame, list.boxed-list, .boxed-list, .card { border-width: 2px; }

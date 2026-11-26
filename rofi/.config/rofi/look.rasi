@@ -9,13 +9,13 @@
 window {
   border: 2px solid;
   border-color: @chrome-mid;
-  border-radius: 4px;
+  border-radius: 14px;   /* the device: round chassis; rows and fields inside are boxy */
 }
 
 titlebar {
   border: 0 0 1px 0;
   border-color: @rim;
-  border-radius: 4px 4px 0 0;
+  border-radius: 12px 12px 0 0;
   background-color: @shell;
   background-image: @chrome-strip;
   padding: 9px 16px;

@@ -13,7 +13,6 @@ SUPER is the Windows key. `SUPER+/` shows this list on screen; `fui keys --text`
 | `` SUPER+/ `` | this list of keys |
 | `` SUPER+B `` | browser |
 | `` SUPER+E `` | file manager |
-| `` SUPER+Y `` | files in the terminal |
 | `` SUPER+A `` | audio mixer |
 | `` SUPER+SHIFT+N `` | network connections |
 | `` SUPER+N `` | notifications and control centre |

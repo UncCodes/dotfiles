@@ -40,6 +40,7 @@
   --fui-sheen: rgba(255, 255, 255, 0.698);
   --fui-shade: rgba(0, 0, 0, 0.180);
   --fui-chrome-lip: #FEFEFD;
+  --fui-chrome-top: #FDFCFA;
   --fui-chrome-mid: #DCD6D0;
   --fui-chrome-horizon: #B7ADA5;
   --fui-chrome-low: #AAA099;
@@ -57,6 +58,9 @@
   --fui-face-horizon: #DFD9D4;
   --fui-face-lo: #D4CCC6;
   --fui-mark: #322F2D;
+  --fui-mark-off: #8D8C8A;
+  --fui-source: #F0E1D8;
+  --fui-chrome-ink-off: #5F5D5B;
   --fui-emboss: rgba(255, 255, 255, 0.651);
   --fui-void-crt: #D9D8D2;
   --fui-floor-crt: #C9C6BF;

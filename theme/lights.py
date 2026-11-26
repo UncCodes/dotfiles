@@ -24,7 +24,7 @@ try:                                    # the drawing needs Pillow; the start pa
 except ImportError:
     Image = ImageDraw = ImageFilter = None
 
-from ribbon import LOOP, RibbonScene, mixc
+from ribbon import LOOP, RibbonScene, bloom, mixc
 
 TAU = 2 * math.pi
 WHITE = (255, 255, 255)
@@ -65,8 +65,8 @@ class LightScene(RibbonScene):
                 continue
             d.line([(x * s, y * s) for x, y in pts], fill=(*self.line, round(255 * min(1.0, a * dim))),
                    width=max(1, round(s * w)))
-        layer = layer.resize((W, H), Image.LANCZOS)
-        img.alpha_composite(layer.filter(ImageFilter.GaussianBlur(max(2, H // 90))))
+        layer = layer.reduce(s)                        # 2x supersampled down to the screen: a box filter is enough
+        img.alpha_composite(bloom(layer, H))
         img.alpha_composite(layer)
         self.dots(img, self.points(t))
 
@@ -83,7 +83,7 @@ class LightScene(RibbonScene):
             dh.ellipse((x / 4 - R, y / 4 - R, x / 4 + R, y / 4 + R), fill=round(255 * a * 0.5))
             dc.ellipse((x * 2 - r * 2, y * 2 - r * 2, x * 2 + r * 2, y * 2 + r * 2), fill=round(255 * a))
         halo = halo.filter(ImageFilter.GaussianBlur(max(1, H // 400))).resize((W, H), Image.BILINEAR)
-        core = core.resize((W, H), Image.LANCZOS)
+        core = core.reduce(2)
         glow = mixc(self.hi, WHITE, 0.25 if self.dark else 0.0)
         for mask, colour, k in ((halo, glow, 0.8 if self.dark else 0.35), (core, mixc(self.hi, WHITE, 0.6 if self.dark else 0.15), 1.0)):
             lit = Image.new("RGBA", (W, H), (*colour, 0))
@@ -178,7 +178,7 @@ class OrbitScene(LightScene):
 
     def lines(self, t):
         out = []
-        steps = 160
+        steps = 128
         for n in range(len(self.RINGS)):
             for i in range(self.SHEAF):
                 k = i - (self.SHEAF - 1) / 2
@@ -187,7 +187,7 @@ class OrbitScene(LightScene):
                     x, y, depth = self._ring(n, t, TAU * j / steps, k)
                     pts.append((x, y))
                     al.append((0.06 + 0.40 * (0.5 + 0.5 * depth) ** 1.6) * (1 - 0.11 * abs(k)))
-                out += [(seg, a, 1.1 - 0.1 * abs(k)) for seg, a in _chunks(pts, al, 8)]
+                out += [(seg, a, 1.1 - 0.1 * abs(k)) for seg, a in _chunks(pts, al, 16)]
         # spokes: faint radial ticks round the outer ring, a dial's scale
         cx, cy, R = self._centre()
         for j in range(48):

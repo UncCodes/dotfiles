@@ -25,6 +25,14 @@ LINES = 30
 SEEDS = {"ice": 3, "chrome": 11, "slate": 17, "ruby": 29}
 
 
+def bloom(layer, H):
+    """A soft glow under the lines, blurred at a quarter of the size (the same look at a
+    fraction of the cost of blurring the whole frame)."""
+    W0, H0 = layer.size
+    q = layer.resize((max(1, W0 // 4), max(1, H0 // 4)), Image.BILINEAR)
+    return q.filter(ImageFilter.GaussianBlur(max(1, H // 360))).resize((W0, H0), Image.BILINEAR)
+
+
 def rgb(c):
     h = c.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
@@ -139,10 +147,8 @@ class RibbonScene:
                 a = strength * ((0.55 if self.dark else 0.50) * (1 - k) ** 1.5 + 0.07)
                 pts = [(x * s, y * s) for x, y in self._line_pts(i, t, layer=which)]
                 d.line(pts, fill=(*self.line, round(255 * a)), width=max(1, round(s * (1.3 - 0.6 * k))))
-        layer = layer.resize((W, H), Image.LANCZOS)
-        # a soft bloom under the spine
-        bloom = layer.filter(ImageFilter.GaussianBlur(max(2, H // 90)))
-        img.alpha_composite(bloom)
+        layer = layer.reduce(s)                        # 2x supersampled down to the screen: a box filter is enough
+        img.alpha_composite(bloom(layer, H))           # a soft bloom under the spine
         img.alpha_composite(layer)
         self.glint(img, t)
 

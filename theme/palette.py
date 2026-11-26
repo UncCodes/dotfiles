@@ -140,11 +140,19 @@ def E(ed):
     # the materials, as gradient stops (theme/make-skin.py draws the same ones):
     # chrome: a bright lip, the lit upper face, a dark horizon, a lighter reflection below
     sh, hi = p["shell"], p["shell_hi"]
-    p["chrome_lip"] = mix(hi, "#FFFFFF", 0.55)
-    p["chrome_mid"] = mix(sh, hi, 0.45)
-    p["chrome_horizon"] = mix(sh, "#000000", 0.05)
-    p["chrome_low"] = mix(sh, "#000000", 0.12)
-    p["chrome_reflect"] = mix(sh, hi, 0.40)
+    p["chrome_lip"] = mix(hi, "#FFFFFF", 0.55)                # a 1 px lit edge only: nothing is written on it
+    if dark:   # gunmetal: the light ink must read on every band (checked: 4.5:1 and up, build.py)
+        p["chrome_top"] = mix(sh, hi, 0.40)
+        p["chrome_mid"] = mix(sh, hi, 0.15)
+        p["chrome_horizon"] = mix(sh, "#000000", 0.10)
+        p["chrome_low"] = mix(sh, "#000000", 0.22)
+        p["chrome_reflect"] = mix(sh, hi, 0.18)
+    else:      # aluminium: the dark ink reads on every band
+        p["chrome_top"] = hi
+        p["chrome_mid"] = mix(sh, hi, 0.45)
+        p["chrome_horizon"] = mix(sh, "#000000", 0.05)
+        p["chrome_low"] = mix(sh, "#000000", 0.12)
+        p["chrome_reflect"] = mix(sh, hi, 0.40)
     p["shell_lo"] = mix(sh, "#000000", 0.10)
     p["rim"] = mix(sh, "#000000", 0.62)                       # the dark edge around every part
     p["tray_top"] = mix(sh, "#000000", 0.50)                  # a recess pressed into the shell
@@ -160,6 +168,9 @@ def E(ed):
     p["face_horizon"] = mix(sh, hi, 0.50)
     p["face_lo"] = mix(sh, "#FFFFFF", 0.30)
     p["mark"] = mix(sh, "#000000", 0.74)                      # text and glyphs printed on chrome
+    p["mark_off"] = mix(p["mark"], p["face_mid"], 0.45)       # ...on a disabled key: dimmer, still legible
+    p["source"] = mix(p["panel"], p["signal"], 0.07 if dark else 0.10)   # a source list beside the content
+    p["chrome_ink_off"] = lift(mix(p["ink"], p["chrome_mid"], 0.45), 4.5, p["chrome_mid"], p["ink"])   # an unfocused title
     p["emboss"] = alpha("#000000", 0.55) if dark else alpha("#FFFFFF", 0.65)   # a text shadow that lifts type off chrome
     return p
 

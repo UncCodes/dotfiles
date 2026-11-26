@@ -487,17 +487,19 @@ void       = "#000000"
 # The owned device of the millennium, cut square: chrome shells lit from above (a bright lip,
 # a dark horizon, a lighter reflection), gel keys with a specular highlight on the primary
 # action, lit LCD wells, bevels, one soft shadow, expo-out glides with a hint of spring.
-# The corners are the instrument's (boxy: 4 px panels, 2 px controls), and so is the type.
+# The parts are boxy like the instrument's (4 px panels, 2 px keys); the device's outer shells
+# stay round (the bar a capsule). The type is the instrument's.
 [look]
 radius     = 4          # windows, panels, popups
 control    = 2          # buttons, fields, rows, keys
+shell      = 14         # the device's outer shells: the bar (a capsule), launcher, console, OSD, lock and login, player
 frame      = 2          # the chrome chassis around every window, px (crt: +1)
 bevel      = 1
 shadow     = true
-shadow_y   = 4
-shadow_blur = 16
-shadow_dark = 0.36
-shadow_light = 0.22
+shadow_y   = 8            # the focused window floats: a deep, soft shadow (the inactive ones a light one)
+shadow_blur = 28
+shadow_dark = 0.48
+shadow_light = 0.30
 glide      = [0.16, 1.0, 0.3, 1.0]
 pop        = [0.3, 1.25, 0.6, 1.0]
 popin      = "86%"
@@ -609,7 +611,7 @@ heat_alert     = 95     # °C
 
 # ── desktop ─────────────────────────────────────────────────────────────
 [desktop]
-cursor_theme = "Adwaita"
+cursor_theme = "fui"           # theme/make-cursor.py: chrome with a gel inset, per edition (Adwaita underneath)
 cursor_size  = 24
 sound_theme  = "fui"             # theme/make-sounds.py
 

@@ -1,0 +1,4 @@
+/* fui // WAYBAR · the compact bar: the standard rules, then a smaller capsule and type.
+ * fui bar uses this with config-compact.jsonc on screens narrower than 1400 px. */
+@import url("style.css");
+@import url("compact.css");

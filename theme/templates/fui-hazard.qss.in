@@ -49,13 +49,16 @@ QCheckBox::indicator, QRadioButton::indicator { width: 14px; height: 14px; borde
 QCheckBox::indicator:checked, QRadioButton::indicator:checked { background: #f2c230; border-color: #f2c230; }
 
 /* the look: an owned device, cut square. Chrome bars, chrome keys, gel on the primary action and the selection. */
-QMenuBar, QToolBar, QHeaderView::section, QStatusBar { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #d2d0cb, stop:0.08 #9a968c, stop:0.46 #716c5e, stop:0.52 #4c4636, stop:0.84 #464132, stop:1 #6e685a); color: #ededed; border: none; border-bottom: 1px solid #1e1c16; }
+QMenuBar, QToolBar, QHeaderView::section, QStatusBar { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #d2d0cb, stop:0.08 #6e685a, stop:0.46 #5b5545, stop:0.52 #484333, stop:0.84 #3e3a2c, stop:1 #5d5848); color: #ededed; border: none; border-bottom: 1px solid #1e1c16; }
 QMenu { border: 1px solid #1e1c16; border-radius: 4px; }
 QMenu::item:selected, QMenuBar::item:selected { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f8dd8d, stop:0.48 #f3c845, stop:0.52 #f2c230, stop:1 #a98822); color: #000000; border-left: none; border-radius: 2px; }
 QPushButton, QToolButton { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e9e8e6, stop:0.48 #aca9a1, stop:0.52 #757062, stop:1 #848074); color: #15130f; border: 1px solid #1e1c16; border-radius: 2px; padding: 4px 16px; }
 QPushButton:hover, QToolButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e9e8e6, stop:0.3 #e9e8e6, stop:0.52 #757062, stop:1 #aca9a1); border-color: #f2c230; }
 QPushButton:pressed, QPushButton:checked, QToolButton:checked, QToolButton:pressed { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #757062, stop:1 #aca9a1); border-color: #1e1c16; }
 QPushButton:default { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f8dd8d, stop:0.48 #f3c845, stop:0.52 #f2c230, stop:1 #a98822); color: #000000; border: 1px solid #a98822; }
+QPushButton:disabled, QToolButton:disabled, QComboBox:disabled { color: #595651; }
+QDialogButtonBox QPushButton { color: #15130f; }
+QDialogButtonBox QPushButton:default { color: #000000; }
 QToolButton[autoRaise="true"] { background: transparent; border-color: transparent; color: #ededed; }
 QToolButton[autoRaise="true"]:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e9e8e6, stop:0.48 #aca9a1, stop:0.52 #757062, stop:1 #848074); border-color: #1e1c16; color: #15130f; }
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit { border-radius: 2px; padding: 3px 12px; border: 1px solid #6b6b6b; }
