@@ -323,6 +323,16 @@ scrollbar slider { border-radius: 99px; min-width: 8px; min-height: 8px; backgro
 notebook > header tab:checked, tabbar tab:selected {
   background-image: linear-gradient(to bottom, @fui_gel_hi, @fui_gel_mid 48%, @fui_signal 52%, @fui_gel_lo); color: @fui_on_gel; box-shadow: none; border-radius: 5px;
 }
+/* the sidebar is brushed metal (the media library's source list), so a window is two
+   materials: glass for the content, metal for the places beside it */
+.sidebar, placessidebar, .navigation-sidebar, stacksidebar {
+  background-color: @fui_shell;
+  background-image:
+    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
+    linear-gradient(to right, @fui_shell_hi, @fui_shell 30%, @fui_shell_lo);
+  color: @fui_ink;
+}
+.sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected { border-radius: 5px; }
 notebook > header.top tab:checked { border-radius: 5px 5px 0 0; }
 notebook > header.bottom tab:checked { border-radius: 0 0 5px 5px; }
 notebook > header.left tab:checked { border-radius: 5px 0 0 5px; }

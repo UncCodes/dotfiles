@@ -64,7 +64,8 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the survey backdrop live (traces running along the contours) or still (`SUPER+SHIFT+W`); it follows the edition |
+| `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, and every edition's loop is rendered ahead of time, so an edition change plays at once |
+| `fui wallpaper pick` | which backdrop: each look its own, or the survey (contours, traces running along them) or the ribbon (a sheaf of light lines) for every look |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
 | `fui brand` | the machine's names: host, OS, operator (the bar badge, lock screen, start page and boot use them) |
@@ -86,6 +87,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Area | What you get |
 |---|---|
 | Icons | one outline family (the Nerd Font's Material Design set) on everything: every palette command and menu row, the bar, the control centre, the lock screen, the start page, notifications, the prompt, fastfetch, terminal tabs, the key list and the doctor; registered in `tokens.toml` `[icons]` |
+| Sessions | Hyprland (tiling) or labwc (overlapping windows with title bars, a taskbar in the bar, a right-click desktop menu), picked at the sign-in screen; both share the bar, notifications, launcher, lock and `fui`, and labwc's title bars follow the look and edition |
 | Windows | flat panels, radius 4, a hairline edge (the focused one in the signal), no shadows (a soft signal halo on deep screens); dialogs, pickers and small tools float centred; picture-in-picture pinned |
 | Bar | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts (`CPU`, `MEM`, `NET`), volume and battery segment meters, now playing, updates, recording, the edition and tier, notices, the clock |
 | Launcher | apps, the command palette, the edition and tier pickers, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |
@@ -96,7 +98,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Terminal | the edition's console (light editions keep a dark one); zsh, starship, fastfetch (the workstation's asset sheet), btop, Neovim, git, mpv, zathura, imv and satty on the same palette |
 | Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
-| Apps by default | zathura (PDF), mpv (video and images, both through a colour halftone screen: `d` toggles it; imv stays installed as a plain viewer), satty (annotation), Thunar (files) |
+| Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
 | Sound | deep, spacious cues as a sound theme: a sub-bass swell, a warm pad and glass bells at sign-in, glass bells for notices, soft blips for toggles, all in a stereo hall |
 | Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet in the edition's look: a glass panel over the survey field, or on y2k a rounded shell with a chrome title strip, pill fields, a gel Login button and the clock in a lit readout, over the ribbon; run `fui setup boot` again after changing look); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |

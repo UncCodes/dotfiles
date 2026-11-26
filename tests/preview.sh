@@ -151,5 +151,43 @@ EOS
 # shellcheck disable=SC2097,SC2098  # the same values, passed on explicitly
 OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DOTFILES_DIR="$DOTFILES_DIR" EDITIONS="$EDITIONS" \
   timeout 900 dbus-run-session -- bash "$TMPD/desktop.sh" || echo "  the sway session ended early (see sway.log)"
+# ── the second session: labwc (title bars, the taskbar), headless ────────
+if command -v labwc >/dev/null; then
+  echo "desktop (headless labwc)"
+  # Arch's labwc carries a file capability, which an unprivileged container refuses to exec
+  # ("Operation not permitted"); a plain copy has none and runs the same
+  getcap "$(command -v labwc)" 2>/dev/null | sed 's/^/  /'
+  cp "$(command -v labwc)" "$TMPD/labwc-bin"
+  cat > "$TMPD/labwc.sh" <<'EOS'
+set -u
+export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1
+lshot() {   # <edition>
+  local m="$1" C="$TMPD/labwc-$1"
+  timeout 30 "$FUI" mode "$m" --quiet
+  timeout 60 python3 "$DOTFILES_DIR/theme/make-wallpaper.py" --edition "$m" "$TMPD/lwall.png" 1280 800 >/dev/null 2>&1
+  mkdir -p "$C"
+  cp -L "$HOME/.config/labwc/rc.xml" "$HOME/.config/labwc/menu.xml" "$C/"
+  base=adw-gtk3-dark; case "$m" in paper|lab|ice|chrome) base=adw-gtk3 ;; esac
+  cat > "$C/autostart" <<AUTO
+swaybg -i "$TMPD/lwall.png" -m fill &
+"$FUI" bar &
+GTK_THEME=$base gtk3-widget-factory &
+sleep 1; kitty --hold sh -c 'fastfetch' &
+AUTO
+  timeout 40 "$TMPD/labwc-bin" -C "$C" >"$OUT/labwc-$m.log" 2>&1 &
+  local pid=$!
+  for _ in $(seq 15); do ls "$XDG_RUNTIME_DIR"/wayland-* >/dev/null 2>&1 && break; sleep 1; done
+  sleep 9
+  WAYLAND_DISPLAY=$(basename "$(ls "$XDG_RUNTIME_DIR"/wayland-? 2>/dev/null | tail -1)") timeout 15 grim "$OUT/$m-labwc.png" 2>/dev/null &&
+    echo "  shot $m-labwc" || echo "  no shot: $m-labwc"
+  kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; pkill -x waybar; pkill -x swaybg; pkill -x kitty; pkill -f gtk3-widget-factory
+}
+for m in cyan paper slate chrome; do lshot "$m"; done
+EOS
+  # shellcheck disable=SC2097,SC2098  # the same values, passed on explicitly
+  OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DOTFILES_DIR="$DOTFILES_DIR" \
+    timeout 300 dbus-run-session -- bash "$TMPD/labwc.sh" || echo "  the labwc session ended early"
+  timeout 30 "$FUI" mode cyan --quiet
+fi
 ls -la "$OUT"
 exit 0

@@ -247,6 +247,7 @@ overlay > box {{ margin-bottom: {inset}px; }}
 window, window.background {{ font-size: 10pt; }}
 {CLOCK_LABEL} {{ font-size: 24px; }}
 entry, password-entry, button, combobox button {{ min-height: 28px; }}
+grid > button {{ min-width: 32px; min-height: 32px; }}
 """
     return out
 
@@ -351,7 +352,9 @@ button image, combobox button arrow {{ color: {C['mark']}; -gtk-icon-shadow: non
 button:hover {{ background-image: {face_hover}; box-shadow: 0 0 0 2px {alpha(C['signal'], 0.40)}, 0 1px 2px alpha(black, 0.35); }}
 button:active, button:checked {{ background-image: {pressed}; box-shadow: inset 0 2px 3px alpha(black, 0.40); }}
 button:disabled {{ background-image: none; background-color: {alpha(C['face_mid'], 0.5)}; color: {alpha(C['mark'], 0.5)}; box-shadow: none; }}
-grid > button {{ min-width: 32px; padding: 0; border-radius: 99px; }}
+/* the edit toggles: ReGreet stretches them to its 45 px rows, so margins take up the rest and
+   leave a circle */
+grid > button {{ min-width: 32px; min-height: 32px; margin: 6px 0; padding: 0; border-radius: 99px; }}
 button.suggested-action {{
   background-image: {gel}; border-color: {C['gel_lo']}; color: {C['on_gel']}; text-shadow: none; font-weight: 700;
   box-shadow: 0 0 8px {alpha(C['signal'], 0.5)}, 0 1px 2px alpha(black, 0.35);

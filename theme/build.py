@@ -594,6 +594,16 @@ scrollbar slider {{ border-radius: 99px; min-width: 8px; min-height: 8px; backgr
 notebook > header tab:checked, tabbar tab:selected {{
   background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
 }}
+/* the sidebar is brushed metal (the media library's source list), so a window is two
+   materials: glass for the content, metal for the places beside it */
+.sidebar, placessidebar, .navigation-sidebar, stacksidebar {{
+  background-color: {c('shell')};
+  background-image:
+    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
+    linear-gradient(to right, {c('shell_hi')}, {c('shell')} 30%, {c('shell_lo')});
+  color: {c('ink')};
+}}
+.sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected {{ border-radius: {cr + 1}px; }}
 notebook > header.top tab:checked {{ border-radius: {cr + 1}px {cr + 1}px 0 0; }}
 notebook > header.bottom tab:checked {{ border-radius: 0 0 {cr + 1}px {cr + 1}px; }}
 notebook > header.left tab:checked {{ border-radius: {cr + 1}px 0 0 {cr + 1}px; }}
@@ -1164,6 +1174,18 @@ def meters():
           f'  "battery": {{ "format-icons": {arr} }},\n  "backlight": {{ "format-icons": {arr} }}\n}}\n')
 
 
+# ── labwc: the second session (theme/labwc.py) ───────────────────────────
+def labwc_files():
+    import labwc
+    for ed in EDS:
+        base = f"labwc/.local/share/themes/fui-{ed}/openbox-3"
+        write(f"{base}/themerc", labwc.themerc(ed))
+        for name, svg in labwc.buttons(ed).items():
+            write(f"{base}/{name}", svg)
+    for look in LOOKS:
+        write(f"labwc/.config/labwc/rc-{look}.xml", labwc.rc(look))
+
+
 # ── run ─────────────────────────────────────────────────────────────────
 colour_includes()
 gtk()
@@ -1179,6 +1201,7 @@ startpage()
 docs()
 keys()
 meters()
+labwc_files()
 
 _, failures = contrast_rows()
 if CHECK:

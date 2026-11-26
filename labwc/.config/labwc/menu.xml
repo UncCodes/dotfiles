@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- fui // labwc: right-click the desktop -->
+<openbox_menu>
+  <menu id="root-menu" label="">
+    <item label="Terminal"><action name="Execute" command="kitty"/></item>
+    <item label="Browser"><action name="Execute" command="firefox"/></item>
+    <item label="Files"><action name="Execute" command="thunar"/></item>
+    <item label="Apps…"><action name="Execute" command="rofi -show drun"/></item>
+    <separator/>
+    <item label="Edition…"><action name="Execute" command="~/.local/bin/fui mode pick"/></item>
+    <item label="Look: instrument / y2k"><action name="Execute" command="~/.local/bin/fui look toggle"/></item>
+    <item label="Backdrop…"><action name="Execute" command="~/.local/bin/fui wallpaper pick"/></item>
+    <item label="Backdrop: live / still"><action name="Execute" command="~/.local/bin/fui wallpaper toggle"/></item>
+    <separator/>
+    <item label="Lock"><action name="Execute" command="hyprlock"/></item>
+    <item label="Power…"><action name="Execute" command="~/.local/bin/fui power"/></item>
+  </menu>
+</openbox_menu>

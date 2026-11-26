@@ -6,6 +6,9 @@ hyprland
 hyprlock
 hypridle
 hyprpolkitagent
+labwc          # the second session: overlapping windows with title bars (pick it at sign-in)
+wlr-randr      # screen modes outside Hyprland (labwc)
+xdg-desktop-portal-wlr  # screen sharing in labwc
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 qt5-wayland

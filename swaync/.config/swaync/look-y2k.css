@@ -1,7 +1,9 @@
-/* fui // SWAYNC · look y2k: memos are small rounded devices
- * A memo has a shell title strip lit from above (the app, the time), then its message on a
- * pale or dark panel; critical memos turn the strip to bad. The control centre is a shell
- * with pills and capsule sliders. Gel only on the primary action. Over base.css. */
+/* fui // SWAYNC · look y2k, over base.css. Each part is a different material of the device:
+ *   a notification is tinted translucent plastic (the late-90s case you could see into):
+ *     the signal's tint, fine horizontal ribbing, a sheen along the top
+ *   the control centre is brushed metal (the media players of 1999-2003), its switches matte
+ *     rubber keys with a lit strip along the foot when on
+ *   the sliders are capsule tracks; gel stays on the primary action */
 
 .notification {
   border: 1px solid @rim;
@@ -64,3 +66,40 @@ scale slider { min-width: 20px; min-height: 12px; border-radius: 99px; border: 1
 .widget-buttons-grid flowboxchild > button { color: @mark; text-shadow: 0 1px alpha(#FFFFFF, 0.55); border: 1px solid @rim; }
 .notification-action:first-child > button, .widget-buttons-grid flowboxchild > button.toggle:checked { color: @on_gel; text-shadow: none; }
 .widget-title > label { color: @ink; text-shadow: 0 1px @emboss; }
+
+/* ── the notification: tinted translucent plastic ── */
+.notification {
+  background-color: alpha(mix(@panel, @signal, 0.22), 0.80);
+  background-image:
+    linear-gradient(to bottom, alpha(#FFFFFF, 0.28), alpha(#FFFFFF, 0.06) 22px, transparent 40px),
+    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.06) 0px, alpha(#FFFFFF, 0.06) 1px, transparent 1px, transparent 3px);
+  border-color: alpha(@signal_hi, 0.55);
+}
+.notification.critical {
+  background-color: alpha(mix(@panel, @bad, 0.30), 0.85);
+  background-image:
+    linear-gradient(to bottom, alpha(#FFFFFF, 0.28), transparent 40px),
+    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.06) 0px, alpha(#FFFFFF, 0.06) 1px, transparent 1px, transparent 3px);
+}
+
+/* ── the control centre: brushed metal ── */
+.control-center {
+  background-color: @shell;
+  background-image:
+    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
+    linear-gradient(to bottom, @shell_hi, @shell 18%, @shell 82%, @shell_lo);
+}
+/* its switches: matte rubber keys, pressed in when on, with a lit strip along the foot */
+.widget-buttons-grid flowboxchild > button {
+  background-image: linear-gradient(to bottom, alpha(#FFFFFF, 0.10), alpha(#000000, 0.10));
+  background-color: mix(@shell, @floor, 0.45);
+  color: @ink; text-shadow: 0 1px @emboss;
+  border: 1px solid @rim;
+  box-shadow: inset 0 1px alpha(#FFFFFF, 0.14), 0 1px alpha(#FFFFFF, 0.10), 0 2px 3px alpha(#000000, 0.35);
+}
+.widget-buttons-grid flowboxchild > button:hover { box-shadow: inset 0 1px alpha(#FFFFFF, 0.20), 0 0 0 2px alpha(@signal, 0.40); }
+.widget-buttons-grid flowboxchild > button.toggle:checked {
+  background-image: linear-gradient(to bottom, alpha(#000000, 0.18), alpha(#FFFFFF, 0.04));
+  color: @signal_hi; text-shadow: 0 0 6px alpha(@signal, 0.6);
+  box-shadow: inset 0 2px 3px alpha(#000000, 0.45), inset 0 -3px @signal;
+}

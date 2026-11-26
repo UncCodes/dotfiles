@@ -200,8 +200,7 @@ toolkit_files() {
     local mime
     for mime in text/html x-scheme-handler/http x-scheme-handler/https application/xhtml+xml; do xdg-mime default firefox.desktop "$mime"; done
     xdg-mime default org.pwmt.zathura.desktop application/pdf
-    # pictures open in mpv, so they get the same halftone screen as video (imv stays installed, plain)
-    for mime in image/png image/jpeg image/gif image/webp image/bmp image/tiff; do xdg-mime default mpv.desktop "$mime"; done
+    for mime in image/png image/jpeg image/gif image/webp image/bmp image/tiff; do xdg-mime default imv.desktop "$mime"; done
     for mime in video/mp4 video/x-matroska video/webm video/quicktime audio/mpeg audio/flac audio/ogg; do xdg-mime default mpv.desktop "$mime"; done
     xdg-mime default thunar.desktop inode/directory
   fi 2>/dev/null

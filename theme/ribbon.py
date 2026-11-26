@@ -41,7 +41,7 @@ class RibbonScene:
         self.dark = is_dark(mode)
         self.signal, self.hi, self.shell = rgb(p["signal"]), rgb(p["signal_hi"]), rgb(p["shell"])
         self.ink = rgb(p["ink"])
-        seed = SEEDS.get(mode, 5)
+        seed = SEEDS.get(mode, sum(map(ord, mode)) % 31 + 1)   # every edition its own shape
         self.ph = [(seed * 0.37 + i * 1.3) % (2 * math.pi) for i in range(4)]
         if self.dark:
             ground = rgb(pt["void"] if tier != "lcd" else p["floor"])

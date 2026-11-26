@@ -1,0 +1,260 @@
+"""labwc: the second session, a stacking window manager with real title bars.
+
+Hyprland tiles and draws no title bars; labwc (Openbox's manner, on Wayland) overlaps windows
+and draws a title bar on each. The bar, notifications, launcher, lock and wallpaper are the
+same programs in both sessions (they speak layer-shell), so only the window frame and the
+keys are labwc's own. This module writes, from the tokens:
+
+  labwc/.local/share/themes/fui-<edition>/openbox-3/   themerc and the title-bar buttons (SVG)
+  labwc/.config/labwc/rc-<look>.xml                     the look's frame (corners, shadows,
+                                                         fonts) and the keys, mirroring Hyprland's
+
+fui mode links ~/.local/share/themes/fui to the edition's theme and ~/.config/labwc/rc.xml to
+the look's rc, then asks labwc to reload (SIGHUP).
+
+The two looks frame a window differently:
+  instrument  a flat header plate in the panel colour, the title left in the mono voice,
+              hairline glyph buttons that light in the signal (close in bad), a 1 px edge in
+              the signal when focused
+  y2k         a chrome title bar split at the horizon (a bright lip, the lit face, a dark
+              horizon, a lighter reflection), the title centred and embossed, three gel orbs
+              (chrome for minimise and maximise, red gel for close), a soft drop shadow
+"""
+from palette import LOOK, TOK, contrast, full, is_dark, look_of, mix
+
+F = TOK["font"]
+G = TOK["geometry"]
+
+BUTTONS = ("iconify", "max", "max_toggled", "close")
+
+
+def hx(c):
+    return "#" + c.lstrip("#")[:6].upper()
+
+
+def _glyph(name, colour, width):
+    """The button's mark, centred in a 24 x 24 box."""
+    w = f'stroke="{colour}" stroke-width="{width}" stroke-linecap="round" fill="none"'
+    return {
+        "iconify": f'<path d="M8 15.5h8" {w}/>',
+        "max": f'<rect x="8" y="8" width="8" height="8" rx="1" {w}/>',
+        "max_toggled": f'<path d="M10 8h6v6" {w}/><rect x="8" y="10" width="6" height="6" rx="1" {w}/>',
+        "close": f'<path d="M8.5 8.5l7 7M15.5 8.5l-7 7" {w}/>',
+    }[name]
+
+
+def _svg(body):
+    return f'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">{body}</svg>\n'
+
+
+def buttons_instrument(p):
+    """Hairline glyphs on the plate: ink, the signal on hover (close: bad); dimmer when inactive."""
+    out = {}
+    for name in BUTTONS:
+        hover = p["bad"] if name == "close" else p["signal"]
+        out[f"{name}-active.svg"] = _svg(_glyph(name, hx(p["ink"]), 1.5))
+        out[f"{name}-inactive.svg"] = _svg(_glyph(name, hx(p["faint"]), 1.5))
+        ring = f'<rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="{hx(hover)}" stroke-width="1"/>'
+        out[f"{name}_hover-active.svg"] = _svg(ring + _glyph(name, hx(hover), 1.5))
+        out[f"{name}_hover-inactive.svg"] = _svg(ring + _glyph(name, hx(hover), 1.5))
+    return out
+
+
+def _orb(hi, mid, base, lo, rim, lens, glyph, glow=None):
+    """A gel orb: a two-part body split at the horizon, a specular lens at the top, the glyph."""
+    halo = (f'<circle cx="12" cy="12" r="10.5" fill="{glow}" fill-opacity="0.35"/>' if glow else "")
+    return _svg(
+        '<defs>'
+        f'<linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{hi}"/>'
+        f'<stop offset=".48" stop-color="{mid}"/><stop offset=".52" stop-color="{base}"/><stop offset="1" stop-color="{lo}"/></linearGradient>'
+        f'<radialGradient id="l" cx=".5" cy=".1" r=".55"><stop offset="0" stop-color="#FFFFFF" stop-opacity="{lens}"/>'
+        '<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'
+        '</defs>'
+        f'{halo}<circle cx="12" cy="12" r="8.5" fill="url(#b)" stroke="{rim}" stroke-width="1"/>'
+        '<ellipse cx="12" cy="8" rx="6" ry="3.6" fill="url(#l)"/>'
+        f'{glyph}')
+
+
+def buttons_y2k(p):
+    """Chrome orbs for minimise and maximise, a red gel orb for close; the hover lights each
+    (a brighter lens and a halo); inactive windows get plain shell-coloured orbs."""
+    out = {}
+    bad = p["bad"]
+    red = (hx(mix(bad, "#FFFFFF", 0.45)), hx(mix(bad, "#FFFFFF", 0.15)), hx(bad), hx(mix(bad, "#000000", 0.35)))
+    face = (hx(p["face_hi"]), hx(p["face_mid"]), hx(p["face_horizon"]), hx(p["face_lo"]))
+    shell = (hx(p["shell_hi"]), hx(p["shell"]), hx(p["shell"]), hx(p["shell_lo"]))
+    rim = hx(p["rim"])
+    for name in BUTTONS:
+        body, mark = (red, "#FFFFFF") if name == "close" else (face, hx(p["mark"]))
+        out[f"{name}-active.svg"] = _orb(*body, rim, 0.75, _glyph(name, mark, 1.8))
+        out[f"{name}_hover-active.svg"] = _orb(*body, rim, 0.95, _glyph(name, mark, 1.8),
+                                               glow=hx(bad if name == "close" else p["signal"]))
+        out[f"{name}-inactive.svg"] = _orb(*shell, rim, 0.45, _glyph(name, hx(p["muted"]), 1.6))
+        out[f"{name}_hover-inactive.svg"] = _orb(*body, rim, 0.85, _glyph(name, mark, 1.8))
+    return out
+
+
+def themerc(ed):
+    p = full(ed)
+    look = look_of(ed)
+    head = f"# fui // labwc theme, edition {ed} ({look}). GENERATED by theme/build.py from theme/tokens.toml.\n"
+    common = f"""
+menu.items.bg.color: {hx(p['panel'])}
+menu.items.text.color: {hx(p['ink'])}
+menu.items.active.bg.color: {hx(p['signal'])}
+menu.items.active.text.color: {hx(p['on_signal'])}
+menu.title.text.color: {hx(p['ink'])}
+menu.separator.color: {hx(p['rule_hi'])}
+menu.items.padding.x: 10
+menu.items.padding.y: 5
+osd.label.text.color: {hx(p['ink'])}
+osd.window-switcher.style-classic.item.active.border.color: {hx(p['signal'])}
+osd.window-switcher.style-classic.item.active.bg.color: {hx(mix(p['panel'], p['signal'], 0.18))}
+osd.window-switcher.preview.border.color: {hx(p['signal'])},{hx(p['panel'])},{hx(p['signal'])}
+osd.workspace-switcher.boxes.border.width: 2
+window.button.spacing: 2
+window.button.hover.bg.color: #00000000
+"""
+    if look == "y2k":
+        title = max((p["ink"], p["mark"]), key=lambda c: contrast(c, p["chrome_mid"]))
+        dark = is_dark(ed)
+        return head + f"""
+# the chrome title bar, split at the horizon: top half lip -> lit face, bottom half horizon -> reflection
+window.active.title.bg: Gradient SplitVertical
+window.active.title.bg.color.splitTo: {hx(p['chrome_lip'])}
+window.active.title.bg.color: {hx(p['chrome_mid'])}
+window.active.title.bg.colorTo: {hx(p['chrome_horizon'])}
+window.active.title.bg.colorTo.splitTo: {hx(p['chrome_reflect'])}
+window.inactive.title.bg: Gradient Vertical
+window.inactive.title.bg.color: {hx(p['shell_hi'])}
+window.inactive.title.bg.colorTo: {hx(p['shell'])}
+window.active.label.text.color: {hx(title)}
+window.inactive.label.text.color: {hx(p['muted'])}
+window.label.text.justify: Center
+window.active.border.color: {hx(p['chrome_mid'])}
+window.inactive.border.color: {hx(p['shell'])}
+border.width: {LOOK['y2k'].get('frame', 4)}
+window.titlebar.padding.width: 6
+window.titlebar.padding.height: 2
+window.button.width: 24
+window.button.height: 24
+window.active.shadow.size: {LOOK['y2k'].get('shadow_blur', 18)}
+window.inactive.shadow.size: 10
+window.active.shadow.color: #000000{round(255 * (LOOK['y2k']['shadow_dark'] if dark else LOOK['y2k']['shadow_light'])):02X}
+window.inactive.shadow.color: #00000024
+menu.title.bg.color: {hx(p['chrome_mid'])}
+menu.border.color: {hx(p['rim'])}
+osd.bg.color: {hx(p['shell'])}
+osd.border.color: {hx(p['rim'])}
+osd.border.width: 1
+""" + common
+    return head + f"""
+# a flat header plate: the panel, the title left in the mono voice, a hairline edge
+window.active.title.bg: Solid
+window.active.title.bg.color: {hx(p['panel'])}
+window.inactive.title.bg: Solid
+window.inactive.title.bg.color: {hx(p['floor'])}
+window.active.label.text.color: {hx(p['ink'])}
+window.inactive.label.text.color: {hx(p['faint'])}
+window.label.text.justify: Left
+window.active.border.color: {hx(p['signal'])}
+window.inactive.border.color: {hx(p['rule_hi'])}
+border.width: 1
+window.titlebar.padding.width: 8
+window.titlebar.padding.height: 0
+window.button.width: 24
+window.button.height: 24
+menu.title.bg.color: {hx(p['panel'])}
+menu.border.color: {hx(p['rule_hi'])}
+osd.bg.color: {hx(p['panel'])}
+osd.border.color: {hx(p['rule_hi'])}
+osd.border.width: 1
+""" + common
+
+
+def buttons(ed):
+    p = full(ed)
+    return buttons_y2k(p) if look_of(ed) == "y2k" else buttons_instrument(p)
+
+
+# ── rc.xml: the frame per look, and the keys (Hyprland's, where labwc has the same idea) ──
+FUI = "~/.local/bin/fui"
+KEYS = [   # (key, action xml, what it does) -- W is SUPER
+    ("W-Return", f'<action name="Execute" command="kitty"/>', "terminal"),
+    ("W-S-Return", f'<action name="Execute" command="{FUI} tabs"/>', "the startup terminal tabs"),
+    ("W-d", '<action name="Execute" command="rofi -show drun"/>', "apps"),
+    ("W-space", f'<action name="Execute" command="{FUI} palette"/>', "command palette"),
+    ("W-slash", f'<action name="Execute" command="{FUI} keys"/>', "this list of keys"),
+    ("W-b", '<action name="Execute" command="firefox"/>', "browser"),
+    ("W-e", '<action name="Execute" command="thunar"/>', "file manager"),
+    ("W-y", f'<action name="Execute" command="{FUI} tui yazi"/>', "files in the terminal"),
+    ("W-a", f'<action name="Execute" command="{FUI} tui wiremix"/>', "audio mixer"),
+    ("W-S-n", f'<action name="Execute" command="{FUI} tui nmtui"/>', "network"),
+    ("W-n", '<action name="Execute" command="swaync-client -t -sw"/>', "notifications and control centre"),
+    ("W-period", '<action name="Execute" command="rofi -modi emoji -show emoji"/>', "emoji"),
+    ("W-S-v", f'<action name="Execute" command="{FUI} clipboard"/>', "clipboard history"),
+    ("W-q", '<action name="Close"/>', "close window"),
+    ("W-f", '<action name="ToggleFullscreen"/>', "fullscreen"),
+    ("W-Up", '<action name="ToggleMaximize"/>', "maximise / restore"),
+    ("W-Down", '<action name="Iconify"/>', "minimise"),
+    ("W-Left", '<action name="SnapToEdge" direction="left"/>', "fill the left half"),
+    ("W-Right", '<action name="SnapToEdge" direction="right"/>', "fill the right half"),
+    ("A-Tab", '<action name="NextWindow"/>', "next window"),
+    ("A-S-Tab", '<action name="PreviousWindow"/>', "previous window"),
+    ("W-Escape", '<action name="Execute" command="hyprlock"/>', "lock"),
+    ("W-x", f'<action name="Execute" command="{FUI} power"/>', "power menu"),
+    ("W-S-e", '<action name="Exit"/>', "quit labwc"),
+    ("W-S-t", f'<action name="Execute" command="{FUI} mode toggle"/>', "edition: the next one in this look"),
+    ("W-A-t", f'<action name="Execute" command="{FUI} mode pick"/>', "edition: pick one from a list"),
+    ("W-C-t", f'<action name="Execute" command="{FUI} look toggle"/>', "look: instrument / y2k"),
+    ("W-S-d", f'<action name="Execute" command="{FUI} display pick"/>', "display tier"),
+    ("W-S-w", f'<action name="Execute" command="{FUI} wallpaper toggle"/>', "live / still backdrop"),
+    ("W-r", f'<action name="Execute" command="{FUI} record toggle"/>', "screen recording start / stop"),
+    ("Print", f'<action name="Execute" command="{FUI} shot region"/>', "screenshot a region"),
+    ("S-Print", f'<action name="Execute" command="{FUI} shot screen"/>', "screenshot the screen"),
+    ("W-Print", f'<action name="Execute" command="{FUI} shot edit"/>', "screenshot a region and annotate it"),
+    ("XF86AudioRaiseVolume", '<action name="Execute" command="swayosd-client --output-volume raise"/>', "volume up"),
+    ("XF86AudioLowerVolume", '<action name="Execute" command="swayosd-client --output-volume lower"/>', "volume down"),
+    ("XF86AudioMute", '<action name="Execute" command="swayosd-client --output-volume mute-toggle"/>', "mute"),
+    ("XF86AudioMicMute", '<action name="Execute" command="swayosd-client --input-volume mute-toggle"/>', "microphone mute"),
+    ("XF86MonBrightnessUp", '<action name="Execute" command="swayosd-client --brightness raise"/>', "brightness up"),
+    ("XF86MonBrightnessDown", '<action name="Execute" command="swayosd-client --brightness lower"/>', "brightness down"),
+    ("XF86AudioPlay", '<action name="Execute" command="playerctl play-pause"/>', "play / pause"),
+    ("XF86AudioNext", '<action name="Execute" command="playerctl next"/>', "next track"),
+    ("XF86AudioPrev", '<action name="Execute" command="playerctl previous"/>', "previous track"),
+] + [(f"W-{n}", f'<action name="GoToDesktop" to="{n}"/>', "go to workspace") for n in range(1, 10)] \
+  + [(f"W-S-{n}", f'<action name="SendToDesktop" to="{n}" follow="no"/>', "send the window to workspace") for n in range(1, 10)]
+
+
+def rc(look):
+    L = LOOK.get(look, {})
+    y2k = look == "y2k"
+    radius = L.get("radius", G["radius"])
+    title_font = (F["ui"], 10, "bold") if y2k else (F["mono"], 9, "bold")
+    keys = "\n".join(f'    <keybind key="{k}">{a}</keybind>   <!-- {d} -->' for k, a, d in KEYS)
+    return f"""<?xml version="1.0"?>
+<!-- fui // labwc, look {look}: the window frame and the keys. GENERATED by theme/build.py.
+     fui mode links rc.xml here; the theme (title bar, buttons, colours) is
+     ~/.local/share/themes/fui, linked to the edition's. -->
+<labwc_config>
+  <core><gap>{G['gaps_in']}</gap></core>
+  <theme>
+    <name>fui</name>
+    <cornerRadius>{radius}</cornerRadius>
+    <dropShadows>{'yes' if y2k else 'no'}</dropShadows>
+    <titlebar><layout>{'icon:iconify,max,close' if y2k else ':iconify,max,close'}</layout><showTitle>yes</showTitle></titlebar>
+    <font place="ActiveWindow"><name>{title_font[0]}</name><size>{title_font[1]}</size><weight>{title_font[2]}</weight></font>
+    <font place="InactiveWindow"><name>{title_font[0]}</name><size>{title_font[1]}</size><weight>{title_font[2]}</weight></font>
+    <font place="MenuItem"><name>{F['ui']}</name><size>10</size></font>
+    <font place="OnScreenDisplay"><name>{F['ui']}</name><size>10</size></font>
+  </theme>
+  <desktops number="4"><popupTime>600</popupTime></desktops>
+  <placement><policy>cascade</policy></placement>
+  <windowSwitcher show="yes" preview="yes" outlines="yes"/>
+  <keyboard>
+    <default/>
+{keys}
+  </keyboard>
+  <mouse><default/></mouse>
+</labwc_config>
+"""
