@@ -112,13 +112,6 @@ t = tomllib.load(open(sys.argv[1], "rb")); g = t["geometry"]
 bad = [k for k in ("gaps_in", "gaps_out", "bar", "radius", "control") if g[k] % 2 or (k.startswith("gaps") and g[k] % 4)]
 bad += [v for v in t["space"]["scale"] if v % 4]
 assert not bad, bad' "$DOTS/theme/tokens.toml"
-t "the cursor theme builds: Xcursor files at 24, 32 and 48 px, the busy ones animated, every alias linked" bash -c '
-  d=$(mktemp -d) && python3 "$1/theme/make-cursor.py" --edition ruby "$d" >/dev/null &&
-  for c in default pointer text wait progress crosshair not-allowed move ns-resize ew-resize nwse-resize nesw-resize left_ptr hand2 xterm watch; do
-    [ "$(head -c 4 "$d/cursors/$c")" = Xcur ] || { echo "no cursor $c"; exit 1; }
-  done
-  python3 -c "import struct,sys; n = struct.unpack(\"<I\", open(sys.argv[1], \"rb\").read()[12:16])[0]; sys.exit(0 if n == 24 else 1)" "$d/cursors/wait" &&
-  grep -q "Inherits=Adwaita" "$d/index.theme"' _ "$DOTS"
 t "display auto tells a panel from a tube on an analog input (the EDID range limits)" bash -c '
   d=$(mktemp -d); python3 - "$d" <<PY
 import sys
@@ -162,6 +155,13 @@ t "every package exists in the official repos" bash -c '
 
 wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the install provides
   python3 -c "import PIL" 2>/dev/null || { echo "  [skip] wallpaper renders (no Pillow)"; return; }
+  t "the cursor theme builds: Xcursor files at 24, 32 and 48 px, the busy ones animated, every alias linked" bash -c '
+    d=$(mktemp -d) && python3 "$1/theme/make-cursor.py" --edition ruby "$d" >/dev/null &&
+    for c in default pointer text wait progress crosshair not-allowed move ns-resize ew-resize nwse-resize nesw-resize left_ptr hand2 xterm watch; do
+      [ "$(head -c 4 "$d/cursors/$c")" = Xcur ] || { echo "no cursor $c"; exit 1; }
+    done
+    python3 -c "import struct,sys; n = struct.unpack(\"<I\", open(sys.argv[1], \"rb\").read()[12:16])[0]; sys.exit(0 if n == 24 else 1)" "$d/cursors/wait" &&
+    grep -q "Inherits=Adwaita" "$d/index.theme"' _ "$DOTS"
   t "still wallpaper renders (cyan lcd, amber deep, paper crt), a different survey per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" /tmp/fui-test.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition amber /tmp/fui-test-amber.png 320 180 &&
