@@ -3,6 +3,7 @@
 // here comes from config.jsonc.
 {
   "include": ["~/.config/waybar/config.jsonc"],
+  "height": 32,
   "margin-left": 8,
   "margin-right": 8,
 

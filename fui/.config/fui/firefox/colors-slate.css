@@ -40,10 +40,11 @@
   --fui-sheen: rgba(255, 255, 255, 0.141);
   --fui-shade: rgba(0, 0, 0, 0.451);
   --fui-chrome-lip: #CBD0DF;
-  --fui-chrome-mid: #5E6786;
-  --fui-chrome-horizon: #363E59;
-  --fui-chrome-low: #323953;
-  --fui-chrome-reflect: #5A6382;
+  --fui-chrome-top: #5A6382;
+  --fui-chrome-mid: #454E6C;
+  --fui-chrome-horizon: #333A55;
+  --fui-chrome-low: #2C3349;
+  --fui-chrome-reflect: #48506E;
   --fui-shell-lo: #333A55;
   --fui-rim: #161924;
   --fui-tray-top: #1C202F;
@@ -57,6 +58,9 @@
   --fui-face-horizon: #626C8B;
   --fui-face-lo: #747A8E;
   --fui-mark: #0F1118;
+  --fui-mark-off: #515566;
+  --fui-source: #232A41;
+  --fui-chrome-ink-off: #BBC0D0;
   --fui-emboss: rgba(0, 0, 0, 0.549);
   --fui-void-crt: #000000;
   --fui-floor-crt: #000000;

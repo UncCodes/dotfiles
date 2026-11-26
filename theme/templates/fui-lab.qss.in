@@ -56,6 +56,9 @@ QPushButton, QToolButton { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, s
 QPushButton:hover, QToolButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:0.3 #ffffff, stop:0.52 #dee1e6, stop:1 #ffffff); border-color: #1f4fe0; }
 QPushButton:pressed, QPushButton:checked, QToolButton:checked, QToolButton:pressed { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #dee1e6, stop:1 #ffffff); border-color: #484a4e; }
 QPushButton:default { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #849eee, stop:0.48 #3561e3, stop:0.52 #1f4fe0, stop:1 #16379d); color: #ffffff; border: 1px solid #16379d; }
+QPushButton:disabled, QToolButton:disabled, QComboBox:disabled { color: #8e8f90; }
+QDialogButtonBox QPushButton { color: #313335; }
+QDialogButtonBox QPushButton:default { color: #ffffff; }
 QToolButton[autoRaise="true"] { background: transparent; border-color: transparent; color: #0e141a; }
 QToolButton[autoRaise="true"]:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:0.48 #ffffff, stop:0.52 #dee1e6, stop:1 #d2d5db); border-color: #484a4e; color: #313335; }
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit { border-radius: 2px; padding: 3px 12px; border: 1px solid #7b8692; }

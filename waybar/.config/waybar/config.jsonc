@@ -9,7 +9,7 @@
   "include": ["~/.config/waybar/meters.jsonc"],
   "layer": "top",
   "position": "top",
-  "height": 32,
+  "height": 36,
   "margin-top": 8,
   "margin-left": 12,
   "margin-right": 12,

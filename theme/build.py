@@ -111,6 +111,17 @@ PAIRS = [   # (name, fg, bg, minimum)
     ("ink on glass over the floor", "ink", "glass_floor", 7.0),
     ("labels on glass over the floor", "muted", "glass_floor", 4.5),
     ("ink on the shell (bar, frames)", "ink", "shell", 4.5),
+    # text on chrome: the bar, title strips, headers and the control centre write ink on every
+    # band of it below the 1 px lip; keys (the chrome faces) take the printed mark
+    ("ink on chrome: the lit top", "ink", "chrome_top", 4.0),
+    ("ink on chrome: the face", "ink", "chrome_mid", 4.5),
+    ("ink on chrome: the horizon", "ink", "chrome_horizon", 4.5),
+    ("ink on chrome: below the horizon", "ink", "chrome_low", 4.5),
+    ("ink on chrome: the reflection", "ink", "chrome_reflect", 4.5),
+    ("the mark on a key", "mark", "face_mid", 4.5),
+    ("the mark on a lit key", "mark", "face_hi", 4.5),
+    ("ink on a source list (sidebars)", "ink", "source", 4.5),
+    ("an unfocused header's title", "chrome_ink_off", "chrome_mid", 4.5),
     ("lit text in a readout well", "readout_ink", "readout", 4.5),
 ]
 CRT_PAIRS = [("crt: ink on a panel", "ink", "panel", 7.0), ("crt: labels on a panel", "muted", "panel", 7.0),
@@ -170,8 +181,7 @@ def gtk_strokes(v, tier):
     deco = ".csd decoration, decoration" if v == 3 else "window.csd"
     entry = "entry, spinbutton:not(.vertical), .entry" if v == 3 else "entry, spinbutton:not(.vertical)"
     return (f"{deco} {{ box-shadow: 0 0 0 {w['hair']} @fui_rule_hi; }}\n"
-            f"headerbar, .titlebar {{ border-bottom-width: {w['hair']};\n"
-            f"  background-image: linear-gradient(to right, @fui_signal 0px, @fui_signal {w['stripe']}, transparent {w['stripe']}); }}\n"
+            f"headerbar, .titlebar {{ border-bottom-width: {w['hair']}; }}\n"
             f"button, {entry}, switch, check, radio {{ border-width: {w['edge']}; }}\n"
             f"separator {{ min-height: {w['hair']}; min-width: {w['hair']}; }}\n"
             f"frame > border, .frame, list.boxed-list, .boxed-list, .card {{ border-width: {w['hair']}; }}\n")
@@ -206,8 +216,8 @@ def rofi_gradients(p):
         return [p["chrome_lip"], hi, p["chrome_mid"], p["chrome_mid"], p["chrome_horizon"],
                 p["chrome_low"], p["chrome_low"], p["chrome_low"], p["chrome_reflect"]]
     return {
-        "chrome-strip": strip(p["shell_hi"]),
-        "chrome-strip-crt": strip(p.get("shell_hi_crt", p["shell_hi"])),
+        "chrome-strip": strip(p["chrome_top"]),
+        "chrome-strip-crt": strip(p["chrome_top"]),
         "gel-face": [p["gel_hi"], p["gel_mid"], p["signal"], p["gel_lo"], p["gel_lo"]],
     }
 
@@ -502,8 +512,9 @@ def gtk_look(v, ed):
     r, cr = L["radius"], L["control"]
     sh = L["shadow_dark"] if is_dark(ed) else L["shadow_light"]
     lens = "radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, {a}), alpha(#FFFFFF, 0) 60%)"
-    metal = (f"linear-gradient(to bottom, {c('chrome_lip')} 0%, {c('shell_hi')} 8%, {c('chrome_mid')} 46%, "
+    metal = (f"linear-gradient(to bottom, {c('chrome_lip')} 0%, {c('chrome_top')} 8%, {c('chrome_mid')} 46%, "
              f"{c('chrome_horizon')} 52%, {c('chrome_low')} 84%, {c('chrome_reflect')} 100%)")
+    unified = f"linear-gradient(to bottom, {c('chrome_top')}, {c('chrome_mid')} 55%, {c('chrome_low')})"
     face = f"{lens.format(a=0.6)}, linear-gradient(to bottom, {c('face_hi')}, {c('face_mid')} 48%, {c('face_horizon')} 52%, {c('face_lo')})"
     face_hover = f"{lens.format(a=0.8)}, linear-gradient(to bottom, {c('face_hi')}, {c('face_hi')} 30%, {c('face_horizon')} 52%, {c('face_mid')})"
     pressed = f"linear-gradient(to bottom, {c('face_horizon')}, {c('face_mid')})"
@@ -527,12 +538,16 @@ def gtk_look(v, ed):
       horizon, a lighter reflection), chrome keys, gel on the primary action and the
       selection, fields pressed into the panel, one soft shadow under a window. ── */
 {'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {r}px; box-shadow: 0 {L['shadow_y']}px {L['shadow_blur']}px alpha(#000000, {sh}), 0 0 0 1px {c('rim')}; }}
+/* window headers are unified: one smooth fall of light from the lit top to below the
+   horizon, no hard split (the bar and the keys keep theirs); an unfocused window's header
+   goes flat and quiet */
 headerbar, .titlebar {{
-  background-image: {metal};
+  background-image: {unified};
   border-bottom: 1px solid {c('rim')};
-  box-shadow: inset 0 1px alpha(#FFFFFF, 0.6);
+  box-shadow: inset 0 1px alpha({c('chrome_lip')}, 0.9);
 }}
-headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to bottom, {c('shell_hi')}, {c('shell')}); }}
+headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to bottom, {c('chrome_mid')}, {c('chrome_horizon')}); box-shadow: none; }}
+headerbar:backdrop label, headerbar:backdrop .title {{ color: {c('chrome_ink_off')}; }}
 {title} {{ letter-spacing: 0; text-shadow: 0 1px {c('emboss')}; }}
 button {{
   background-image: {face};
@@ -545,7 +560,7 @@ button {{
 }}
 button:hover {{ background-image: {face_hover}; border-color: {c('rim')}; box-shadow: 0 0 0 2px alpha({c('signal')}, 0.40), 0 1px 2px alpha(#000000, 0.30); }}
 button:active, button:checked {{ background-image: {pressed}; background-color: transparent; color: {c('mark')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.35); }}
-button:disabled {{ background-image: none; background-color: alpha({c('face_mid')}, 0.5); color: alpha({c('mark')}, 0.5); box-shadow: none; }}
+button:disabled {{ background-image: none; background-color: alpha({c('face_mid')}, 0.6); color: {c('mark_off')}; box-shadow: none; }}
 button.flat, headerbar button.flat {{ background-image: none; border-color: transparent; box-shadow: none; text-shadow: none; color: {c('ink')}; }}
 button.flat:hover {{ background-image: {face}; border-color: {c('rim')}; color: {c('mark')}; }}
 headerbar button {{ background-image: {face}; border-color: {c('rim')}; box-shadow: 0 1px 1px alpha(#000000, 0.25); }}
@@ -594,13 +609,11 @@ scrollbar slider {{ border-radius: {cr}px; min-width: 8px; min-height: 8px; back
 notebook > header tab:checked, tabbar tab:selected {{
   background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr}px;
 }}
-/* the sidebar is brushed metal (the media library's source list), so a window is two
-   materials: glass for the content, metal for the places beside it */
+/* the sidebar is a source list: a calm field tinted by the signal beside the glass content,
+   its selection a band of gel */
 .sidebar, placessidebar, .navigation-sidebar, stacksidebar {{
-  background-color: {c('shell')};
-  background-image:
-    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
-    linear-gradient(to right, {c('shell_hi')}, {c('shell')} 30%, {c('shell_lo')});
+  background-color: {c('source')};
+  background-image: none;
   color: {c('ink')};
 }}
 .sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected {{ border-radius: {cr}px; }}
@@ -657,12 +670,15 @@ def qt():
         # QPalette roles in qt6ct order: WindowText Button Light Midlight Dark Mid Text BrightText ButtonText
         # Base Window Shadow Highlight HighlightedText Link LinkVisited AlternateBase NoRole ToolTipBase
         # ToolTipText PlaceholderText Accent
-        roles = [p["ink"], p["raised"], mix(p["raised"], "#FFFFFF", 0.4), mix(p["raised"], "#FFFFFF", 0.2),
-                 p["rule_hi"], p["rule"], p["ink"], p["white"], p["ink"], p["well"], p["floor"], "#000000",
+        # Button and ButtonText are the chrome key's face and its printed mark: whatever Qt draws
+        # from the palette instead of the sheet (dialog buttons, some combo boxes) still reads
+        roles = [p["ink"], p["face_mid"], p["face_hi"], mix(p["face_mid"], p["face_hi"], 0.5),
+                 p["rule_hi"], p["rule"], p["ink"], p["white"], p["mark"], p["well"], p["floor"], "#000000",
                  p["signal"], p["on_signal"], p["info"], p["info"], p["panel"], p["floor"],
                  p["raised"], p["ink"], p["muted"], p["signal"]]
         active = ", ".join(qargb(x) for x in roles)
-        disabled = ", ".join(qargb(p["faint"]) if i in (0, 6, 8) else qargb(x) for i, x in enumerate(roles))
+        off = mix(p["mark"], p["face_mid"], 0.45)                  # disabled text on a key: dimmer, still legible
+        disabled = ", ".join(qargb(off if i == 8 else p["faint"]) if i in (0, 6, 8) else qargb(x) for i, x in enumerate(roles))
         write(f"qt/.config/qt6ct/colors/fui-{ed}.conf",
               f"{banner()}[ColorScheme]\nactive_colors={active}\ndisabled_colors={disabled}\ninactive_colors={active}\n")
         q = lambda k: qcss(p[k])
@@ -724,7 +740,7 @@ def qss_look(p):
     r, cr = LOOK["radius"], LOOK["control"]
     q = lambda k: qcss(p[k])
     v = lambda *stops: "qlineargradient(x1:0, y1:0, x2:0, y2:1, " + ", ".join(f"stop:{t} {q(k)}" for t, k in stops) + ")"
-    metal = v((0, "chrome_lip"), (0.08, "shell_hi"), (0.46, "chrome_mid"), (0.52, "chrome_horizon"), (0.84, "chrome_low"), (1, "chrome_reflect"))
+    metal = v((0, "chrome_lip"), (0.08, "chrome_top"), (0.46, "chrome_mid"), (0.52, "chrome_horizon"), (0.84, "chrome_low"), (1, "chrome_reflect"))
     face = v((0, "face_hi"), (0.48, "face_mid"), (0.52, "face_horizon"), (1, "face_lo"))
     face_hover = v((0, "face_hi"), (0.3, "face_hi"), (0.52, "face_horizon"), (1, "face_mid"))
     pressed = v((0, "face_horizon"), (1, "face_mid"))
@@ -738,6 +754,9 @@ QPushButton, QToolButton {{ background: {face}; color: {q('mark')}; border: 1px 
 QPushButton:hover, QToolButton:hover {{ background: {face_hover}; border-color: {q('signal')}; }}
 QPushButton:pressed, QPushButton:checked, QToolButton:checked, QToolButton:pressed {{ background: {pressed}; border-color: {q('rim')}; }}
 QPushButton:default {{ background: {gel}; color: {q('on_gel')}; border: 1px solid {q('gel_lo')}; }}
+QPushButton:disabled, QToolButton:disabled, QComboBox:disabled {{ color: {q('mark_off')}; }}
+QDialogButtonBox QPushButton {{ color: {q('mark')}; }}
+QDialogButtonBox QPushButton:default {{ color: {q('on_gel')}; }}
 QToolButton[autoRaise="true"] {{ background: transparent; border-color: transparent; color: {q('ink')}; }}
 QToolButton[autoRaise="true"]:hover {{ background: {face}; border-color: {q('rim')}; color: {q('mark')}; }}
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{ border-radius: {cr}px; padding: 3px 12px; border: 1px solid {q('edge')}; }}
@@ -1041,7 +1060,7 @@ def startpage():
     tpl = (ROOT / "theme/templates/start.html.in").read_text()
     keys = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint", "signal",
             "signal_hi", "signal_dim", "on_signal", "counter", "ok", "warn", "bad", "info", "glass", "arc", "bead",
-            "shell", "shell_hi", "readout", "readout_ink", "chrome_lip", "chrome_mid", "chrome_horizon", "chrome_low",
+            "shell", "shell_hi", "readout", "readout_ink", "chrome_lip", "chrome_top", "chrome_mid", "chrome_horizon", "chrome_low",
             "chrome_reflect", "rim", "gel_hi", "gel_mid", "gel_lo", "on_gel", "face_hi", "face_mid", "face_horizon",
             "face_lo", "mark", "emboss"]
     d0 = E(EDS[0])

@@ -237,7 +237,7 @@ def greeter_fit(tier, H):
     out = ""
     inset = round(H * TOK["tier"][tier]["inset"])
     if inset:
-        r = LOOK["radius"]
+        r = LOOK["shell"]
         out += f"""/* ── a tube: the safe inset ({inset} px) ── */
 {CLOCK} {{ margin-top: {inset}px; border-top-width: 1px; border-radius: {r}px; }}
 overlay > box {{ margin-bottom: {inset}px; }}
@@ -262,15 +262,15 @@ def greeter_look(C, ed):
     # embossed the other way
     title = max((C["ink"], C["mark"]), key=lambda c: contrast(c, C["chrome_mid"]))
     title_emboss = alpha("#000000", 0.5) if title == C["ink"] else alpha(C["face_hi"], 0.7)
-    r = L["radius"]
+    r = L["shell"]                                      # the shell is round; its parts boxy
     lens = "radial-gradient(ellipse at 50% 0%, alpha(white, {a}), alpha(white, 0) 62%)"
     # the title strip is the top 50 px of the panel: the greeting's row (15 px margin, the
     # label, 15 px below it); a lit lip, the face, the horizon, a lighter reflection. The lip
     # is kept short so the greeting (15-34 px) sits on the face and below it, never on the lit band
-    strip = (f"linear-gradient(to bottom, {C['chrome_lip']} 0px, {C['shell_hi']} 2px, {C['chrome_mid']} 13px, {C['chrome_mid']} 24px, "
+    strip = (f"linear-gradient(to bottom, {C['chrome_lip']} 0px, {C['chrome_top']} 2px, {C['chrome_mid']} 13px, {C['chrome_mid']} 24px, "
              f"{C['chrome_horizon']} 26px, {C['chrome_low']} 44px, {C['chrome_reflect']} 49px, {C['rim']} 49px, "
              f"{C['rim']} 50px, transparent 50px)")
-    body = f"linear-gradient(to bottom, {C['shell_hi']}, {C['shell']} 90px, {C['shell']} 70%, {C['shell_lo']})"
+    body = f"linear-gradient(to bottom, {C['chrome_top']}, {C['shell']} 90px, {C['shell']} 70%, {C['shell_lo']})"
     face = (f"{lens.format(a=0.6)}, linear-gradient(to bottom, {C['face_hi']}, {C['face_mid']} 48%, "
             f"{C['face_horizon']} 52%, {C['face_lo']})")
     face_hover = (f"{lens.format(a=0.85)}, linear-gradient(to bottom, {C['face_hi']}, {C['face_hi']} 30%, "
@@ -342,7 +342,7 @@ button.destructive-action:hover {{ box-shadow: 0 0 0 2px {alpha(C['bad'], 0.55)}
 
 /* ── the lists that drop from User and Session ── */
 popover > contents {{
-  background-color: {C['shell']}; background-image: linear-gradient(to bottom, {C['shell_hi']}, {C['shell']} 24px);
+  background-color: {C['shell']}; background-image: linear-gradient(to bottom, {C['chrome_top']}, {C['shell']} 24px);
   border: 1px solid {C['rim']}; border-radius: {L['radius']}px; padding: 4px; box-shadow: {drop};
 }}
 popover modelbutton, popover row {{ color: {C['ink']}; border-radius: {cr}px; padding: 4px 12px; }}

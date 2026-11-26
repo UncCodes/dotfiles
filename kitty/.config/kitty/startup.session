@@ -10,10 +10,6 @@ new_tab SHELL
 cd ~
 launch zsh
 
-new_tab FILES
-cd ~
-launch zsh -ic 'yazi; exec zsh'
-
 new_tab GIT
 cd ~/.dotfiles
 launch zsh -ic 'lazygit; exec zsh'

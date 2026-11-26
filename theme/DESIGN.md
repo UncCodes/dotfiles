@@ -31,9 +31,10 @@ keys: [`../docs/KEYS.md`](../docs/KEYS.md).
 6. **Quiet at rest, loud on event.** Nothing loops for attention. When something needs the
    operator now, the alert takeover turns the chrome's signal to the bad colour: one
    transition, then steady. Nothing flashes.
-7. **Precision, boxy.** A 4 px unit, integer strokes, one corner language: 4 px panels and
-   windows, 2 px keys, fields and rows (only a radio stays round: its shape is its meaning),
-   tabular figures with a slashed zero.
+7. **Precision: a round shell, boxy parts.** A 4 px unit, integer strokes. The device's outer
+   shells are round (the bar a capsule; the launcher, console, OSD, lock and login panels at
+   14 to 16 px); everything on them is boxy: 4 px windows and panels, 2 px keys, fields and
+   rows (only a radio stays round: its shape is its meaning). Tabular figures with a slashed zero.
 8. **Legible before cool.** Contrast floors, flash limits and reduced motion come first;
    the finish, the gloss and the glow are the first things cut. Glass is the material and stays on
    every tier, so text on it is checked against the glass over the darkest backdrop.
@@ -188,7 +189,7 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 
 ## Don't
 
-- No pills or circles (but radios and LEDs), and no corner over 4 px.
+- No pills or circles among the parts (but radios and LEDs); round corners only on the outer shells.
 - No gloss without a job: gel only on the primary action, the selection and the current
   workspace; the shadow only under what floats; glow only on lit readouts and gel.
 - No pixel or segment typefaces: the type is the instrument's three voices.
@@ -206,7 +207,10 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 | Chrome keys (`face_*`, text in `mark`), with a specular band | pressable | buttons, workspaces, the badge, hovered readouts |
 | Gel (`gel_*`, text in `on_gel`), with a specular band | the primary action, the selection, the current workspace | suggested buttons, selected rows, the active workspace |
 | Readouts (`readout`, `readout_ink`), glowing | live values | the bar's clock, the lock screen's time, the OSD level, the player |
-| One soft shadow | floating | windows, menus, tooltips; never between flat panels |
+| One soft shadow | floating | windows (deep and soft under the focused one, light under the rest), menus, tooltips; never between flat panels |
+| Unified chrome (one smooth fall of light, no horizon) | a window's header | GTK header bars, labwc title bars; flat and quiet when unfocused |
+| Source list (`source`: the panel tinted by the signal) | the places beside the content | app sidebars, their selection a band of gel |
+| The pointer: chrome with a gel inset (theme/make-cursor.py) | where you are | every cursor shape, drawn per edition; busy is a ring of gel keys lighting in turn |
 
 ### One family, many parts
 

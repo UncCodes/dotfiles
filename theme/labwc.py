@@ -104,17 +104,15 @@ window.button.hover.bg.color: #00000000
     title = max((p["ink"], p["mark"]), key=lambda c: contrast(c, p["chrome_mid"]))
     dark = is_dark(ed)
     return head + f"""
-# the chrome title bar, split at the horizon: top half lip -> lit face, bottom half horizon -> reflection
-window.active.title.bg: Gradient SplitVertical
-window.active.title.bg.color.splitTo: {hx(p['chrome_lip'])}
-window.active.title.bg.color: {hx(p['chrome_mid'])}
-window.active.title.bg.colorTo: {hx(p['chrome_horizon'])}
-window.active.title.bg.colorTo.splitTo: {hx(p['chrome_reflect'])}
+# the title bar: unified chrome, one smooth fall of light; quieter when the window is unfocused
+window.active.title.bg: Gradient Vertical
+window.active.title.bg.color: {hx(p['chrome_top'])}
+window.active.title.bg.colorTo: {hx(p['chrome_low'])}
 window.inactive.title.bg: Gradient Vertical
-window.inactive.title.bg.color: {hx(p['shell_hi'])}
-window.inactive.title.bg.colorTo: {hx(p['shell'])}
+window.inactive.title.bg.color: {hx(p['chrome_mid'])}
+window.inactive.title.bg.colorTo: {hx(p['chrome_horizon'])}
 window.active.label.text.color: {hx(title)}
-window.inactive.label.text.color: {hx(p['muted'])}
+window.inactive.label.text.color: {hx(p['chrome_ink_off'])}
 window.label.text.justify: Left
 window.active.border.color: {hx(p['chrome_mid'])}
 window.inactive.border.color: {hx(p['shell'])}
@@ -145,7 +143,6 @@ KEYS = [   # (key, action xml, what it does) -- W is SUPER
     ("W-slash", f'<action name="Execute" command="{FUI} keys"/>', "this list of keys"),
     ("W-b", '<action name="Execute" command="firefox"/>', "browser"),
     ("W-e", '<action name="Execute" command="thunar"/>', "file manager"),
-    ("W-y", f'<action name="Execute" command="{FUI} tui yazi"/>', "files in the terminal"),
     ("W-a", '<action name="Execute" command="pavucontrol"/>', "audio mixer"),
     ("W-S-n", '<action name="Execute" command="nm-connection-editor"/>', "network connections"),
     ("W-n", '<action name="Execute" command="swaync-client -t -sw"/>', "notifications and control centre"),

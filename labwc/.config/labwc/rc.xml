@@ -26,7 +26,6 @@
     <keybind key="W-slash"><action name="Execute" command="~/.local/bin/fui keys"/></keybind>   <!-- this list of keys -->
     <keybind key="W-b"><action name="Execute" command="firefox"/></keybind>   <!-- browser -->
     <keybind key="W-e"><action name="Execute" command="thunar"/></keybind>   <!-- file manager -->
-    <keybind key="W-y"><action name="Execute" command="~/.local/bin/fui tui yazi"/></keybind>   <!-- files in the terminal -->
     <keybind key="W-a"><action name="Execute" command="pavucontrol"/></keybind>   <!-- audio mixer -->
     <keybind key="W-S-n"><action name="Execute" command="nm-connection-editor"/></keybind>   <!-- network connections -->
     <keybind key="W-n"><action name="Execute" command="swaync-client -t -sw"/></keybind>   <!-- notifications and control centre -->

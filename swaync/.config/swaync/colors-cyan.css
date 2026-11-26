@@ -40,10 +40,11 @@
 @define-color sheen rgba(255, 255, 255, 0.141);
 @define-color shade rgba(0, 0, 0, 0.451);
 @define-color chrome_lip #C9CFD1;
-@define-color chrome_mid #566B6F;
-@define-color chrome_horizon #2D454A;
-@define-color chrome_low #294045;
-@define-color chrome_reflect #52676C;
+@define-color chrome_top #52676C;
+@define-color chrome_mid #3C5459;
+@define-color chrome_horizon #2A4246;
+@define-color chrome_low #25393D;
+@define-color chrome_reflect #3F575B;
 @define-color shell_lo #2A4246;
 @define-color rim #121C1E;
 @define-color tray_top #182427;
@@ -57,6 +58,9 @@
 @define-color face_horizon #5A6F73;
 @define-color face_lo #6D8083;
 @define-color mark #0C1314;
+@define-color mark_off #4D5658;
+@define-color source #0D1E24;
+@define-color chrome_ink_off #BAC4C9;
 @define-color emboss rgba(0, 0, 0, 0.549);
 @define-color void_crt #000000;
 @define-color floor_crt #000000;

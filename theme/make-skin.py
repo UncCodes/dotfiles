@@ -29,7 +29,7 @@ S = 4                                                           # supersampling
 FONT = HERE.parent / "fui/.local/share/fonts/fui/Michroma-Regular.ttf"   # the vendored brand face
 # corners in skin pixels (the skin is drawn at 1x on a 275 px window; the desktop's 4 px panels
 # and 2 px controls become these): the shell, trays and readouts, keys
-R_SHELL, R_TRAY, R_KEY = 2.0, 1.5, 1.2
+R_SHELL, R_TRAY, R_KEY = 7.0, 1.5, 1.2   # the shell round, its parts boxy
 
 # ── the format's 5x6 text font (the marquee): a 4x5 face, drawn crisp ───
 GLYPHS = {

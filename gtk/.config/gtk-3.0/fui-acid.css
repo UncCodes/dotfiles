@@ -42,10 +42,11 @@
 @define-color fui_sheen rgba(255, 255, 255, 0.141);
 @define-color fui_shade rgba(0, 0, 0, 0.451);
 @define-color fui_chrome_lip #CFD1CA;
-@define-color fui_chrome_mid #6A6F5C;
-@define-color fui_chrome_horizon #434A33;
-@define-color fui_chrome_low #3E4530;
-@define-color fui_chrome_reflect #666C58;
+@define-color fui_chrome_top #666C58;
+@define-color fui_chrome_mid #535943;
+@define-color fui_chrome_horizon #404631;
+@define-color fui_chrome_low #373D2A;
+@define-color fui_chrome_reflect #555B45;
 @define-color fui_shell_lo #404631;
 @define-color fui_rim #1B1E15;
 @define-color fui_tray_top #24271B;
@@ -59,6 +60,9 @@
 @define-color fui_face_horizon #6E7360;
 @define-color fui_face_lo #7E8372;
 @define-color fui_mark #12140E;
+@define-color fui_mark_off #55584F;
+@define-color fui_source #1D2213;
+@define-color fui_chrome_ink_off #C9CDC1;
 @define-color fui_emboss rgba(0, 0, 0, 0.549);
 @define-color fui_void_crt #000000;
 @define-color fui_floor_crt #000000;
@@ -255,13 +259,17 @@ separator { min-height: 1px; min-width: 1px; background-color: @fui_rule; }
 /* ── the look: an owned device, cut square. Chrome headers (a bright lip, the lit face, a dark
       horizon, a lighter reflection), chrome keys, gel on the primary action and the
       selection, fields pressed into the panel, one soft shadow under a window. ── */
-.csd decoration, decoration { border-radius: 4px; box-shadow: 0 4px 16px alpha(#000000, 0.36), 0 0 0 1px @fui_rim; }
+.csd decoration, decoration { border-radius: 4px; box-shadow: 0 8px 28px alpha(#000000, 0.48), 0 0 0 1px @fui_rim; }
+/* window headers are unified: one smooth fall of light from the lit top to below the
+   horizon, no hard split (the bar and the keys keep theirs); an unfocused window's header
+   goes flat and quiet */
 headerbar, .titlebar {
-  background-image: linear-gradient(to bottom, @fui_chrome_lip 0%, @fui_shell_hi 8%, @fui_chrome_mid 46%, @fui_chrome_horizon 52%, @fui_chrome_low 84%, @fui_chrome_reflect 100%);
+  background-image: linear-gradient(to bottom, @fui_chrome_top, @fui_chrome_mid 55%, @fui_chrome_low);
   border-bottom: 1px solid @fui_rim;
-  box-shadow: inset 0 1px alpha(#FFFFFF, 0.6);
+  box-shadow: inset 0 1px alpha(@fui_chrome_lip, 0.9);
 }
-headerbar:backdrop, .titlebar:backdrop { background-image: linear-gradient(to bottom, @fui_shell_hi, @fui_shell); }
+headerbar:backdrop, .titlebar:backdrop { background-image: linear-gradient(to bottom, @fui_chrome_mid, @fui_chrome_horizon); box-shadow: none; }
+headerbar:backdrop label, headerbar:backdrop .title { color: @fui_chrome_ink_off; }
 headerbar .title, headerbar label.title { letter-spacing: 0; text-shadow: 0 1px @fui_emboss; }
 button {
   background-image: radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%), linear-gradient(to bottom, @fui_face_hi, @fui_face_mid 48%, @fui_face_horizon 52%, @fui_face_lo);
@@ -274,7 +282,7 @@ button {
 }
 button:hover { background-image: radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.8), alpha(#FFFFFF, 0) 60%), linear-gradient(to bottom, @fui_face_hi, @fui_face_hi 30%, @fui_face_horizon 52%, @fui_face_mid); border-color: @fui_rim; box-shadow: 0 0 0 2px alpha(@fui_signal, 0.40), 0 1px 2px alpha(#000000, 0.30); }
 button:active, button:checked { background-image: linear-gradient(to bottom, @fui_face_horizon, @fui_face_mid); background-color: transparent; color: @fui_mark; box-shadow: inset 0 2px 3px alpha(#000000, 0.35); }
-button:disabled { background-image: none; background-color: alpha(@fui_face_mid, 0.5); color: alpha(@fui_mark, 0.5); box-shadow: none; }
+button:disabled { background-image: none; background-color: alpha(@fui_face_mid, 0.6); color: @fui_mark_off; box-shadow: none; }
 button.flat, headerbar button.flat { background-image: none; border-color: transparent; box-shadow: none; text-shadow: none; color: @fui_ink; }
 button.flat:hover { background-image: radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%), linear-gradient(to bottom, @fui_face_hi, @fui_face_mid 48%, @fui_face_horizon 52%, @fui_face_lo); border-color: @fui_rim; color: @fui_mark; }
 headerbar button { background-image: radial-gradient(ellipse at 50% 0%, alpha(#FFFFFF, 0.6), alpha(#FFFFFF, 0) 60%), linear-gradient(to bottom, @fui_face_hi, @fui_face_mid 48%, @fui_face_horizon 52%, @fui_face_lo); border-color: @fui_rim; box-shadow: 0 1px 1px alpha(#000000, 0.25); }
@@ -306,7 +314,7 @@ row:selected, list row:selected, treeview.view:selected {
   background-image: linear-gradient(to bottom, @fui_gel_hi, @fui_gel_mid 48%, @fui_signal 52%, @fui_gel_lo); color: @fui_on_gel; box-shadow: none; border-radius: 2px;
 }
 row:selected label, list row:selected label { color: @fui_on_gel; }
-popover, menu, .menu, .context-menu { border: 1px solid @fui_rim; border-radius: 4px; box-shadow: 0 4px 16px alpha(#000000, 0.36); }
+popover, menu, .menu, .context-menu { border: 1px solid @fui_rim; border-radius: 4px; box-shadow: 0 8px 28px alpha(#000000, 0.48); }
 menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu row:hover {
   background-image: linear-gradient(to bottom, @fui_gel_hi, @fui_gel_mid 48%, @fui_signal 52%, @fui_gel_lo); color: @fui_on_gel; box-shadow: none; border-radius: 2px;
 }
@@ -323,13 +331,11 @@ scrollbar slider { border-radius: 2px; min-width: 8px; min-height: 8px; backgrou
 notebook > header tab:checked, tabbar tab:selected {
   background-image: linear-gradient(to bottom, @fui_gel_hi, @fui_gel_mid 48%, @fui_signal 52%, @fui_gel_lo); color: @fui_on_gel; box-shadow: none; border-radius: 2px;
 }
-/* the sidebar is brushed metal (the media library's source list), so a window is two
-   materials: glass for the content, metal for the places beside it */
+/* the sidebar is a source list: a calm field tinted by the signal beside the glass content,
+   its selection a band of gel */
 .sidebar, placessidebar, .navigation-sidebar, stacksidebar {
-  background-color: @fui_shell;
-  background-image:
-    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
-    linear-gradient(to right, @fui_shell_hi, @fui_shell 30%, @fui_shell_lo);
+  background-color: @fui_source;
+  background-image: none;
   color: @fui_ink;
 }
 .sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected { border-radius: 2px; }

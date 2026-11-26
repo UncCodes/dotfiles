@@ -184,7 +184,7 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd", scene=None):
     routes = scene.packets()
     ff = subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-         "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "animation",
+         "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-tune", "animation",
          "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
         stdin=subprocess.PIPE)
     moving = getattr(scene, "frame", None)           # the light scenes draw whole frames

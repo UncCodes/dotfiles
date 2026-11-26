@@ -19,7 +19,7 @@ if not ok or type(T) ~= "table" or type(T.editions) ~= "table" then   -- keeps H
                           glow = false, protect = false } },
         desktop = { dark = { gtk_base = "adw-gtk3-dark", icon_theme = "Papirus-Dark", scheme = "prefer-dark" },
                     light = { gtk_base = "adw-gtk3", icon_theme = "Papirus-Light", scheme = "prefer-light" } },
-        cursor = { theme = "Adwaita", size = 24 },
+        cursor = { theme = "fui", size = 24 },
         geometry = { radius = 4, gaps_in = 6, gaps_out = 14 },
         opacity = { window_active = 0.98, window_inactive = 0.94 },
         blur = { size = 6, passes = 3, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
@@ -146,11 +146,11 @@ hl.config({
         inactive_opacity = TI.glass and T.opacity.window_inactive or 1.0,
         shadow = {
             enabled = true,
-            range = LK.shadow_blur or 16,
-            render_power = 3,
+            range = LK.shadow_blur or 28,
+            render_power = 2,                  -- a long, soft fall-off
             offset = "0 " .. tostring(LK.shadow_y or 6),
             color = rgba("000000FF", C.scheme == "dark" and (LK.shadow_dark or 0.36) or (LK.shadow_light or 0.22)),
-            color_inactive = rgba("000000FF", 0.14),
+            color_inactive = rgba("000000FF", C.scheme == "dark" and 0.20 or 0.12),
         },
         blur = {
             enabled    = TI.glass,
@@ -265,7 +265,6 @@ hl.bind(k("space"), hl.dsp.exec_cmd(fui .. "palette"))                          
 hl.bind(k("slash"), hl.dsp.exec_cmd(fui .. "keys"))                              -- this list of keys
 hl.bind(k("B"), hl.dsp.exec_cmd(browser))                                        -- browser
 hl.bind(k("E"), hl.dsp.exec_cmd(fileManager))                                    -- file manager
-hl.bind(k("Y"), hl.dsp.exec_cmd(fui .. "tui yazi"))                              -- files in the terminal
 hl.bind(k("A"), hl.dsp.exec_cmd("pavucontrol"))                                  -- audio mixer
 hl.bind(k("SHIFT + N"), hl.dsp.exec_cmd("nm-connection-editor"))                 -- network connections
 hl.bind(k("N"), hl.dsp.exec_cmd("swaync-client -t -sw"))                         -- notifications and control centre
