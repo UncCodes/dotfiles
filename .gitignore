@@ -5,7 +5,7 @@ hypr/.config/hypr/local.lua
 
 # ...but not the ~/.local folder of the fui package (fui mode, fui bar, fui wallpaper, ...)
 !/fui/.local/
-!/labwc/.local/
+!/kde/.local/
 
 # Python caches
 __pycache__/

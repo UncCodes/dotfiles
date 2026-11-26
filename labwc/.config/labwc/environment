@@ -1,6 +1,0 @@
-# fui // labwc: the session's environment (the same as Hyprland's)
-XCURSOR_THEME=fui
-XCURSOR_SIZE=24
-QT_QPA_PLATFORM=wayland;xcb
-QT_QPA_PLATFORMTHEME=qt5ct
-XDG_CURRENT_DESKTOP=labwc:wlroots

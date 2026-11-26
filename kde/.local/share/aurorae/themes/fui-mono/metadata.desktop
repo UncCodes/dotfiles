@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=fui mono
+Comment=Chrome title bar, square gel keys (theme/kde.py)
+X-KDE-PluginInfo-Name=fui-mono
+X-KDE-PluginInfo-Version=1
+X-KDE-PluginInfo-License=MIT
+X-KDE-PluginInfo-EnabledByDefault=true
+X-Plasma-API=declarativeappletscript

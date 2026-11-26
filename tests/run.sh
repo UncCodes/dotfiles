@@ -99,11 +99,11 @@ t "corners: round outer shells (18 px at most), boxy parts (no pills or circles 
 t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
   ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests" | grep -v "RETIRED="' _ "$DOTS"
 t "one tool per job: windowed settings apps, one file manager, one monitor (no nmtui, wiremix, bluetui, yazi, nvtop)" bash -c '
-  ! git -C "$1" grep -n -i -E "nmtui|wiremix|bluetui|yazi|nvtop" -- hypr waybar swaync labwc kitty zsh theme/labwc.py packages.txt aur.txt fui/.local/bin/fui \
+  ! git -C "$1" grep -n -i -E "nmtui|wiremix|bluetui|yazi|nvtop" -- hypr waybar swaync kde kitty zsh theme/kde.py packages.txt aur.txt fui/.local/bin/fui \
       | grep -v "RETIRED=\|tui <command>"' _ "$DOTS"
 t "one Qt platform theme everywhere (qt5ct: Qt5 and Qt6 apps share the colours and sheet)" bash -c '
   grep -q "QT_QPA_PLATFORMTHEME\", \"qt5ct\"" "$1/hypr/.config/hypr/hyprland.lua" &&
-  grep -qx "QT_QPA_PLATFORMTHEME=qt5ct" "$1/labwc/.config/labwc/environment" &&
+  grep -qx "unset QT_QPA_PLATFORMTHEME" "$1/kde/.config/plasma-workspace/env/fui.sh" &&
   grep -qx "QT_QPA_PLATFORMTHEME=qt5ct" "$1/fui/.config/environment.d/60-fui.conf" &&
   grep -q "qt6ct/colors/fui-" "$1/theme/templates/qt5ct.conf.in"' _ "$DOTS"
 t "spacing on the 4 px scale (gaps, space scale)" python3 -c '
@@ -255,9 +255,10 @@ for m in $EDITIONS; do
 done
 t "all twelve editions cycle in order and wrap" bash -c 'f="$HOME/.local/bin/fui"; set -- $1; first=$1; "$f" mode "$first" --quiet
   for want in "${@:2}" "$first"; do "$f" mode toggle --quiet; [ "$("$f" mode status)" = "$want" ] || { echo "expected $want, got $("$f" mode status)"; exit 1; }; done' _ "$EDITIONS"
-t "links from the two looks are cleared (the stowed labwc rc stays)" bash -c 'f="$HOME/.local/bin/fui"
+t "links from the two looks and from labwc are cleared" bash -c 'f="$HOME/.local/bin/fui"
+  mkdir -p "$HOME/.local/share/themes" && ln -sfn fui-cyan "$HOME/.local/share/themes/fui" &&
   ln -sfn look-y2k.css "$HOME/.config/waybar/fui-look.css" && "$f" mode apply --quiet &&
-  [ ! -e "$HOME/.config/waybar/fui-look.css" ] && [ ! -L "$HOME/.config/waybar/fui-look.css" ] && [ -s "$HOME/.config/labwc/rc.xml" ]'
+  [ ! -L "$HOME/.config/waybar/fui-look.css" ] && [ ! -L "$HOME/.local/share/themes/fui" ]'
 t "fui skin draws the player skin for the edition and points Audacious at it" bash -c 'f="$HOME/.local/bin/fui"
   "$f" mode slate --quiet && FUI_SKIN_ALWAYS=1 "$f" skin apply --quiet &&
   [ -s "$HOME/.local/share/fui/skin/main.bmp" ] && [ "$(readlink "$HOME/.local/share/fui/skin")" = "$HOME/.local/share/fui/skins/slate" ] &&
@@ -318,20 +319,32 @@ t "boot splash, login screen and consoles render (and the splash animates its tr
     [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
   done
   grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
-t "labwc: a theme per edition (themerc and square gel keys) and one rc, all well formed" bash -c '
-  for d in "$1"/labwc/.local/share/themes/fui-*/openbox-3; do
-    [ -s "$d/themerc" ] || { echo "no themerc in $d"; exit 1; }
-    for b in iconify max max_toggled close; do for v in "" _hover; do for s in active inactive; do
-      [ -s "$d/$b$v-$s.svg" ] || { echo "missing $d/$b$v-$s.svg"; exit 1; }
-    done; done; done
+t "Plasma: a colour scheme, a window frame and a Plasma style per edition, all well formed" bash -c '
+  n=$(python3 -c "import tomllib,sys; print(len(tomllib.load(open(sys.argv[1],\"rb\"))[\"meta\"][\"editions\"]))" "$1/theme/tokens.toml")
+  [ "$(ls "$1"/kde/.local/share/color-schemes/Fui*.colors | wc -l)" -eq "$n" ] || { echo "colour schemes missing"; exit 1; }
+  for d in "$1"/kde/.local/share/aurorae/themes/fui-*; do
+    for f in metadata.desktop decoration.svg close.svg minimize.svg maximize.svg restore.svg "$(basename "$d")rc"; do
+      [ -s "$d/$f" ] || { echo "missing $d/$f"; exit 1; }
+    done
   done
-  [ "$(ls -d "$1"/labwc/.local/share/themes/fui-* | wc -l)" -eq "$(python3 -c "import tomllib,sys; print(len(tomllib.load(open(sys.argv[1],\"rb\"))[\"meta\"][\"editions\"]))" "$1/theme/tokens.toml")" ] || exit 1
+  for d in "$1"/kde/.local/share/plasma/desktoptheme/fui-*; do
+    for f in metadata.json colors widgets/panel-background.svg dialogs/background.svg widgets/tooltip.svg; do
+      [ -s "$d/$f" ] || { echo "missing $d/$f"; exit 1; }
+    done
+  done
   python3 -c "
-import sys, xml.dom.minidom as m, glob
-for f in glob.glob(sys.argv[1] + \"/labwc/.config/labwc/*.xml\") + glob.glob(sys.argv[1] + \"/labwc/.local/share/themes/*/openbox-3/*.svg\"):
-    m.parse(f)
-" "$1"
-  [ "$(readlink "$HOME/.local/share/themes/fui")" = "fui-$("$HOME/.local/bin/fui" mode status)" ] || { echo "the labwc theme link does not follow the edition"; exit 1; }' _ "$DOTS"
+import sys, glob, json, xml.dom.minidom as m
+for f in glob.glob(sys.argv[1] + \"/kde/.local/share/**/*.svg\", recursive=True):
+    ids = {e.getAttribute(\"id\") for e in m.parse(f).getElementsByTagName(\"*\")}
+    if \"decoration.svg\" in f:
+        assert {\"decoration-topleft\", \"decoration-center\", \"decoration-inactive-bottomright\"} <= ids, f
+    elif \"/aurorae/\" in f:
+        assert {\"active-center\", \"hover-center\", \"pressed-center\", \"inactive-center\"} <= ids, f
+    else:
+        assert {\"topleft\", \"center\", \"bottomright\"} <= ids or {\"south-center\"} <= ids, f
+for f in glob.glob(sys.argv[1] + \"/kde/.local/share/plasma/desktoptheme/*/metadata.json\"):
+    json.load(open(f))
+" "$1"' _ "$DOTS"
 t "rofi themes put no @reference inside linear-gradient() (rofi rejects it)" bash -c '
   ! grep -n "linear-gradient([^)]*@" "$1"/rofi/.config/rofi/*.rasi' _ "$DOTS"
 t "the login screen wears the look, and styles only ReGreet's two panels" bash -c '

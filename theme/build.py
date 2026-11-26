@@ -1205,15 +1205,11 @@ def meters():
           f'  "battery": {{ "format-icons": {arr} }},\n  "backlight": {{ "format-icons": {arr} }}\n}}\n')
 
 
-# ── labwc: the second session (theme/labwc.py) ───────────────────────────
-def labwc_files():
-    import labwc
-    for ed in EDS:
-        base = f"labwc/.local/share/themes/fui-{ed}/openbox-3"
-        write(f"{base}/themerc", labwc.themerc(ed))
-        for name, svg in labwc.buttons(ed).items():
-            write(f"{base}/{name}", svg)
-    write("labwc/.config/labwc/rc.xml", labwc.rc())
+# ── KDE Plasma: the second session (theme/kde.py) ──────────────────────
+def kde_files():
+    import kde
+    for path, text in kde.files().items():
+        write(path, text)
 
 
 # ── run ─────────────────────────────────────────────────────────────────
@@ -1231,7 +1227,7 @@ startpage()
 docs()
 keys()
 meters()
-labwc_files()
+kde_files()
 
 _, failures = contrast_rows()
 if CHECK:
