@@ -208,7 +208,7 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 | Gel (`gel_*`, text in `on_gel`), with a specular band | the primary action, the selection, the current workspace | suggested buttons, selected rows, the active workspace |
 | Readouts (`readout`, `readout_ink`), glowing | live values | the bar's clock, the lock screen's time, the OSD level, the player |
 | One soft shadow | floating | windows (deep and soft under the focused one, light under the rest), menus, tooltips; never between flat panels |
-| Unified chrome (one smooth fall of light, no horizon) | a window's header | GTK header bars, labwc title bars; flat and quiet when unfocused |
+| Unified chrome (one smooth fall of light, no horizon) | a window's header | GTK header bars, Plasma's window frames; flat and quiet when unfocused |
 | Source list (`source`: the panel tinted by the signal) | the places beside the content | app sidebars, their selection a band of gel |
 | The pointer: chrome with a gel inset (theme/make-cursor.py) | where you are | every cursor shape, drawn per edition; busy is a ring of gel keys lighting in turn |
 
@@ -224,7 +224,8 @@ reads as designed rather than skinned:
 | Control centre | brushed metal; its switches matte rubber keys, a lit strip along the foot when on |
 | Launcher | a chrome title strip, a pressed-in search field, a striped library list, gel on the selection |
 | Volume overlay | an LCD panel in a shell bezel: lit segments, the number glowing |
-| Window frame (labwc) | a chrome title bar split at the horizon, square gel keys (red gel for close), a soft shadow |
+| Window frame (Plasma) | unified chrome, the title left, square gel keys (red gel for close), a 4 px chassis, a soft shadow |
+| Panel and pop-ups (Plasma) | round chrome shells; Plasma's own parts on them in the edition's colour scheme |
 | App sidebars (GTK) | brushed metal beside the glass content |
 | Music player (Audacious) | a chrome shell, square transport keys in a tray, gel play, glowing segment digits |
 
@@ -233,12 +234,13 @@ never appears on the bar. Variety comes from the part, not from new colours.
 
 ### Two sessions
 
-Hyprland (tiling, no title bars) and labwc (overlapping windows with title bars, Openbox's
-manner) are both offered at the sign-in screen. The bar, notifications, launcher, lock,
-wallpaper and `fui` are the same in both; labwc shows its windows as a taskbar where Hyprland
-shows the workspaces and the window title, and draws each window's frame in the look
-(theme/labwc.py). The keys match where the idea is the same; labwc adds window keys of its own
-(`SUPER+Up` maximise, `SUPER+Down` minimise, `SUPER+Left/Right` fill a half, `ALT+Tab`).
+Hyprland (tiling, no title bars, our bar and tools) and KDE Plasma (the full desktop) are
+both offered at the sign-in screen. Plasma keeps its own shell, settings and keys; it is
+dressed in the edition rather than rebuilt (theme/kde.py): a colour scheme (keys are chrome
+faces printed in the mark, the selection is the signal, headers are chrome), an Aurorae window
+frame, a Plasma style whose panel and pop-ups are round chrome shells, the cursor and the
+edition's backdrop. `fui plasma apply` points Plasma at the current edition at sign-in and
+whenever `fui mode` runs inside it. One keyring (gnome-keyring) serves both sessions.
 
 Material roles exist in every edition (editions without a chassis derive them),
 so a component can always resolve them. Contrast is checked for `ink` on the shell and lit

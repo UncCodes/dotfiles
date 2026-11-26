@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=fui
+Comment=Dress Plasma in the current edition (colours, window frame, style, cursor, wallpaper)
+Exec=sh -c '"$HOME/.local/bin/fui" plasma apply'
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true

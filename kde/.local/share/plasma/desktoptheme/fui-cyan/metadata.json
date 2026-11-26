@@ -1,0 +1,10 @@
+{
+  "KPlugin": {
+    "Id": "fui-cyan",
+    "Name": "fui cyan",
+    "Description": "Round chrome shells for the panel and pop-ups (theme/kde.py)",
+    "License": "MIT",
+    "Version": "1"
+  },
+  "X-Plasma-API-Minimum-Version": "6.0"
+}

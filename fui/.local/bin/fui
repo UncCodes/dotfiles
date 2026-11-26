@@ -2,6 +2,7 @@
 # fui // one command for the desktop.
 #
 #   fui mode [toggle|pick|<edition>|apply|status]    the edition (toggle: the next one; pick: from a list)
+#   fui plasma [apply|status]                        the Plasma session in the edition (colours, frame, style)
 #   fui cursor [apply|status]                        the pointer: chrome with a gel inset, drawn from the edition
 #   fui skin [apply|status]                          the music player's skin, drawn from the edition (Audacious)
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
@@ -124,13 +125,13 @@ edition_blurb() {   # one line per edition for the picker
   esac
 }
 
-in_session() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || [ -n "${LABWC_PID:-}" ]; }   # a desktop session is running
+in_session() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }   # our desktop is running (Plasma keeps its own shell)
+in_plasma() { [[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* ]]; }      # the Plasma session
 
 restart_services() {   # tell running apps about a new edition, tier or alert
   pkill -USR1 -x kitty 2>/dev/null                 # kitty re-reads kitty.conf
   in_session || return 0
-  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then t3 hyprctl reload >/dev/null 2>&1   # window edges, glass, background
-  else kill -HUP "$LABWC_PID" 2>/dev/null; fi       # labwc re-reads rc.xml and the theme
+  t3 hyprctl reload >/dev/null 2>&1                # window edges, glass, background
   bar_start
   have swaync-client && pgrep -x swaync >/dev/null && t3 swaync-client -rs >/dev/null 2>&1
   if pgrep -x swayosd-server >/dev/null; then pkill -x swayosd-server; detach swayosd-server; fi
@@ -180,8 +181,6 @@ cmd_mode() {
   for app in waybar swaync swayosd; do
     mode_link "$CFG/$app" "colors-$new.css" fui-colors.css
   done
-  mkdir -p "$HOME/.local/share/themes"
-  mode_link "$HOME/.local/share/themes" "fui-$new" fui                # labwc: the edition's title bars
   mode_link "$CFG/rofi"    "colors-$new.rasi"  fui-colors.rasi
   mode_link "$CFG/hypr"    "colors-$new.conf"  fui-colors.conf
   mode_link "$CFG/kitty"   "colors-$new.conf"  fui-colors.conf
@@ -207,10 +206,11 @@ cmd_mode() {
   if in_session; then detach "$SELF" skin apply --quiet   # drawing a skin takes seconds: never hold the change up
   else cmd_skin apply --quiet; fi
   if in_session; then detach "$SELF" cursor apply; else cmd_cursor apply; fi
+  if in_plasma; then detach "$SELF" plasma apply; fi
   # links from earlier versions, which no longer exist in the repo (the two looks became one)
   rm -f "$CFG/waybar/fui-look.css" "$CFG/swaync/fui-look.css" "$CFG/swayosd/fui-look.css" "$CFG/rofi/fui-look.rasi" \
         "$CFG/hypr/fui-look-lock.conf" "$STATE"/edition-instrument "$STATE"/edition-y2k 2>/dev/null
-  case "$(readlink "$CFG/labwc/rc.xml" 2>/dev/null)" in rc-*.xml) rm -f "$CFG/labwc/rc.xml" ;; esac   # now a stowed file
+  [ -L "$HOME/.local/share/themes/fui" ] && rm -f "$HOME/.local/share/themes/fui"          # labwc's, now gone
   rm -f "$CFG/kitty/fui-mode.conf" "$CFG/waybar/fui-mode.css" "$CFG/rofi/fui-mode.rasi" "$CFG/mako/fui-mode" \
         "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" \
         "$CFG/kitty/console.conf" "$SHARE/brand/mark.png" 2>/dev/null
@@ -277,6 +277,46 @@ cmd_skin() {
   [ "$quiet" = 1 ] || note "PLAYER SKIN" "$ed" audio-x-generic
   return 0
 }
+
+# ── plasma: the second session, in the edition ──────────────────────────
+# theme/kde.py writes a colour scheme, a window frame (Aurorae) and a Plasma style per edition
+# (the kde stow package). This points Plasma at the current edition's, sets the cursor, the
+# wallpaper (the edition's still) and one keyring for both sessions. It runs at Plasma sign-in
+# (~/.config/autostart/fui-plasma.desktop) and from fui mode inside Plasma.
+cmd_plasma() {
+  local ed still w h
+  case "${1:-apply}" in
+    apply) ;;
+    status) echo "plasma: $(in_plasma && echo running || echo not running) · scheme $(tok_kde ColorScheme)"; return 0 ;;
+    *) die "usage: fui plasma [apply|status]" ;;
+  esac
+  ed=$(current_mode)
+  local kw=kwriteconfig6; have $kw || kw=kwriteconfig5
+  if have $kw; then
+    # the frame and the keyring are settings files: written here, not stowed, so Plasma may rewrite them
+    $kw --file kwinrc --group org.kde.kdecoration2 --key library org.kde.kwin.aurorae
+    $kw --file kwinrc --group org.kde.kdecoration2 --key theme "__aurorae__svg__fui-$ed"
+    $kw --file kwalletrc --group Wallet --key Enabled false                    # gnome-keyring serves both sessions
+    $kw --file kwalletrc --group org.freedesktop.secrets --key apiEnabled false
+    $kw --file kcminputrc --group Mouse --key cursorTheme fui
+    $kw --file kdeglobals --group General --key font "$(tok font.ui),10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+    $kw --file kdeglobals --group General --key fixed "$(tok font.mono),10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+  fi
+  in_plasma || return 0
+  local ed_camel; ed_camel="Fui$(printf '%s' "${ed:0:1}" | tr '[:lower:]' '[:upper:]')${ed:1}"
+  have plasma-apply-colorscheme && t3 plasma-apply-colorscheme "$ed_camel" >/dev/null 2>&1
+  have plasma-apply-desktoptheme && t3 plasma-apply-desktoptheme "fui-$ed" >/dev/null 2>&1
+  have plasma-apply-cursortheme && t3 plasma-apply-cursortheme fui >/dev/null 2>&1
+  if have qdbus6; then t3 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1
+  elif have dbus-send; then t3 dbus-send --session --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1; fi
+  # the wallpaper: the edition's still at the screen's size (Plasma draws its own desktop)
+  read -r w h < <(screen_size)
+  still=$(wp_file still "$(backdrop_of "$ed")" "$ed" "$(current_tier)" "${w}x$h" "$(wp_key)")
+  [ -s "$still" ] || wp_render still "$(backdrop_of "$ed")" "$ed" "$(current_tier)" "$w" "$h" "$still" "$still.part.png" || true
+  [ -s "$still" ] && have plasma-apply-wallpaperimage && t3 plasma-apply-wallpaperimage "$still" >/dev/null 2>&1
+  return 0
+}
+tok_kde() { grep -m1 "^$1=" "$CFG/kdeglobals" 2>/dev/null | cut -d= -f2; }
 
 # ── cursor: chrome with a gel inset, in the edition ─────────────────────
 # theme/make-cursor.py draws the theme (under a second); ~/.local/share/icons/fui points at the
@@ -391,26 +431,8 @@ tier_links() {   # point every app's fui-tier link at one tier
 }
 
 screen_size() {   # "<width> <height>" of the largest screen, in logical pixels
-  if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && have wlr-randr && wlr-randr --json >/dev/null 2>&1; then
-    wlr-randr --json 2>/dev/null | python3 -c '
-import json, sys
-try:
-    best = (0, 1920, 1080)
-    for o in json.load(sys.stdin):
-        if not o.get("enabled"):
-            continue
-        for m in o.get("modes", []):
-            if m.get("current"):
-                s = o.get("scale") or 1
-                w, h = int(m["width"] / s), int(m["height"] / s)
-                best = max(best, (w * h, w, h))
-    print(best[1], best[2])
-except Exception:
-    print(1920, 1080)
-' 2>/dev/null || echo "1920 1080"
-    return 0
-  fi
-  hyprctl -j monitors 2>/dev/null | python3 -c '
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    hyprctl -j monitors 2>/dev/null | python3 -c '
 import json, sys
 try:
     m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
@@ -418,6 +440,26 @@ try:
 except Exception:
     print(1920, 1080)
 ' 2>/dev/null || echo "1920 1080"
+  elif have kscreen-doctor; then                    # Plasma
+    kscreen-doctor -j 2>/dev/null | python3 -c '
+import json, sys
+try:
+    best = (0, 1920, 1080)
+    for o in json.load(sys.stdin).get("outputs", []):
+        if not o.get("enabled"):
+            continue
+        mode = next((m for m in o.get("modes", []) if m.get("id") == o.get("currentModeId")), None)
+        if mode:
+            s = o.get("scale") or 1
+            w, h = int(mode["size"]["width"] / s), int(mode["size"]["height"] / s)
+            best = max(best, (w * h, w, h))
+    print(best[1], best[2])
+except Exception:
+    print(1920, 1080)
+' 2>/dev/null || echo "1920 1080"
+  else
+    echo "1920 1080"
+  fi
 }
 
 cmd_display() {
@@ -633,8 +675,6 @@ except Exception:
 wp_screens() {      # how many screens are on
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     hyprctl -j monitors 2>/dev/null | python3 -c 'import json, sys; print(len(json.load(sys.stdin)))' 2>/dev/null || echo 1
-  elif have wlr-randr; then
-    wlr-randr --json 2>/dev/null | python3 -c 'import json, sys; print(sum(1 for o in json.load(sys.stdin) if o.get("enabled")))' 2>/dev/null || echo 1
   else echo 1; fi
 }
 wp_key() {          # changes when anything that draws the backdrops changes
@@ -951,21 +991,6 @@ bar_start() {
     [ "$config" = "$dir/config-compact.jsonc" ] && [ "$inset" -lt 8 ] && ms=8
     printf '{\n  "include": ["%s"],\n  "margin-top": %d,\n  "margin-left": %d,\n  "margin-right": %d\n}\n' \
       "$config" "$mt" "$(( ms + dx ))" "$(( ms - dx ))" > "$cfg"
-    # labwc: no Hyprland modules there; its windows are listed as a taskbar instead (the
-    # stacking desktop's own idiom), where Hyprland shows the workspaces and the window title
-    [ -n "${LABWC_PID:-}" ] && python3 - "$config" "$cfg" <<'PY'
-import json, re, sys
-src, out = sys.argv[1], sys.argv[2]
-conf = json.loads(re.sub(r"^\s*//.*$", "", open(src).read(), flags=re.M))
-cfg = json.load(open(out))
-swap = {"hyprland/workspaces": None, "hyprland/window": "wlr/taskbar", "hyprland/language": None}
-for side in ("modules-left", "modules-center", "modules-right"):
-    mods = [swap.get(m, m) for m in conf.get(side, [])]
-    cfg[side] = [m for m in mods if m]
-if not any("wlr/taskbar" in cfg[s] for s in ("modules-left", "modules-center", "modules-right")):
-    cfg["modules-center"] = ["wlr/taskbar"] + cfg["modules-center"]      # the compact bar has no title slot
-json.dump(cfg, open(out, "w"), indent=2)
-PY
     pkill -x waybar 2>/dev/null
     for _ in $(seq 40); do pgrep -x waybar >/dev/null || break; sleep 0.05; done
     pkill -9 -x waybar 2>/dev/null
@@ -1074,7 +1099,7 @@ cmd_power() {
   case "$pick" in
     lock) hyprlock ;;
     logout) cmd_sound logout; sleep 0.6
-            if [ -n "${LABWC_PID:-}" ]; then labwc --exit 2>/dev/null || kill "$LABWC_PID"; else hyprctl dispatch 'hl.dsp.exit()'; fi ;;
+            hyprctl dispatch 'hl.dsp.exit()' ;;
     suspend) systemctl suspend ;;
     reboot) cmd_sound logout; sleep 0.6; systemctl reboot ;;
     shutdown) cmd_sound logout; sleep 0.6; systemctl poweroff ;;
@@ -1371,7 +1396,7 @@ fix_gpu() { cmd_setup gpu; }
 fix_bar() { bar_start; }
 fix_mako() { pkill -x mako; sudo pacman -Rns --noconfirm mako; pgrep -x swaync >/dev/null || detach swaync; }
 # packages an earlier version installed whose job another one does now: one tool per job
-RETIRED="wiremix:pavucontrol bluetui:blueman ttf-silkscreen:Michroma ttf-dseg:Michroma yazi:thunar nvtop:btop"
+RETIRED="wiremix:pavucontrol bluetui:blueman ttf-silkscreen:Michroma ttf-dseg:Michroma yazi:thunar nvtop:btop labwc:plasma-desktop wlr-randr:kscreen xdg-desktop-portal-wlr:xdg-desktop-portal-kde"
 retired_installed() { local r; for r in $RETIRED; do pacman -Qq "${r%%:*}" >/dev/null 2>&1 && printf '%s ' "${r%%:*}"; done; }
 # shellcheck disable=SC2086
 fix_retired() { local p; p=$(retired_installed); [ -n "$p" ] && sudo pacman -Rns --noconfirm $p; }
@@ -1857,6 +1882,7 @@ case "$sub" in
   mode)      cmd_mode "$@" ;;
   skin)      cmd_skin "$@" ;;
   cursor)    cmd_cursor "$@" ;;
+  plasma)    cmd_plasma "$@" ;;
   display)   cmd_display "$@" ;;
   alert)     cmd_alert "$@" ;;
   watch)     cmd_watch "$@" ;;

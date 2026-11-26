@@ -6,9 +6,9 @@ hyprland
 hyprlock
 hypridle
 hyprpolkitagent
-labwc          # the second session: overlapping windows with title bars (pick it at sign-in)
-wlr-randr      # screen modes outside Hyprland (labwc)
-xdg-desktop-portal-wlr  # screen sharing in labwc
+plasma-desktop # the second session: KDE Plasma, in the look (pick it at sign-in; fui plasma)
+xdg-desktop-portal-kde  # Plasma's file pickers and screen sharing (Hyprland keeps its own portal)
+kscreen        # Plasma's screen settings (fui reads the screen size from it)
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 qt5-wayland

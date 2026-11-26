@@ -3,7 +3,7 @@
 window#waybar { border-radius: 16px; }
 * { font-size: 12px; }
 #custom-brand { font-size: 12px; }
-#workspaces button, #clock, #taskbar button,
+#workspaces button, #clock,
 #mpris, #custom-updates, #cpu, #memory, #network, #pulseaudio, #battery, #language,
 #custom-sound, #custom-mode, #custom-notify, #tray, #custom-rec { font-size: 11px; }
 #custom-power { font-size: 13px; }

@@ -137,24 +137,3 @@ tooltip {
 }
 tooltip label { color: @ink; text-shadow: none; font-family: "JetBrainsMono Nerd Font", monospace; }
 
-/* labwc's taskbar: a row of chrome keys like the workspaces (the stacking desktop lists its
-   windows where Hyprland shows the workspaces); the focused window's key is gel */
-#taskbar { padding: 0 4px; }
-#taskbar button {
-  margin: 5px 2px; padding: 0 10px;
-  font-family: "Inter", sans-serif; font-size: 12px; font-weight: 600;
-  color: @mark; text-shadow: 0 1px alpha(#FFFFFF, 0.55);
-  border: 1px solid alpha(@rim, 0.85); border-radius: 2px;
-  background-image:
-    linear-gradient(to bottom, alpha(#FFFFFF, 0.45), alpha(#FFFFFF, 0) 46%),
-    linear-gradient(to bottom, @face_hi, @face_mid 48%, @face_horizon 52%, @face_lo);
-  box-shadow: 0 1px 1px alpha(#000000, 0.3);
-}
-#taskbar button:hover { box-shadow: 0 0 0 2px alpha(@signal, 0.40), 0 1px 1px alpha(#000000, 0.3); }
-#taskbar button.active {
-  color: @on_gel; text-shadow: none; border-color: @gel_lo;
-  background-image:
-    linear-gradient(to bottom, alpha(#FFFFFF, 0.64), alpha(#FFFFFF, 0) 46%),
-    linear-gradient(to bottom, @gel_hi, @gel_mid 48%, @signal 52%, @gel_lo);
-}
-#taskbar button.minimized { color: alpha(@mark, 0.55); }
