@@ -6,21 +6,18 @@ same programs in both sessions (they speak layer-shell), so only the window fram
 keys are labwc's own. This module writes, from the tokens:
 
   labwc/.local/share/themes/fui-<edition>/openbox-3/   themerc and the title-bar buttons (SVG)
-  labwc/.config/labwc/rc-<look>.xml                     the look's frame (corners, shadows,
-                                                         fonts) and the keys, mirroring Hyprland's
+  labwc/.config/labwc/rc.xml                            the frame (corners, shadows, fonts)
+                                                         and the keys, mirroring Hyprland's
 
-fui mode links ~/.local/share/themes/fui to the edition's theme and ~/.config/labwc/rc.xml to
-the look's rc, then asks labwc to reload (SIGHUP).
+fui mode links ~/.local/share/themes/fui to the edition's theme, then asks labwc to reload
+(SIGHUP).
 
-The two looks frame a window differently:
-  instrument  a flat header plate in the panel colour, the title left in the mono voice,
-              hairline glyph buttons that light in the signal (close in bad), a 1 px edge in
-              the signal when focused
-  y2k         a chrome title bar split at the horizon (a bright lip, the lit face, a dark
-              horizon, a lighter reflection), the title centred and embossed, three gel orbs
-              (chrome for minimise and maximise, red gel for close), a soft drop shadow
+The frame: a chrome title bar split at the horizon (a bright lip, the lit face, a dark
+horizon, a lighter reflection), the title left in the mono voice and embossed, three square
+gel keys (chrome for minimise and maximise, red gel for close), boxy corners, a soft drop
+shadow.
 """
-from palette import LOOK, TOK, contrast, full, is_dark, look_of, mix
+from palette import LOOK, TOK, contrast, full, is_dark, mix
 
 F = TOK["font"]
 G = TOK["geometry"]
@@ -47,22 +44,11 @@ def _svg(body):
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">{body}</svg>\n'
 
 
-def buttons_instrument(p):
-    """Hairline glyphs on the plate: ink, the signal on hover (close: bad); dimmer when inactive."""
-    out = {}
-    for name in BUTTONS:
-        hover = p["bad"] if name == "close" else p["signal"]
-        out[f"{name}-active.svg"] = _svg(_glyph(name, hx(p["ink"]), 1.5))
-        out[f"{name}-inactive.svg"] = _svg(_glyph(name, hx(p["faint"]), 1.5))
-        ring = f'<rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="{hx(hover)}" stroke-width="1"/>'
-        out[f"{name}_hover-active.svg"] = _svg(ring + _glyph(name, hx(hover), 1.5))
-        out[f"{name}_hover-inactive.svg"] = _svg(ring + _glyph(name, hx(hover), 1.5))
-    return out
-
-
-def _orb(hi, mid, base, lo, rim, lens, glyph, glow=None):
-    """A gel orb: a two-part body split at the horizon, a specular lens at the top, the glyph."""
-    halo = (f'<circle cx="12" cy="12" r="10.5" fill="{glow}" fill-opacity="0.35"/>' if glow else "")
+def _key(hi, mid, base, lo, rim, lens, glyph, glow=None):
+    """A gel key, cut square: a two-part body split at the horizon, a specular band at the
+    top, the glyph."""
+    cr = LOOK["control"]
+    halo = (f'<rect x="1.5" y="1.5" width="21" height="21" rx="{cr + 1}" fill="{glow}" fill-opacity="0.35"/>' if glow else "")
     return _svg(
         '<defs>'
         f'<linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{hi}"/>'
@@ -70,14 +56,15 @@ def _orb(hi, mid, base, lo, rim, lens, glyph, glow=None):
         f'<radialGradient id="l" cx=".5" cy=".1" r=".55"><stop offset="0" stop-color="#FFFFFF" stop-opacity="{lens}"/>'
         '<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>'
         '</defs>'
-        f'{halo}<circle cx="12" cy="12" r="8.5" fill="url(#b)" stroke="{rim}" stroke-width="1"/>'
-        '<ellipse cx="12" cy="8" rx="6" ry="3.6" fill="url(#l)"/>'
+        f'{halo}<rect x="3.5" y="3.5" width="17" height="17" rx="{cr}" fill="url(#b)" stroke="{rim}" stroke-width="1"/>'
+        f'<rect x="5" y="4.5" width="14" height="6.5" rx="{max(cr - 1, 0)}" fill="url(#l)"/>'
         f'{glyph}')
 
 
-def buttons_y2k(p):
-    """Chrome orbs for minimise and maximise, a red gel orb for close; the hover lights each
-    (a brighter lens and a halo); inactive windows get plain shell-coloured orbs."""
+def buttons(ed):
+    """Chrome keys for minimise and maximise, a red gel key for close; the hover lights each
+    (a brighter band and a halo); inactive windows get plain shell-coloured keys."""
+    p = full(ed)
     out = {}
     bad = p["bad"]
     red = (hx(mix(bad, "#FFFFFF", 0.45)), hx(mix(bad, "#FFFFFF", 0.15)), hx(bad), hx(mix(bad, "#000000", 0.35)))
@@ -86,18 +73,17 @@ def buttons_y2k(p):
     rim = hx(p["rim"])
     for name in BUTTONS:
         body, mark = (red, "#FFFFFF") if name == "close" else (face, hx(p["mark"]))
-        out[f"{name}-active.svg"] = _orb(*body, rim, 0.75, _glyph(name, mark, 1.8))
-        out[f"{name}_hover-active.svg"] = _orb(*body, rim, 0.95, _glyph(name, mark, 1.8),
+        out[f"{name}-active.svg"] = _key(*body, rim, 0.75, _glyph(name, mark, 1.8))
+        out[f"{name}_hover-active.svg"] = _key(*body, rim, 0.95, _glyph(name, mark, 1.8),
                                                glow=hx(bad if name == "close" else p["signal"]))
-        out[f"{name}-inactive.svg"] = _orb(*shell, rim, 0.45, _glyph(name, hx(p["muted"]), 1.6))
-        out[f"{name}_hover-inactive.svg"] = _orb(*body, rim, 0.85, _glyph(name, mark, 1.8))
+        out[f"{name}-inactive.svg"] = _key(*shell, rim, 0.45, _glyph(name, hx(p["muted"]), 1.6))
+        out[f"{name}_hover-inactive.svg"] = _key(*body, rim, 0.85, _glyph(name, mark, 1.8))
     return out
 
 
 def themerc(ed):
     p = full(ed)
-    look = look_of(ed)
-    head = f"# fui // labwc theme, edition {ed} ({look}). GENERATED by theme/build.py from theme/tokens.toml.\n"
+    head = f"# fui // labwc theme, edition {ed}. GENERATED by theme/build.py from theme/tokens.toml.\n"
     common = f"""
 menu.items.bg.color: {hx(p['panel'])}
 menu.items.text.color: {hx(p['ink'])}
@@ -115,10 +101,9 @@ osd.workspace-switcher.boxes.border.width: 2
 window.button.spacing: 2
 window.button.hover.bg.color: #00000000
 """
-    if look == "y2k":
-        title = max((p["ink"], p["mark"]), key=lambda c: contrast(c, p["chrome_mid"]))
-        dark = is_dark(ed)
-        return head + f"""
+    title = max((p["ink"], p["mark"]), key=lambda c: contrast(c, p["chrome_mid"]))
+    dark = is_dark(ed)
+    return head + f"""
 # the chrome title bar, split at the horizon: top half lip -> lit face, bottom half horizon -> reflection
 window.active.title.bg: Gradient SplitVertical
 window.active.title.bg.color.splitTo: {hx(p['chrome_lip'])}
@@ -130,17 +115,17 @@ window.inactive.title.bg.color: {hx(p['shell_hi'])}
 window.inactive.title.bg.colorTo: {hx(p['shell'])}
 window.active.label.text.color: {hx(title)}
 window.inactive.label.text.color: {hx(p['muted'])}
-window.label.text.justify: Center
+window.label.text.justify: Left
 window.active.border.color: {hx(p['chrome_mid'])}
 window.inactive.border.color: {hx(p['shell'])}
-border.width: {LOOK['y2k'].get('frame', 4)}
+border.width: {LOOK['frame']}
 window.titlebar.padding.width: 6
 window.titlebar.padding.height: 2
 window.button.width: 24
 window.button.height: 24
-window.active.shadow.size: {LOOK['y2k'].get('shadow_blur', 18)}
+window.active.shadow.size: {LOOK['shadow_blur']}
 window.inactive.shadow.size: 10
-window.active.shadow.color: #000000{round(255 * (LOOK['y2k']['shadow_dark'] if dark else LOOK['y2k']['shadow_light'])):02X}
+window.active.shadow.color: #000000{round(255 * (LOOK['shadow_dark'] if dark else LOOK['shadow_light'])):02X}
 window.inactive.shadow.color: #00000024
 menu.title.bg.color: {hx(p['chrome_mid'])}
 menu.border.color: {hx(p['rim'])}
@@ -148,36 +133,9 @@ osd.bg.color: {hx(p['shell'])}
 osd.border.color: {hx(p['rim'])}
 osd.border.width: 1
 """ + common
-    return head + f"""
-# a flat header plate: the panel, the title left in the mono voice, a hairline edge
-window.active.title.bg: Solid
-window.active.title.bg.color: {hx(p['panel'])}
-window.inactive.title.bg: Solid
-window.inactive.title.bg.color: {hx(p['floor'])}
-window.active.label.text.color: {hx(p['ink'])}
-window.inactive.label.text.color: {hx(p['faint'])}
-window.label.text.justify: Left
-window.active.border.color: {hx(p['signal'])}
-window.inactive.border.color: {hx(p['rule_hi'])}
-border.width: 1
-window.titlebar.padding.width: 8
-window.titlebar.padding.height: 0
-window.button.width: 24
-window.button.height: 24
-menu.title.bg.color: {hx(p['panel'])}
-menu.border.color: {hx(p['rule_hi'])}
-osd.bg.color: {hx(p['panel'])}
-osd.border.color: {hx(p['rule_hi'])}
-osd.border.width: 1
-""" + common
 
 
-def buttons(ed):
-    p = full(ed)
-    return buttons_y2k(p) if look_of(ed) == "y2k" else buttons_instrument(p)
-
-
-# ── rc.xml: the frame per look, and the keys (Hyprland's, where labwc has the same idea) ──
+# ── rc.xml: the frame, and the keys (Hyprland's, where labwc has the same idea) ──
 FUI = "~/.local/bin/fui"
 KEYS = [   # (key, action xml, what it does) -- W is SUPER
     ("W-Return", f'<action name="Execute" command="kitty"/>', "terminal"),
@@ -204,9 +162,8 @@ KEYS = [   # (key, action xml, what it does) -- W is SUPER
     ("W-Escape", '<action name="Execute" command="hyprlock"/>', "lock"),
     ("W-x", f'<action name="Execute" command="{FUI} power"/>', "power menu"),
     ("W-S-e", '<action name="Exit"/>', "quit labwc"),
-    ("W-S-t", f'<action name="Execute" command="{FUI} mode toggle"/>', "edition: the next one in this look"),
+    ("W-S-t", f'<action name="Execute" command="{FUI} mode toggle"/>', "edition: the next one"),
     ("W-A-t", f'<action name="Execute" command="{FUI} mode pick"/>', "edition: pick one from a list"),
-    ("W-C-t", f'<action name="Execute" command="{FUI} look toggle"/>', "look: instrument / y2k"),
     ("W-S-d", f'<action name="Execute" command="{FUI} display pick"/>', "display tier"),
     ("W-S-w", f'<action name="Execute" command="{FUI} wallpaper toggle"/>', "live / still backdrop"),
     ("W-r", f'<action name="Execute" command="{FUI} record toggle"/>', "screen recording start / stop"),
@@ -226,23 +183,20 @@ KEYS = [   # (key, action xml, what it does) -- W is SUPER
   + [(f"W-S-{n}", f'<action name="SendToDesktop" to="{n}" follow="no"/>', "send the window to workspace") for n in range(1, 10)]
 
 
-def rc(look):
-    L = LOOK.get(look, {})
-    y2k = look == "y2k"
-    radius = L.get("radius", G["radius"])
-    title_font = (F["ui"], 10, "bold") if y2k else (F["mono"], 9, "bold")
+def rc():
+    title_font = (F["mono"], 9, "bold")
     keys = "\n".join(f'    <keybind key="{k}">{a}</keybind>   <!-- {d} -->' for k, a, d in KEYS)
     return f"""<?xml version="1.0"?>
-<!-- fui // labwc, look {look}: the window frame and the keys. GENERATED by theme/build.py.
-     fui mode links rc.xml here; the theme (title bar, buttons, colours) is
-     ~/.local/share/themes/fui, linked to the edition's. -->
+<!-- fui // labwc: the window frame and the keys. GENERATED by theme/build.py.
+     The theme (title bar, buttons, colours) is ~/.local/share/themes/fui, linked to the
+     edition's. -->
 <labwc_config>
   <core><gap>{G['gaps_in']}</gap></core>
   <theme>
     <name>fui</name>
-    <cornerRadius>{radius}</cornerRadius>
-    <dropShadows>{'yes' if y2k else 'no'}</dropShadows>
-    <titlebar><layout>{'icon:iconify,max,close' if y2k else ':iconify,max,close'}</layout><showTitle>yes</showTitle></titlebar>
+    <cornerRadius>{LOOK['radius']}</cornerRadius>
+    <dropShadows>yes</dropShadows>
+    <titlebar><layout>icon:iconify,max,close</layout><showTitle>yes</showTitle></titlebar>
     <font place="ActiveWindow"><name>{title_font[0]}</name><size>{title_font[1]}</size><weight>{title_font[2]}</weight></font>
     <font place="InactiveWindow"><name>{title_font[0]}</name><size>{title_font[1]}</size><weight>{title_font[2]}</weight></font>
     <font place="MenuItem"><name>{F['ui']}</name><size>10</size></font>

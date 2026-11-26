@@ -1,21 +1,21 @@
-/* fui // ROFI · look y2k: the launcher is a small device
- * A rounded window in a chrome chassis; its title strip is chrome (a bright lip, the lit face,
- * a dark horizon, a lighter reflection); the search field is a pill pressed into the panel;
+/* fui // ROFI · the look: the launcher is a small device
+ * A boxy window in a chrome chassis; its title strip is chrome (a bright lip, the lit face,
+ * a dark horizon, a lighter reflection); the search field is pressed into the panel;
  * the selected row is glossy gel in the signal, the rows striped like a media library.
  * Imported last by config.rasi.
  * Rofi allows no references inside linear-gradient(): the gradients are written whole into
  * colors-<edition>.rasi by theme/build.py (chrome-strip, gel-face) and named here. */
 
 window {
-  border: 4px solid;
+  border: 2px solid;
   border-color: @chrome-mid;
-  border-radius: 14px;
+  border-radius: 4px;
 }
 
 titlebar {
   border: 0 0 1px 0;
   border-color: @rim;
-  border-radius: 10px 10px 0 0;
+  border-radius: 4px 4px 0 0;
   background-color: @shell;
   background-image: @chrome-strip;
   padding: 9px 16px;
@@ -28,7 +28,7 @@ well { border: 0; padding: 14px; }
 inputbar {
   border: 1px solid;
   border-color: @edge;
-  border-radius: 99px;
+  border-radius: 2px;
   padding: 7px 16px;
   background-color: @well;
 }
@@ -36,7 +36,7 @@ inputbar {
 element {
   border: 1px solid;
   border-color: transparent;
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 6px 12px;
 }
 element selected.normal, element selected.active {

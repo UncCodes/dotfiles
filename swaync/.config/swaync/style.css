@@ -4,9 +4,9 @@
  * time small in the data voice. A critical memo's summary is a solid plate in bad. The
  * control centre is the system console: a header plate, flat toggles, square sliders.
  * Colours: fui-colors.css (the edition), fui-tier.css (the display tier), fui-alert.css.
- *   fui-look.css  the look (look-<instrument|y2k>.css), over base.css */
+ *   look.css      the look: chrome, gel and lit wells, cut square, over base.css */
 @import url("fui-colors.css");
 @import url("fui-tier.css");
 @import url("fui-alert.css");
 @import url("base.css");
-@import url("fui-look.css");
+@import url("look.css");

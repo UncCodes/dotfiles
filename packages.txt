@@ -51,7 +51,7 @@ zathura-pdf-mupdf
 imv
 satty           # screenshot annotation (SUPER+Print)
 
-# music and sound, chosen for the y2k look (each follows the edition)
+# music and sound, chosen for the look (each follows the edition)
 audacious           # the music player: fui skin draws its classic skin from the edition (the Qt view follows qt6ct)
 audacious-plugins   # its formats, outputs, the classic-skin interface and the spectrum analyser
 easyeffects         # a system equaliser, the player EQ for every app (GTK4, themed by the edition)

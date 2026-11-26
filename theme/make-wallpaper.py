@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Draw the fui backdrop for the edition's look: the survey field (instrument) or the ribbon
-of light (y2k, theme/ribbon.py).
+"""Draw a fui backdrop in an edition's colours. Six of them:
 
-The instrument backdrop is described below.
+  survey  a topographic map with data running along its contours (described below)
+  ribbon  a sheaf of light lines over a haze (theme/ribbon.py)
+  helix, orbit, fibre, mesh   more light over the same haze (theme/lights.py): a braid, a
+          gyroscope of rings, a fibre-optic lamp, a wireframe landscape
 
 The survey (theme/survey.py: a topographic map of a seeded terrain) is mapped onto the
 screen scaled to cover, centred, enlarged 1.1x, fading from the top of the screen to the
@@ -17,8 +19,8 @@ on deep and on a tube (the light editions keep their floor, dimmed on crt).
 Usage:
   python3 theme/make-wallpaper.py [--edition E] [--tier T] [--scene S] [out.png] [width] [height]
   python3 theme/make-wallpaper.py --live [--edition E] [--tier T] [--scene S] [--seconds N] out.mp4 [width] [height]
---scene picks the backdrop: auto (the look's own, the default), survey or ribbon. Either one
-draws in any edition's colours, so the backdrop need not follow the look.
+--scene picks the backdrop: auto (the edition's own, the default) or one of the six by name.
+Every one draws in any edition's colours.
   python3 theme/make-wallpaper.py --all     # the fallback still (first edition, lcd) into hypr/.config/hypr/
 `fui wallpaper` renders the current edition and tier at the screen's size into ~/.cache/fui.
 The live loop is seamless at its default length (56 s, every bead speed divides it).
@@ -33,8 +35,9 @@ from PIL import Image, ImageChops, ImageDraw
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from survey import OPACITY, WIDTH, length, survey, walk  # noqa: E402
-from palette import EDS, LOOK, E, T, edition, is_dark, look_of  # noqa: E402
+from palette import EDS, E, T, backdrop_of, edition, is_dark  # noqa: E402
 from ribbon import RibbonScene  # noqa: E402
+from lights import SCENES as LIGHTS  # noqa: E402
 
 HYPR = HERE.parent / "hypr/.config/hypr"
 
@@ -62,20 +65,23 @@ def ground(ed, tier):
     return T(ed, tier)["void"]
 
 
-SCENES = ("survey", "ribbon")
+SCENES = ("survey", "ribbon", *LIGHTS)
 
 
 def scene_of(mode, scene=None):
-    """The backdrop to draw: one chosen by name (any look, in the edition's colours), or by
-    default the look's own (tokens.toml [look.*] backdrop)."""
+    """The backdrop to draw: one chosen by name (in the edition's colours), or by default the
+    edition's own (tokens.toml: its `backdrop`)."""
     if scene in SCENES:
         return scene
-    return LOOK.get(look_of(mode), {}).get("backdrop") or "survey"
+    return backdrop_of(mode)
 
 
 def Scene(mode, W, H, tier="lcd", scene=None):
-    if scene_of(mode, scene) == "ribbon":
+    name = scene_of(mode, scene)
+    if name == "ribbon":
         return RibbonScene(mode, W, H, tier)
+    if name in LIGHTS:
+        return LIGHTS[name](mode, W, H, tier)
     return SurveyScene(mode, W, H, tier)
 
 
@@ -181,7 +187,7 @@ def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd", scene=None):
          "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "animation",
          "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)],
         stdin=subprocess.PIPE)
-    moving = getattr(scene, "frame", None)           # the ribbon draws whole frames
+    moving = getattr(scene, "frame", None)           # the light scenes draw whole frames
     for n in range(int(seconds * fps)):
         t = n / fps
         if moving:

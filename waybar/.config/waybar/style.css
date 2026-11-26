@@ -3,8 +3,8 @@
  *   fui-colors.css  the edition (colors-<edition>.css)          fui mode
  *   fui-tier.css    the display tier (tier-<crt|lcd|deep>.css)  fui display
  *   fui-alert.css   the alert takeover (alert-on/off.css)        fui alert
- *   fui-look.css    the look's rules (look-<instrument|y2k>.css) fui mode / fui look */
+ *   look.css        the look: chrome, gel and lit wells, cut square */
 @import url("fui-colors.css");
 @import url("fui-tier.css");
 @import url("fui-alert.css");
-@import url("fui-look.css");
+@import url("look.css");

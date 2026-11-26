@@ -1,4 +1,4 @@
-/* fui // SWAYOSD · the shared rules (the instrument look); a look's file may override them.
+/* fui // SWAYOSD · the shared rules; look.css dresses them in chrome and gel.
    style.css imports this, then fui-look.css. */
 window#osd {
   background-color: @glass;

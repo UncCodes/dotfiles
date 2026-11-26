@@ -1,9 +1,7 @@
 -- ┌─ fui // HYPRLAND (Lua config, Hyprland 0.57+) ─────────────────────────┐
--- │ Two looks on one core (fui look). instrument: flat panels with a hairline │
--- │ edge (the focused one in the signal), no drop shadow, the survey field    │
--- │ behind. y2k: windows in a chrome chassis (a gradient frame), one soft     │
--- │ shadow, springy motion, ribbons of light behind. Glass on every tier.     │
--- │ Editions (fui mode), each in one look, drawn for the display tier       │
+-- │ One look: windows in a chrome chassis (a thin gradient frame lit from   │
+-- │ above), boxy corners, one soft shadow, springy motion, glass on every    │
+-- │ tier. Editions (fui mode) recolour it, drawn for the display tier        │
 -- │ (fui display: crt, lcd or deep). Tokens: ~/.config/hypr/fui.lua.         │
 -- │ Keys: SUPER+/ shows them all (fui keys reads the comments below).        │
 -- └─────────────────────────────────────────────────────────────────────────┘
@@ -29,8 +27,8 @@ if not ok or type(T) ~= "table" or type(T.editions) ~= "table" then   -- keeps H
         ease = { 0.25, 0.9, 0.25, 1.0 },
     }
 end
-T.looks = T.looks or { instrument = { radius = 4, shadow = false, popin = "94%" } }
-T.curves = T.curves or { instrument = { glide = T.ease, pop = { 0.2, 0.9, 0.1, 1.0 } } }
+T.look = T.look or { radius = 4, control = 2, frame = 2, popin = "86%" }
+T.curves = T.curves or { glide = T.ease, pop = { 0.3, 1.25, 0.6, 1.0 } }
 
 local STATE = (os.getenv("XDG_STATE_HOME") or (HOME .. "/.local/state")) .. "/fui"
 local function state(name, default)
@@ -55,11 +53,7 @@ for k, v in pairs(T.editions[edition]) do C[k] = v end
 for k, v in pairs(T.editions[edition][tier] or {}) do C[k] = v end     -- crt: black floor, lifted labels
 if state("alert", "off") == "on" then C.signal = C.bad end              -- the alert takeover (fui alert)
 local DESK = T.desktop[C.scheme] or T.desktop.dark
--- the look: the edition's visual language (instrument or y2k)
-local look = C.look or "instrument"
-local LK = T.looks[look] or T.looks.instrument or {}
-local CV = T.curves[look] or T.curves.instrument
-local y2k = look == "y2k"
+local LK, CV = T.look, T.curves                                         -- the look: corners, frame, shadow, motion
 local inset = tonumber(state("inset", "0")) or 0                         -- crt: the safe inset in px
 
 local function rgba(hex8, a)                 -- "RRGGBBAA" (optionally with a new alpha) -> "rgba(...)"
@@ -67,17 +61,18 @@ local function rgba(hex8, a)                 -- "RRGGBBAA" (optionally with a ne
     return "rgba(" .. hex8 .. ")"
 end
 
--- y2k: every window sits in a chrome chassis, a multi-stop gradient frame lit from above
+-- every window sits in a chrome chassis, a multi-stop gradient frame lit from above
 -- (a bright lip, the lit face, a dark horizon, a lighter reflection); unfocused frames dim
 local function chassis(focused)
     if focused and state("alert", "off") == "on" then return rgba(C.bad) end   -- the alert takeover lights the frame bad
+    if not C.chrome_lip then return rgba(focused and C.signal or C.rule_hi) end   -- the fallback palette has no chassis
     local stops = focused and { C.chrome_lip, C.shell_hi, C.chrome_mid, C.chrome_horizon, C.chrome_low, C.chrome_reflect }
                           or { C.shell_hi, C.shell, C.shell_lo, C.shell }
     local out = {}
     for _, c in ipairs(stops) do out[#out + 1] = rgba(c or C.rule_hi) end
     return { colors = out, angle = 90 }        -- Lua gradients are tables, not "rgba(..) rgba(..) 90deg"
 end
-local frame = y2k and ((LK.frame or 4) + (tier == "crt" and 1 or 0)) or TI.border
+local frame = (LK.frame or 2) + (tier == "crt" and 1 or 0)
 
 -- ── programs ────────────────────────────────────────────────────────────
 local fui         = "$HOME/.local/bin/fui "  -- the fui command (fui help)
@@ -129,7 +124,6 @@ end)
 
 -- ── look ────────────────────────────────────────────────────────────────
 local screen_on = T.screen.on and TI.finish and state("screen", "on") ~= "off"   -- never on a real tube
-local glow = TI.glow                                                              -- deep: one soft halo
 
 hl.config({
     general = {
@@ -137,35 +131,26 @@ hl.config({
         gaps_out = math.max(T.geometry.gaps_out, inset),
         border_size = frame,
         col = {
-            -- the focused window: the signal; the others: a hairline
-            -- y2k: a lit gradient edge, signal into the shell's highlight
-            active_border   = y2k and chassis(true) or rgba(C.signal),
-            inactive_border = y2k and chassis(false) or rgba(C.rule_hi),
+            -- a lit chrome edge; the unfocused ones dimmer
+            active_border   = chassis(true),
+            inactive_border = chassis(false),
         },
         resize_on_border = true,
         layout = "dwindle",
     },
 
-    -- Flat panels of glass (blurred behind), no drop shadows. On deep screens the
-    -- focused window carries one soft halo in the signal (luminance, not blur soup).
+    -- Panels of glass (blurred behind) with one soft drop shadow.
     decoration = {
         rounding = LK.radius or T.geometry.radius,
         active_opacity   = TI.glass and T.opacity.window_active or 1.0,
         inactive_opacity = TI.glass and T.opacity.window_inactive or 1.0,
-        -- instrument: no shadow (a soft halo in the signal on deep). y2k: one soft drop shadow.
-        shadow = y2k and {
+        shadow = {
             enabled = true,
-            range = LK.shadow_blur or 18,
+            range = LK.shadow_blur or 16,
             render_power = 3,
             offset = "0 " .. tostring(LK.shadow_y or 6),
             color = rgba("000000FF", C.scheme == "dark" and (LK.shadow_dark or 0.36) or (LK.shadow_light or 0.22)),
             color_inactive = rgba("000000FF", 0.14),
-        } or {
-            enabled = glow,
-            range = 8,
-            render_power = 3,
-            color = rgba(C.signal, 0.30),
-            color_inactive = rgba(C.signal, 0.0),
         },
         blur = {
             enabled    = TI.glass,
@@ -192,8 +177,8 @@ hl.config({
             font_family = T.font.mono,
             font_size = 11,
             height = 18,
-            gradients = y2k,
-            rounding = y2k and 6 or 0,
+            gradients = true,
+            rounding = LK.control or 2,
             render_titles = true,
             col = { active = rgba(C.signal), inactive = rgba(C.panel) },
             text_color = rgba(C.on_signal),
@@ -220,20 +205,19 @@ hl.config({
     },
 })
 
--- ── motion: the look's. instrument: decisive (quick out, firm settle).
---    y2k: expo-out glides, windows pop in with about 5% overshoot.
+-- ── motion: expo-out glides; windows pop in with about 5% overshoot.
 local e, pp = CV.glide or T.ease, CV.pop or { 0.2, 0.9, 0.1, 1.0 }
 hl.curve("glide", { type = "bezier", points = { { e[1], e[2] }, { e[3], e[4] } } })
 hl.curve("snap",  { type = "bezier", points = { { 0.2, 0.9 }, { 0.1, 1 } } })
 hl.curve("pop",   { type = "bezier", points = { { pp[1], pp[2] }, { pp[3], pp[4] } } })
-local popin = "popin " .. (LK.popin or "94%")
-hl.animation({ leaf = "windowsIn",   enabled = true, speed = y2k and 3.5 or 3, bezier = y2k and "pop" or "glide", style = popin })
+local popin = "popin " .. (LK.popin or "86%")
+hl.animation({ leaf = "windowsIn",   enabled = true, speed = 3.5, bezier = "pop", style = popin })
 hl.animation({ leaf = "windowsOut",  enabled = true, speed = 2.5, bezier = "snap", style = popin })
 hl.animation({ leaf = "windowsMove", enabled = true, speed = 3, bezier = "glide" })
 hl.animation({ leaf = "border",      enabled = true, speed = 4, bezier = "glide" })
 hl.animation({ leaf = "fade",        enabled = true, speed = 3, bezier = "glide" })
 hl.animation({ leaf = "layers",      enabled = true, speed = 3, bezier = "glide", style = "fade" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 3, bezier = "glide", style = y2k and "slide" or "slidefade 10%" })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 3, bezier = "glide", style = "slide" })
 hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 3, bezier = "glide", style = "slidevert" })
 
 -- ── window rules ────────────────────────────────────────────────────────
@@ -295,9 +279,8 @@ hl.bind(k("SHIFT + Tab"), hl.dsp.group.prev())                                  
 hl.bind(k("Escape"), hl.dsp.exec_cmd("hyprlock"))                                -- lock
 hl.bind(k("X"), hl.dsp.exec_cmd(fui .. "power"))                                 -- power menu
 hl.bind(k("SHIFT + E"), hl.dsp.exit())                                           -- quit Hyprland
-hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- edition: the next one in this look (cyan → … → lab, or ice → … → ruby)
+hl.bind(k("SHIFT + T"), hl.dsp.exec_cmd(fui .. "mode toggle"))                   -- edition: the next one (cyan → … → ruby)
 hl.bind(k("ALT + T"), hl.dsp.exec_cmd(fui .. "mode pick"))                       -- edition: pick one from a list
-hl.bind(k("CTRL + T"), hl.dsp.exec_cmd(fui .. "look toggle"))                     -- look: instrument ↔ y2k (back to the edition last used in it)
 hl.bind(k("SHIFT + D"), hl.dsp.exec_cmd(fui .. "display pick"))                  -- display tier: auto, crt, lcd or deep
 hl.bind(k("SHIFT + W"), hl.dsp.exec_cmd(fui .. "wallpaper toggle"))              -- live / still backdrop
 hl.bind(k("SHIFT + C"), hl.dsp.exec_cmd(fui .. "screen toggle"))                 -- screen finish (vignette) on / off; lcd and deep only

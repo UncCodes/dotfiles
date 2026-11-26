@@ -1,8 +1,0 @@
-/* fui // SWAYOSD · look instrument, over base.css: a meter. The level reads against a scale
-   (a tick every tenth, the half in the signal), like the needle scale on a panel meter. */
-window#osd trough {
-  background-image:
-    linear-gradient(to right, transparent 0%, transparent 49.5%, @signal 49.5%, @signal 50.5%, transparent 50.5%),
-    repeating-linear-gradient(to right, @rule_hi 0px, @rule_hi 1px, transparent 1px, transparent 10%);
-}
-window#osd label { letter-spacing: 1px; }

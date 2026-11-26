@@ -4,7 +4,7 @@
  * flat rows; the selected row takes the signal stripe and tint. Colours and strokes:
  *   fui-colors.rasi  the edition (colors-<edition>.rasi)       fui mode
  *   fui-tier.rasi    the display tier (tier-<tier>.rasi)       fui display
- *   fui-look.rasi    the look (look-<instrument|y2k>.rasi), imported last so it can override
+ *   look.rasi        the look (chrome, gel, cut square), imported last so it can override
  * The palette, session menu and key list reuse this panel with their own titles and codes
  * (fui palette / power / keys pass -theme-str). */
 
@@ -122,5 +122,5 @@ element normal.urgent, element alternate.urgent, element selected.urgent { backg
 element-icon { size: 20px; background-color: transparent; }
 element-text { vertical-align: 0.5; background-color: transparent; text-color: inherit; }
 
-/* the look: instrument changes nothing; y2k rounds and lights the panel (fui mode links it) */
-@import "fui-look.rasi"
+/* the look: chrome and gel over the base rules */
+@import "look.rasi"

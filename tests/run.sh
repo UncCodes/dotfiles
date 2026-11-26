@@ -56,12 +56,6 @@ if command -v luacheck >/dev/null; then
   t "luacheck" luacheck --config "$DOTS/.luacheckrc" "$DOTS/hypr/.config/hypr" "$DOTS/nvim/.config/nvim"
 fi
 EDITIONS=$(python3 -c 'import tomllib,sys; print(" ".join(tomllib.load(open(sys.argv[1],"rb"))["meta"]["editions"]))' "$DOTS/theme/tokens.toml")
-# "look:edition edition ...;" for every look, in cycle order
-LOOK_EDITIONS=$(python3 -c '
-import tomllib, sys
-t = tomllib.load(open(sys.argv[1], "rb"))
-for lk in t["meta"]["looks"]:
-    print(lk + ":" + " ".join(e for e in t["meta"]["editions"] if t["edition"][e].get("look", "instrument") == lk))' "$DOTS/theme/tokens.toml")
 if command -v lua >/dev/null; then
   for m in $EDITIONS night; do
     for tier in crt lcd deep; do
@@ -71,11 +65,7 @@ if command -v lua >/dev/null; then
         HOME="$h" XDG_STATE_HOME="$h/.local/state" lua "$1/tests/hyprland-mock.lua" "$1/hypr/.config/hypr/hyprland.lua"' _ "$DOTS" "$m" "$tier"
     done
   done
-  t "hyprland.lua: the alert takeover turns the window edge to bad" bash -c '
-    h=$(mktemp -d); mkdir -p "$h/.config/hypr" "$h/.local/state/fui"
-    cp "$1/hypr/.config/hypr/fui.lua" "$h/.config/hypr/"; echo on > "$h/.local/state/fui/alert"
-    HOME="$h" XDG_STATE_HOME="$h/.local/state" FUI_EXPECT_BORDER=FF5C6C lua "$1/tests/hyprland-mock.lua" "$1/hypr/.config/hypr/hyprland.lua"' _ "$DOTS"
-  t "hyprland.lua: the alert takeover lights a y2k window's chrome frame bad" bash -c '
+  t "hyprland.lua: the alert takeover lights the window's chrome frame bad" bash -c '
     h=$(mktemp -d); mkdir -p "$h/.config/hypr" "$h/.local/state/fui"
     cp "$1/hypr/.config/hypr/fui.lua" "$h/.config/hypr/"; echo on > "$h/.local/state/fui/alert"; echo slate > "$h/.local/state/fui/mode"
     HOME="$h" XDG_STATE_HOME="$h/.local/state" FUI_EXPECT_BORDER=FF5C6C lua "$1/tests/hyprland-mock.lua" "$1/hypr/.config/hypr/hyprland.lua"' _ "$DOTS"
@@ -95,15 +85,18 @@ t "every edition has every per-edition file" bash -c '
       [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
     done
   done' _ "$DOTS" "$EDITIONS"
-t "every look has its layer for the bar, notices, OSD, launcher and lock screen" bash -c '
-  for l in instrument y2k; do
-    for f in waybar/.config/waybar/look-$l.css swaync/.config/swaync/look-$l.css swayosd/.config/swayosd/look-$l.css \
-             rofi/.config/rofi/look-$l.rasi hypr/.config/hypr/lock-$l.conf; do
-      [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
-    done
+t "the look has its layer for the bar, notices, OSD, launcher and lock screen" bash -c '
+  for f in waybar/.config/waybar/look.css swaync/.config/swaync/look.css swayosd/.config/swayosd/look.css \
+           rofi/.config/rofi/look.rasi hypr/.config/hypr/lock-look.conf; do
+    [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
   done' _ "$DOTS"
-t "the instrument look keeps its own parts: no y2k material (chrome, gel, faces, readouts) in its layers" bash -c '
-  ! grep -nE "@(chrome|gel|face)[_-]|@readout|@shell" "$1"/*/.config/*/look-instrument.* "$1"/hypr/.config/hypr/lock-instrument.conf' _ "$DOTS"
+t "one corner language: boxy (no pills or circles but radios and LEDs; panels 4 px at most)" bash -c '
+  ! grep -nE "border-radius: *(99|[5-9]|[1-9][0-9])px" "$1"/waybar/.config/waybar/look.css "$1"/swaync/.config/swaync/look.css \
+      "$1"/swayosd/.config/swayosd/look.css "$1"/rofi/.config/rofi/look.rasi "$1"/theme/templates/start.html.in &&
+  ! grep -nE "rounding = ([5-9]|[1-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
+  [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
+t "the type is the instrument'"'"'s: no pixel or segment faces anywhere" bash -c '
+  ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests"' _ "$DOTS"
 t "the bar meters round down (100 icons, full only at 99 and up)" python3 -c '
 import json, re, sys
 m = json.loads(re.sub(r"^\s*//.*$", "", open(sys.argv[1]).read(), flags=re.M))
@@ -142,21 +135,31 @@ wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the insta
     ! cmp -s /tmp/fui-test.png /tmp/fui-test-amber.png &&
     python3 "$1/theme/make-wallpaper.py" --edition amber --tier deep /tmp/fui-test-deep.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition concrete --tier crt /tmp/fui-test-crt.png 320 180' _ "$DOTS"
-  t "either backdrop renders in any edition (--scene): the ribbon in cyan, the survey in ruby" bash -c '
+  t "any backdrop renders in any edition (--scene): the ribbon in cyan, the survey in ruby" bash -c '
     python3 "$1/theme/make-wallpaper.py" --edition cyan --scene ribbon /tmp/fui-test-cr.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition cyan /tmp/fui-test-cs.png 320 180 &&
     ! cmp -s /tmp/fui-test-cr.png /tmp/fui-test-cs.png &&
     python3 "$1/theme/make-wallpaper.py" --edition ruby --scene survey /tmp/fui-test-rs.png 320 180 &&
     ! python3 "$1/theme/make-wallpaper.py" --scene nope /tmp/fui-test-x.png 320 180 2>/dev/null' _ "$DOTS"
-  t "the y2k backdrop renders: a ribbon of light, its own per edition" bash -c '
+  t "the ribbon renders: a ribbon of light, its own per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" --edition slate /tmp/fui-test-slate.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition ice --tier crt /tmp/fui-test-ice.png 320 180 &&
     ! cmp -s /tmp/fui-test-slate.png /tmp/fui-test-ice.png &&
     python3 -c "import sys; sys.path.insert(0, sys.argv[1] + \"/theme\"); import importlib.util as u
 s = u.spec_from_file_location(\"w\", sys.argv[1] + \"/theme/make-wallpaper.py\"); w = u.module_from_spec(s); s.loader.exec_module(w)
-sc = w.Scene(\"ruby\", 320, 180); a, b, c = sc.frame(0), sc.frame(14), sc.frame(56)
+sc = w.Scene(\"ruby\", 320, 180, scene=\"ribbon\"); a, b, c = sc.frame(0), sc.frame(14), sc.frame(56)
 assert list(a.getdata()) != list(b.getdata()), \"the ribbon does not move\"
 assert list(a.getdata()) == list(c.getdata()), \"the loop is not seamless at 56 s\"" "$1"' _ "$DOTS"
+  t "the four figures of light render, move and loop seamlessly (helix orbit fibre mesh)" bash -c '
+    python3 -c "import sys; sys.path.insert(0, sys.argv[1] + \"/theme\"); import importlib.util as u
+s = u.spec_from_file_location(\"w\", sys.argv[1] + \"/theme/make-wallpaper.py\"); w = u.module_from_spec(s); s.loader.exec_module(w)
+import lights
+for name in (\"helix\", \"orbit\", \"fibre\", \"mesh\"):
+    sc = w.Scene(\"amber\", 320, 180, scene=name); a, b, c = sc.frame(0), sc.frame(7), sc.frame(56)
+    assert list(a.getdata()) != list(b.getdata()), name + \" does not move\"
+    assert list(a.getdata()) == list(c.getdata()), name + \" does not loop at 56 s\"
+    assert sc.packets() == [] and lights.svg(name, \"amber\").startswith(\"<svg\")
+" "$1"' _ "$DOTS"
   t "the player skin renders: every bitmap the classic format needs, at its size" bash -c '
     for e in slate cyan; do
       rm -rf /tmp/fui-skin && python3 "$1/theme/make-skin.py" --edition $e /tmp/fui-skin >/dev/null || exit 1
@@ -204,7 +207,7 @@ t "fui is on the default PATH" env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/b
 # Hyprland wants a runtime folder even just to check the config; containers have none
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"; chmod 700 "$XDG_RUNTIME_DIR"; export XDG_RUNTIME_DIR
 t "Hyprland --verify-config" Hyprland --verify-config
-LINKS="labwc/rc.xml waybar/fui-look.css swaync/fui-look.css swayosd/fui-look.css rofi/fui-look.rasi hypr/fui-look-lock.conf waybar/fui-colors.css waybar/fui-tier.css waybar/fui-alert.css rofi/fui-colors.rasi rofi/fui-tier.rasi swaync/fui-colors.css swaync/fui-tier.css swaync/fui-alert.css swayosd/fui-colors.css swayosd/fui-tier.css hypr/fui-colors.conf hypr/fui-tier.conf kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors imv/config satty/config.toml"
+LINKS="waybar/fui-colors.css waybar/fui-tier.css waybar/fui-alert.css rofi/fui-colors.rasi rofi/fui-tier.rasi swaync/fui-colors.css swaync/fui-tier.css swaync/fui-alert.css swayosd/fui-colors.css swayosd/fui-tier.css hypr/fui-colors.conf hypr/fui-tier.conf kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors imv/config satty/config.toml"
 t "edition and tier links in place" bash -c 'for l in $1; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done' _ "$LINKS"
 for m in $EDITIONS; do
   t "switch to $m" bash -c '"$HOME/.local/bin/fui" mode "$1" --quiet &&
@@ -214,22 +217,14 @@ for m in $EDITIONS; do
     [ "$(readlink "$HOME/.config/gtk-4.0/fui-mode.css")" = "fui-$1.css" ] &&
     [ "$(readlink "$HOME/.config/btop/themes/fui.theme")" = "fui-$1.theme" ] &&
     [ "$(readlink "$HOME/.config/imv/config")" = "config-$1" ] &&
-    [ "$(readlink "$HOME/.config/waybar/fui-look.css")" = "look-$("$HOME/.local/bin/fui" look status).css" ] &&
-    [ "$(readlink "$HOME/.config/hypr/fui-look-lock.conf")" = "lock-$("$HOME/.local/bin/fui" look status).conf" ] &&
     grep -q "fui-$1.conf" "$HOME/.config/qt6ct/qt6ct.conf" &&
     grep -q "data-theme=\"$1\"" "$HOME/.local/share/fui/start.html"' _ "$m"
 done
-while IFS= read -r row; do
-  t "the ${row%%:*} editions cycle in order and wrap (toggle stays in its look)" bash -c 'f="$HOME/.local/bin/fui"; set -- $1; first=$1; "$f" mode "$first" --quiet
-    for want in "${@:2}" "$first"; do "$f" mode toggle --quiet; [ "$("$f" mode status)" = "$want" ] || { echo "expected $want, got $("$f" mode status)"; exit 1; }; done' _ "${row#*:}"
-done <<< "$LOOK_EDITIONS"
-t "fui look switches looks and comes back to the edition last used in each" bash -c 'f="$HOME/.local/bin/fui"
-  "$f" mode amber --quiet && "$f" mode ruby --quiet &&
-  [ "$("$f" look status)" = y2k ] && [ "$(readlink "$HOME/.config/rofi/fui-look.rasi")" = look-y2k.rasi ] &&
-  "$f" look instrument --quiet && [ "$("$f" mode status)" = amber ] &&
-  "$f" look toggle --quiet && [ "$("$f" mode status)" = ruby ] &&
-  grep -q "data-look=\"y2k\"" "$HOME/.local/share/fui/start.html" &&
-  "$f" look instrument --quiet'
+t "all twelve editions cycle in order and wrap" bash -c 'f="$HOME/.local/bin/fui"; set -- $1; first=$1; "$f" mode "$first" --quiet
+  for want in "${@:2}" "$first"; do "$f" mode toggle --quiet; [ "$("$f" mode status)" = "$want" ] || { echo "expected $want, got $("$f" mode status)"; exit 1; }; done' _ "$EDITIONS"
+t "links from the two looks are cleared (the stowed labwc rc stays)" bash -c 'f="$HOME/.local/bin/fui"
+  ln -sfn look-y2k.css "$HOME/.config/waybar/fui-look.css" && "$f" mode apply --quiet &&
+  [ ! -e "$HOME/.config/waybar/fui-look.css" ] && [ ! -L "$HOME/.config/waybar/fui-look.css" ] && [ -s "$HOME/.config/labwc/rc.xml" ]'
 t "fui skin draws the player skin for the edition and points Audacious at it" bash -c 'f="$HOME/.local/bin/fui"
   "$f" mode slate --quiet && FUI_SKIN_ALWAYS=1 "$f" skin apply --quiet &&
   [ -s "$HOME/.local/share/fui/skin/main.bmp" ] && [ "$(readlink "$HOME/.local/share/fui/skin")" = "$HOME/.local/share/fui/skins/slate" ] &&
@@ -258,9 +253,9 @@ t "a second wallpaper change never waits on the first (the backdrop follows the 
   PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the first change did not finish"; exit 1; }
   PATH="$fake:$PATH" "$f" mode phosphor --quiet
   PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the second change hung"; exit 1; }
-  ls "${XDG_CACHE_HOME:-$HOME/.cache}"/fui/still-survey-phosphor-* >/dev/null || { echo "no phosphor still"; exit 1; }
+  ls "${XDG_CACHE_HOME:-$HOME/.cache}"/fui/still-mesh-phosphor-* >/dev/null || { echo "no phosphor still"; exit 1; }
   pkill -x swaybg; rm -rf "$fake"'
-t "the backdrop can be chosen apart from the look: the ribbon behind an instrument edition, and back" bash -c '
+t "the backdrop can be chosen apart from the edition: the ribbon behind amber, and back" bash -c '
   fake=$(mktemp -d); printf "#!/bin/bash\nwhile :; do sleep 1; done\n" > "$fake/swaybg"; chmod +x "$fake/swaybg"
   f="$HOME/.local/bin/fui"; c="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
   PATH="$fake:$PATH" "$f" mode amber --quiet
@@ -290,7 +285,7 @@ t "boot splash, login screen and consoles render (and the splash animates its tr
     [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
   done
   grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
-t "labwc: a theme per edition (themerc and the title-bar buttons) and an rc per look, all well formed" bash -c '
+t "labwc: a theme per edition (themerc and square gel keys) and one rc, all well formed" bash -c '
   for d in "$1"/labwc/.local/share/themes/fui-*/openbox-3; do
     [ -s "$d/themerc" ] || { echo "no themerc in $d"; exit 1; }
     for b in iconify max max_toggled close; do for v in "" _hover; do for s in active inactive; do
@@ -306,15 +301,14 @@ for f in glob.glob(sys.argv[1] + \"/labwc/.config/labwc/*.xml\") + glob.glob(sys
   [ "$(readlink "$HOME/.local/share/themes/fui")" = "fui-$("$HOME/.local/bin/fui" mode status)" ] || { echo "the labwc theme link does not follow the edition"; exit 1; }' _ "$DOTS"
 t "rofi themes put no @reference inside linear-gradient() (rofi rejects it)" bash -c '
   ! grep -n "linear-gradient([^)]*@" "$1"/rofi/.config/rofi/*.rasi' _ "$DOTS"
-t "the login screen follows the look, and styles only ReGreet's two panels" bash -c '
+t "the login screen wears the look, and styles only ReGreet's two panels" bash -c '
   for e in cyan slate; do
     rm -rf "/tmp/fui-gre-$e" && python3 "$1/theme/make-boot.py" --edition "$e" --size 800x600 "/tmp/fui-gre-$e" >/dev/null || exit 1
     css="/tmp/fui-gre-$e/greeter/regreet.css"
     grep -q "frame:not(.background) { background: none; border: none" "$css" || { echo "$e: the notice frame is styled as a panel"; exit 1; }
     grep -q "frame.widget-clock" "$css" || { echo "$e: no clock rules"; exit 1; }
   done
-  grep -q "(instrument)" /tmp/fui-gre-cyan/greeter/regreet.css && ! grep -q "chrome capsules" /tmp/fui-gre-cyan/greeter/regreet.css &&
-  grep -q "(y2k)" /tmp/fui-gre-slate/greeter/regreet.css && grep -q "border-radius: 99px" /tmp/fui-gre-slate/greeter/regreet.css &&
+  grep -q "the shell" /tmp/fui-gre-cyan/greeter/regreet.css && ! grep -q "border-radius: 99px" /tmp/fui-gre-slate/greeter/regreet.css &&
   grep -q "Welcome to" /tmp/fui-gre-slate/greeter/regreet.toml &&
   ! grep -q "safe inset" /tmp/fui-gre-slate/greeter/regreet.css || { echo "no inset expected on an 800x600 lcd"; exit 1; }
   # on a tube at 1024x768 (a 17-inch CRT behind an adapter) nothing touches an edge, and the type steps down

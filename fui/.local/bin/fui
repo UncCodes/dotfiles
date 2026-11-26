@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # fui // one command for the desktop.
 #
-#   fui mode [toggle|pick|<edition>|apply|status]    the edition (toggle: the next in this look; pick: all of them)
-#   fui look [toggle|pick|instrument|y2k|status]     the look: instrument (cyan … lab) or y2k (ice chrome slate ruby)
+#   fui mode [toggle|pick|<edition>|apply|status]    the edition (toggle: the next one; pick: from a list)
 #   fui skin [apply|status]                          the music player's skin, drawn from the edition (Audacious)
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
 #   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
 #   fui wallpaper [start|toggle|live|still]          the backdrop, live or still (SUPER+SHIFT+W)
-#   fui wallpaper [pick|auto|survey|ribbon]          which backdrop: each look its own, or one for every look
+#   fui wallpaper [pick|auto|<backdrop>]             which backdrop: each edition its own, or one for all
 #   fui screen [toggle|on|off]                       the screen finish, a faint vignette (SUPER+SHIFT+C)
 #   fui sound <event>|on|off|toggle|status           interface sounds
 #   fui palette | power | keys | clipboard           launcher windows (SUPER+Space, SUPER+X, SUPER+/, SUPER+SHIFT+V)
@@ -69,10 +68,6 @@ rofi_window() {   # rofi_window "<TITLE>" "<CODE>" [rofi args...]
 # theme/build.py writes every themed file once per edition. Each app reads a fui-colors.*
 # (or fui-mode.css) link next to them; this points the links at one edition.
 modes() { local m; m=$(tok meta.editions); echo "${m:-cyan amber phosphor acid hazard mono paper lab}"; }
-looks() { local l; l=$(tok meta.looks); echo "${l:-instrument}"; }
-look_of() { local l; l=$(tok "edition.$1.look"); echo "${l:-instrument}"; }   # an edition's look
-modes_of() { local m; for m in $(modes); do [ "$(look_of "$m")" = "$1" ] && printf '%s ' "$m"; done; echo; }
-current_look() { look_of "$(current_mode)"; }
 
 current_mode() {
   local m all new
@@ -94,7 +89,7 @@ render_startpage() {   # the browser home page for this user, in the current edi
   mkdir -p "$SHARE"
   sed -e "s|__USER__|${USER:-user}|g" -e "s|__HOST__|$(host_name)|g" -e "s|__OS__|$(os_name)|g" \
       -e "s|__LOGO__|$(os_logo)|g" -e "s|__KERNEL__|$(uname -r)|g" \
-      -e "s|__EDITION__|$(current_mode)|g" -e "s|__DISPLAY__|$(current_tier)|g" -e "s|__LOOK__|$(current_look)|g" \
+      -e "s|__EDITION__|$(current_mode)|g" -e "s|__DISPLAY__|$(current_tier)|g" \
       "$src" > "$SHARE/start.html.tmp" &&
     mv "$SHARE/start.html.tmp" "$SHARE/start.html"
 }
@@ -148,26 +143,24 @@ cmd_mode() {
     status)
       if [ "${2:-}" = --bar ]; then
         echo "<span alpha='70%'>${I_edition-}</span> $cur · $(current_tier)"
-      elif [ "${2:-}" = --look ]; then
-        current_look
       else
         echo "$cur"
       fi
       return 0 ;;
-    toggle)   # the next edition in this look's cycle
+    toggle)   # the next edition
       local first="" take=0 m
       new=""
-      for m in $(modes_of "$(look_of "$cur")"); do
+      for m in $(modes); do
         [ -n "$first" ] || first="$m"
         if [ "$take" = 1 ]; then new="$m"; break; fi
         [ "$m" = "$cur" ] && take=1
       done
       new="${new:-$first}" ;;
-    pick)   # each edition with a swatch of its signal colour and its look
+    pick)   # each edition with a swatch of its signal colour
       local m rows="" pick sw
       for m in $(modes); do
         sw=$(tok "edition.$m.signal")
-        rows="$rows<span color='${sw:-#888888}'>■</span>  $(printf '%-9s' "$m")<span alpha='55%'>$(printf '%-11s' "$(look_of "$m")")</span><span alpha='70%'>$(edition_blurb "$m")</span>"$'\n'
+        rows="$rows<span color='${sw:-#888888}'>■</span>  $(printf '%-9s' "$m")<span alpha='70%'>$(edition_blurb "$m")</span>"$'\n'
       done
       pick=$(printf '%s' "$rows" | rofi_window "${I_edition-}  EDITION" "ED-06" -dmenu -i -p "SET" -no-custom -lines 12 -markup-rows -format i) || return 0
       # shellcheck disable=SC2046
@@ -181,17 +174,11 @@ cmd_mode() {
 
   mkdir -p "$STATE"
   [ "$new" = "$cur" ] && [ "$(cat "$STATE/mode" 2>/dev/null)" = "$new" ] || echo "$new" > "$STATE/mode"
-  local look; look=$(look_of "$new")
-  echo "$new" > "$STATE/edition-$look"        # fui look comes back to this edition
 
   local app
   for app in waybar swaync swayosd; do
     mode_link "$CFG/$app" "colors-$new.css" fui-colors.css
-    mode_link "$CFG/$app" "look-$look.css"  fui-look.css
   done
-  mode_link "$CFG/rofi"    "look-$look.rasi"   fui-look.rasi
-  mode_link "$CFG/hypr"    "lock-$look.conf"   fui-look-lock.conf
-  mode_link "$CFG/labwc"   "rc-$look.xml"      rc.xml                 # labwc: the look's frame and the keys
   mkdir -p "$HOME/.local/share/themes"
   mode_link "$HOME/.local/share/themes" "fui-$new" fui                # labwc: the edition's title bars
   mode_link "$CFG/rofi"    "colors-$new.rasi"  fui-colors.rasi
@@ -216,7 +203,10 @@ cmd_mode() {
   alert_links "$(cat "$STATE/alert" 2>/dev/null || echo off)"
   render_startpage
   cmd_skin apply --quiet
-  # links from earlier looks, which no longer exist in the repo
+  # links from earlier versions, which no longer exist in the repo (the two looks became one)
+  rm -f "$CFG/waybar/fui-look.css" "$CFG/swaync/fui-look.css" "$CFG/swayosd/fui-look.css" "$CFG/rofi/fui-look.rasi" \
+        "$CFG/hypr/fui-look-lock.conf" "$STATE"/edition-instrument "$STATE"/edition-y2k 2>/dev/null
+  case "$(readlink "$CFG/labwc/rc.xml" 2>/dev/null)" in rc-*.xml) rm -f "$CFG/labwc/rc.xml" ;; esac   # now a stowed file
   rm -f "$CFG/kitty/fui-mode.conf" "$CFG/waybar/fui-mode.css" "$CFG/rofi/fui-mode.rasi" "$CFG/mako/fui-mode" \
         "$CFG/hypr/fui-mode-hyprlock.conf" "$CFG/fui/fui-mode.sh" "$CFG/fui/starship.toml" "$CFG/git/fui-mode.gitconfig" \
         "$CFG/kitty/console.conf" "$SHARE/brand/mark.png" 2>/dev/null
@@ -237,51 +227,15 @@ cmd_mode() {
     detach "$SELF" wallpaper start
     cmd_sound move
   fi
-  [ "$quiet" = 1 ] || note "EDITION" "$new · $look" preferences-desktop-theme
+  [ "$quiet" = 1 ] || note "EDITION" "$new" preferences-desktop-theme
   return 0
-}
-
-
-# ── look: the visual language (instrument or y2k) ───────────────────────
-# Every edition belongs to one look; switching looks returns to the edition last used in it.
-cmd_look() {
-  local cmd="${1:-status}" cur target l rows="" pick quiet="" a
-  for a in "$@"; do [ "$a" = --quiet ] && quiet=--quiet; done
-  cur=$(current_look)
-  case "$cmd" in
-    status) echo "$cur"; return 0 ;;
-    toggle)
-      local first="" take=0
-      target=""
-      for l in $(looks); do
-        [ -n "$first" ] || first="$l"
-        if [ "$take" = 1 ]; then target="$l"; break; fi
-        [ "$l" = "$cur" ] && take=1
-      done
-      target="${target:-$first}" ;;
-    pick)
-      for l in $(looks); do rows="$rows$(printf '%-11s' "$l")<span alpha='70%'>$(modes_of "$l")</span>"$'\n'; done
-      pick=$(printf '%s' "$rows" | rofi_window "${I_edition-}  LOOK" "LK-01" -dmenu -i -p "SET" -no-custom -lines 4 -markup-rows -format i) || return 0
-      # shellcheck disable=SC2046
-      set -- $(looks); shift "$pick" 2>/dev/null || return 0; target="$1" ;;
-    *)
-      [[ " $(looks) " == *" $cmd "* ]] || die "usage: fui look [toggle|pick|$(looks | tr ' ' '|')|status]"
-      target="$cmd" ;;
-  esac
-  local ed
-  ed=$(cat "$STATE/edition-$target" 2>/dev/null)
-  if [ -z "$ed" ] || [ "$(look_of "$ed")" != "$target" ]; then
-    ed=$(modes_of "$target"); ed="${ed%% *}"
-  fi
-  [ -n "$ed" ] || die "no edition belongs to the look $target"
-  cmd_mode "$ed" ${quiet:+"$quiet"}
 }
 
 
 # ── skin: the music player wears the edition ────────────────────────────
 # theme/make-skin.py draws a classic player skin (the Winamp 2 bitmap format, read by Audacious)
-# from the edition's roles: y2k editions get shells, bevels, lit readouts and a gel play button;
-# instrument editions flat panels and hairlines. ~/.local/share/fui/skin always points at the
+# from the edition's roles: a chrome shell, square keys, lit readouts and a gel play key.
+# ~/.local/share/fui/skin always points at the
 # current edition's skin, and Audacious is told to load that path once.
 cmd_skin() {
   local cmd="${1:-status}" quiet=0 a ed dir link="$SHARE/skin" conf="$CFG/audacious/config"
@@ -289,7 +243,7 @@ cmd_skin() {
   ed=$(current_mode); dir="$SHARE/skins/$ed"
   case "$cmd" in
     status)
-      echo "edition $ed ($(look_of "$ed") look) · skin $(readlink "$link" 2>/dev/null || echo none)"
+      echo "edition $ed · skin $(readlink "$link" 2>/dev/null || echo none)"
       if have audacious; then
         echo "Audacious: View → Interface → Winamp Classic Interface shows it (the Qt interface follows the edition through qt6ct)"
       else
@@ -563,24 +517,36 @@ cmd_lockclock() {
 
 
 # ── wallpaper: the backdrop ─────────────────────────────────────────────
-# Two backdrops, each drawn in any edition's colours: the survey (a contour map with traces
-# running along it) and the ribbon (a sheaf of light lines). By default each look shows its own
-# (tokens.toml [look.*] backdrop); `fui wallpaper pick` chooses one for every look. Rendered for
+# Six backdrops, each drawn in any edition's colours: the survey (a contour map with traces
+# running along it), the ribbon (a sheaf of light lines) and four more figures of light (a
+# braid, a gyroscope, a fibre-optic lamp, a wireframe landscape). By default each edition shows
+# its own (tokens.toml: its backdrop); `fui wallpaper pick` chooses one for all. Rendered for
 # the backdrop, the edition, the display tier and the screen's size by theme/make-wallpaper.py
 # into ~/.cache/fui/. Live: the loop, played by mpvpaper. Still: swaybg with the PNG (also shown
 # while a loop renders); before the still exists, the edition's ground colour.
 # A loop takes minutes to render, so after showing the wallpaper `fui wallpaper warm` renders
 # every other edition's in the background (idle priority): a later edition change finds its
 # loop ready, and a running player swaps to it in place, with no gap.
-WP_SCENES="survey ribbon"
+WP_SCENES="survey ribbon helix orbit fibre mesh"
+wp_blurb() {        # a backdrop's one-line description, for the picker
+  case "$1" in
+    auto) echo "Each edition its own" ;;
+    survey) echo "Survey: a contour map, traces running along it" ;;
+    ribbon) echo "Ribbon: a sheaf of light lines" ;;
+    helix) echo "Helix: two strands of light braided round each other" ;;
+    orbit) echo "Orbit: a gyroscope of rings, beads travelling them" ;;
+    fibre) echo "Fibre: a fibre-optic lamp, its tips breathing" ;;
+    mesh) echo "Mesh: a wireframe landscape rolling in" ;;
+  esac
+}
 
-backdrop_pref() {   # auto (each look its own) or a backdrop for every look
+backdrop_pref() {   # auto (each edition its own) or a backdrop for every edition
   local s; s=$(cat "$STATE/backdrop" 2>/dev/null)
   case " $WP_SCENES " in *" $s "*) echo "$s" ;; *) echo auto ;; esac
 }
 backdrop_of() {     # the backdrop an edition shows
   local s; s=$(backdrop_pref)
-  [ "$s" = auto ] && s=$(tok "look.$(look_of "$1").backdrop")
+  [ "$s" = auto ] && s=$(tok "edition.$1.backdrop")
   case " $WP_SCENES " in *" $s "*) echo "$s" ;; *) echo survey ;; esac
 }
 wp_size() {         # "<w> <h>": the largest screen in device pixels, even numbers
@@ -608,7 +574,7 @@ wp_screens() {      # how many screens are on
   else echo 1; fi
 }
 wp_key() {          # changes when anything that draws the backdrops changes
-  cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/survey.py" "$DOTS/theme/ribbon.py" \
+  cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/survey.py" "$DOTS/theme/ribbon.py" "$DOTS/theme/lights.py" \
       "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8
 }
 wp_file() {         # wp_file still|live <backdrop> <edition> <tier> <w>x<h> <key>
@@ -696,12 +662,13 @@ wallpaper_takeover() {
 }
 
 wallpaper_pick() {
-  local cur rows choice names=(auto survey ribbon)
+  local cur rows="" choice n
+  # shellcheck disable=SC2206
+  local names=(auto $WP_SCENES)
   cur=$(backdrop_pref)
-  rows=$(printf '%s  Each look its own\n%s  Survey: a contour map, traces running along it\n%s  Ribbon: a sheaf of light lines\n' \
-    "$([ "$cur" = auto ] && echo "●" || echo "○")" "$([ "$cur" = survey ] && echo "●" || echo "○")" "$([ "$cur" = ribbon ] && echo "●" || echo "○")")
-  choice=$(echo "$rows" | rofi_window "${I_backdrop-}  BACKDROP" "BKD-03" -dmenu -i -p "SHOW" -no-custom -lines 3 -format i) || return 1
-  [ -n "$choice" ] && [ "$choice" -ge 0 ] 2>/dev/null && [ "$choice" -lt 3 ] || return 1
+  for n in "${names[@]}"; do rows="$rows$([ "$cur" = "$n" ] && echo "●" || echo "○")  $(wp_blurb "$n")"$'\n'; done
+  choice=$(printf '%s' "$rows" | rofi_window "${I_backdrop-}  BACKDROP" "BKD-03" -dmenu -i -p "SHOW" -no-custom -lines "${#names[@]}" -format i) || return 1
+  [ -n "$choice" ] && [ "$choice" -ge 0 ] 2>/dev/null && [ "$choice" -lt "${#names[@]}" ] || return 1
   echo "${names[$choice]}"
 }
 
@@ -714,14 +681,14 @@ cmd_wallpaper() {
     start) ;;
     toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "BACKDROP" "$pref" preferences-desktop-wallpaper ;;
     live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
-    pick|auto|survey|ribbon)
+    pick|auto|survey|ribbon|helix|orbit|fibre|mesh)
       local s="$1"
       if [ "$s" = pick ]; then s=$(wallpaper_pick) || return 0; fi
       if [ "$s" = auto ]; then rm -f "$STATE/backdrop"; else echo "$s" > "$STATE/backdrop"; fi
-      note "BACKDROP" "$([ "$s" = auto ] && echo "each look its own" || echo "$s")" preferences-desktop-wallpaper ;;
+      note "BACKDROP" "$([ "$s" = auto ] && echo "each edition its own" || echo "$s")" preferences-desktop-wallpaper ;;
     warm) wallpaper_warm; return 0 ;;
     status) echo "$pref $(backdrop_pref)"; return 0 ;;
-    *) die "usage: fui wallpaper [start|toggle|live|still|pick|auto|survey|ribbon|warm|status]" ;;
+    *) die "usage: fui wallpaper [start|toggle|live|still|pick|auto|${WP_SCENES// /|}|warm|status]" ;;
   esac
 
   local mode tier w h size key scene still video
@@ -769,7 +736,7 @@ else:
 }
 
 # Render every edition's backdrop ahead of time, at idle priority, one at a time: the stills
-# first (a second each), then the loops, the current look's editions before the other look's.
+# first (a second each), then the loops, the current edition and the next ones in the cycle first.
 # One warm-up at a time; a foreground run that needs a file being warmed waits for it.
 wallpaper_warm() {
   have flock || return 0
@@ -777,13 +744,15 @@ wallpaper_warm() {
   flock -n 8 || return 0
   have renice && renice -n 19 -p $$ >/dev/null 2>&1
   have ionice && ionice -c 3 -p $$ >/dev/null 2>&1
-  local w h size key tier pref look m kind scene out eds=""
+  local w h size key tier pref cur m kind scene out eds="" after=""
   read -r w h < <(wp_size); size="${w}x$h"; key=$(wp_key); tier=$(current_tier)
-  pref=$(cat "$STATE/wallpaper" 2>/dev/null); look=$(current_look)
+  pref=$(cat "$STATE/wallpaper" 2>/dev/null); cur=$(current_mode)
   # the cache holds only what the current drawing code makes
   find "$CACHE" -maxdepth 1 \( -name 'still-*.png' -o -name 'live-*.mp4' \) ! -name "*-$key.*" -delete 2>/dev/null
-  for m in $(modes_of "$look"); do eds="$eds $m"; done
-  for m in $(modes); do [[ " $eds " == *" $m "* ]] || eds="$eds $m"; done
+  for m in $(modes); do                      # the cycle, starting at the current edition
+    if [ "$m" = "$cur" ] || [ -n "$eds" ]; then eds="$eds $m"; else after="$after $m"; fi
+  done
+  eds="$eds$after"
   for kind in still live; do
     [ "$kind" = live ] && { [ "$pref" = still ] || ! have mpvpaper || ! have ffmpeg; } && break
     for m in $eds; do
@@ -973,7 +942,6 @@ cmd_palette() {   # every action in one window; each row is "icon|label|command"
     "${I_run-}|Run a command|rofi -config $CFG/rofi/config.rasi -show run"
     "${I_edition-}|Edition: pick one|$SELF mode pick"
     "${I_next-}|Edition: the next one|$SELF mode toggle"
-    "${I_look-}|Look: instrument or y2k|$SELF look toggle"
     "${I_audio-}|Player skin: draw it for this edition|$SELF skin apply"
     "${I_display-}|Display tier: auto, crt, lcd, deep|$SELF display pick"
     "${I_backdrop-}|Backdrop: pick one|$SELF wallpaper pick"
@@ -1468,11 +1436,10 @@ for m in json.load(sys.stdin):
              swaync/fui-colors.css swaync/fui-tier.css swayosd/fui-colors.css hypr/fui-colors.conf hypr/fui-tier.conf \
              kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css \
              gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors \
-             imv/config satty/config.toml waybar/fui-look.css swaync/fui-look.css swayosd/fui-look.css \
-             rofi/fui-look.rasi hypr/fui-look-lock.conf labwc/rc.xml; do
+             imv/config satty/config.toml; do
       [ -e "$CFG/$l" ] || nml=$((nml + 1))
     done
-    [ "$nml" = 0 ] && ok "$(current_look) look, $(current_mode) edition and $(current_tier) tier links in place" || { bad "$nml theme links missing"; fix fix_mode_links "fui mode apply"; }
+    [ "$nml" = 0 ] && ok "$(current_mode) edition and $(current_tier) tier links in place" || { bad "$nml theme links missing"; fix fix_mode_links "fui mode apply"; }
     if [ -d "$DOTS/.git" ]; then
       local dirty behind
       dirty=$(git -C "$DOTS" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
@@ -1493,7 +1460,7 @@ for m in json.load(sys.stdin):
   done
 
   section "look"
-  info "look: $(current_look) (SUPER+CTRL+T)   edition: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
+  info "edition: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
   info "display tier: $(cmd_display status) (SUPER+SHIFT+D)"
   [ "$(cmd_alert status)" = on ] && warn "the alert takeover is on ($(cat "$STATE/alert-source" 2>/dev/null || echo manual)): fui alert off clears it"
   local nbar; nbar=$(pgrep -cx waybar 2>/dev/null || echo 0)
@@ -1794,7 +1761,6 @@ sub="${1:-help}"
 [ $# -gt 0 ] && shift
 case "$sub" in
   mode)      cmd_mode "$@" ;;
-  look)      cmd_look "$@" ;;
   skin)      cmd_skin "$@" ;;
   display)   cmd_display "$@" ;;
   alert)     cmd_alert "$@" ;;

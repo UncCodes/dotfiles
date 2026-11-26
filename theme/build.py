@@ -4,13 +4,12 @@
   python3 theme/build.py            # regenerate everything
   python3 theme/build.py --check    # exit 1 if anything is stale or a contrast pair fails
 
-Two LOOKS on one core: instrument (an instrument for a trained operator: dark quiet fields,
-one signal colour, hairline structure, labels and codes, honest numbers) and y2k (the owned
-device of the millennium: chrome, gel, glowing readouts). Colours come in EDITIONS, each in
-one look (instrument: cyan amber phosphor acid hazard mono paper lab; y2k: ice chrome slate
-ruby), each drawn for three display TIERS (crt, lcd, deep). Components use roles (floor,
-panel, ink, signal, and the material roles shell, readout ...), never hex. The GTK theme of a
-y2k edition carries the look's rules; the hand-written apps read look-<look>.* layers.
+One LOOK on one core: the owned device of the millennium (chrome shells lit from above, gel
+keys, glowing LCD wells, one soft shadow) cut square and set in the instrument's type
+(Michroma, Inter, JetBrains Mono). Colours come in EDITIONS (cyan amber phosphor acid hazard
+mono paper lab ice chrome slate ruby), each drawn for three display TIERS (crt, lcd, deep).
+Components use roles (floor, panel, ink, signal, and the material roles shell, readout ...),
+never hex; editions without a chassis of their own derive it (theme/palette.py).
 
 Per edition (fui mode links each app to one):
   waybar, swaync, swayosd   colors-<edition>.css   @define-color roles, plus <role>_crt variants
@@ -40,8 +39,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "theme"))
 from survey import survey, svg_beads, svg_lines  # noqa: E402
 from ribbon import svg as ribbon_svg  # noqa: E402
-from palette import (CRT_SWAP, DEEP_SWAP, EDS, LOOK, LOOKS, ROLES, TIERS, TOK, E, T, alpha, console, contrast,  # noqa: E402
-                     css, editions_of, full, hx, hx8, is_dark, look_of, mix, over, parse)
+from lights import SCENES as LIGHTS, svg as light_svg  # noqa: E402
+from palette import (CRT_SWAP, DEEP_SWAP, EDS, LOOK, ROLES, TIERS, TOK, E, T, alpha, backdrop_of, console,  # noqa: E402
+                     contrast, css, full, hx, hx8, is_dark, mix, over, parse)
 
 TIER, G, GL, O, BL, SCR, F, MO, D, WS, SAFE = (TOK[k] for k in ("tier", "geometry", "glass", "opacity", "blur", "screen",
                                                               "font", "motion", "desktop", "workstation", "safety"))
@@ -200,7 +200,7 @@ def rofi_gradient(cols):
 
 
 def rofi_gradients(p):
-    """The y2k materials as rofi gradients. Rofi spaces the stops evenly, so the chrome strip
+    """The materials as rofi gradients. Rofi spaces the stops evenly, so the chrome strip
     repeats stops to put its dark horizon at the middle (stop 5 of 9); gel turns at the middle."""
     def strip(hi):
         return [p["chrome_lip"], hi, p["chrome_mid"], p["chrome_mid"], p["chrome_horizon"],
@@ -245,8 +245,8 @@ def colour_includes():
               f"inactive_tab_background {c['raised']}\ninactive_tab_foreground {c['dim']}\n"
               f"tab_bar_background      {c['bg']}\nactive_border_color     {hx(p['signal'])}\n"
               f"inactive_border_color   {c['raised']}\nbell_border_color       {hx(p['warn'])}\n"
-              + ("# the y2k look: tabs are rounded pills\ntab_bar_style           powerline\ntab_powerline_style     round\n"
-                 "tab_title_template      \" {index}  {title} \"\n" if look_of(ed) == "y2k" else ""))
+              + "# the look: tabs are slanted keys, cut square\ntab_bar_style           powerline\ntab_powerline_style     slanted\n"
+                "tab_title_template      \" {index}  {title} \"\n")
         ansi = c["ansi"]
         write(f"kitty/.config/kitty/console-{ed}.conf",
               f"{banner()}# fui // edition {ed}: the console (the {c['source']} palette). Every terminal program\n"
@@ -493,10 +493,10 @@ scale slider {{ margin: -5px; }}"""}
 """
 
 
-def gtk_y2k(v, ed):
-    """The y2k look over the base rules: chrome headers, chrome capsule buttons, gel on the
-    primary action and the selection, pressed-in fields, one soft shadow under a window."""
-    L = LOOK["y2k"]
+def gtk_look(v, ed):
+    """The look over the base rules: chrome headers, chrome keys cut square, gel on the primary
+    action and the selection, pressed-in fields, one soft shadow under a window."""
+    L = LOOK
     c = lambda k: f"@fui_{k}"
     gtk3 = v == 3
     r, cr = L["radius"], L["control"]
@@ -523,8 +523,8 @@ def gtk_y2k(v, ed):
            if gtk3 else
            "button.circular, headerbar button.image-button, windowcontrols > button, button.osd.image-button")
     return f"""
-/* ── the y2k look: an owned device. Chrome headers (a bright lip, the lit face, a dark horizon,
-      a lighter reflection), chrome capsule buttons, gel on the primary action and the
+/* ── the look: an owned device, cut square. Chrome headers (a bright lip, the lit face, a dark
+      horizon, a lighter reflection), chrome keys, gel on the primary action and the
       selection, fields pressed into the panel, one soft shadow under a window. ── */
 {'.csd decoration, decoration' if gtk3 else 'window.csd'} {{ border-radius: {r}px; box-shadow: 0 {L['shadow_y']}px {L['shadow_blur']}px alpha(#000000, {sh}), 0 0 0 1px {c('rim')}; }}
 headerbar, .titlebar {{
@@ -537,7 +537,7 @@ headerbar:backdrop, .titlebar:backdrop {{ background-image: linear-gradient(to b
 button {{
   background-image: {face};
   border: 1px solid {c('rim')};
-  border-radius: {cr + 1}px;
+  border-radius: {cr}px;
   color: {c('mark')};
   text-shadow: 0 1px alpha(#FFFFFF, 0.55);
   box-shadow: 0 1px 2px alpha(#000000, 0.30);
@@ -556,43 +556,43 @@ button.suggested-action, button.default {{
 button.suggested-action:hover {{ background-image: {gel}; box-shadow: 0 0 10px alpha({c('signal')}, 0.65), 0 1px 2px alpha(#000000, 0.30); }}
 button.suggested-action:active {{ background-image: {gel_flat}; box-shadow: inset 0 2px 3px alpha(#000000, 0.35); }}
 button.destructive-action {{ background-image: none; border-color: {c('bad')}; color: {c('bad')}; text-shadow: none; }}
-/* curves: a capsule only for a standalone text button and the primary action; a circle only
-   for an icon-only button; joined parts (linked groups, an entry's buttons, spin buttons)
-   meet square and round only their outer corners, at the controls' radius */
-{capsule} {{ border-radius: 99px; }}
-{orb} {{ border-radius: 99px; min-width: 24px; min-height: 24px; padding: 4px; }}
+/* corners: one language, boxy. Every key, field and track takes the controls' radius; only a
+   radio stays round (its shape is its meaning). Joined parts (linked groups, an entry's
+   buttons, spin buttons) meet square and round only their outer corners. */
+{capsule} {{ border-radius: {cr}px; }}
+{orb} {{ border-radius: {cr}px; min-width: 24px; min-height: 24px; padding: 4px; }}
 .linked > button, .linked > entry, .linked > combobox > box > button, spinbutton > button {{ border-radius: 0; }}
-.linked > :first-child, .linked > :first-child > box > button {{ border-top-left-radius: {cr + 1}px; border-bottom-left-radius: {cr + 1}px; }}
-.linked > :last-child, .linked > :last-child > box > button, spinbutton > button:last-child {{ border-top-right-radius: {cr + 1}px; border-bottom-right-radius: {cr + 1}px; }}
+.linked > :first-child, .linked > :first-child > box > button {{ border-top-left-radius: {cr}px; border-bottom-left-radius: {cr}px; }}
+.linked > :last-child, .linked > :last-child > box > button, spinbutton > button:last-child {{ border-top-right-radius: {cr}px; border-bottom-right-radius: {cr}px; }}
 .linked.vertical > button {{ border-radius: 0; }}
-.linked.vertical > :first-child {{ border-radius: {cr + 1}px {cr + 1}px 0 0; }}
-.linked.vertical > :last-child {{ border-radius: 0 0 {cr + 1}px {cr + 1}px; }}
-entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{ border-radius: {cr + 1}px; box-shadow: {well}; }}
+.linked.vertical > :first-child {{ border-radius: {cr}px {cr}px 0 0; }}
+.linked.vertical > :last-child {{ border-radius: 0 0 {cr}px {cr}px; }}
+entry, spinbutton:not(.vertical){', .entry' if gtk3 else ''} {{ border-radius: {cr}px; box-shadow: {well}; }}
 {focus_sel} {{ box-shadow: {well}, 0 0 0 2px alpha({c('signal')}, 0.45); }}
-check {{ border-radius: 4px; background-image: {face}; border-color: {c('rim')}; }}
+check {{ border-radius: {cr}px; background-image: {face}; border-color: {c('rim')}; }}
 radio {{ border-radius: 99px; background-image: {face}; border-color: {c('rim')}; }}
 check:checked, check:indeterminate, radio:checked {{ background-image: {gel}; border-color: {c('gel_lo')}; color: {c('on_gel')}; }}
 frame > border, .frame, list.boxed-list, .boxed-list, .card {{ border-radius: {r}px; }}
 row:selected, list row:selected, treeview.view:selected {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr}px;
 }}
 row:selected label, list row:selected label {{ color: {c('on_gel')}; }}
 {pop} {{ border: 1px solid {c('rim')}; border-radius: {r}px; box-shadow: 0 {L['shadow_y']}px {L['shadow_blur']}px alpha(#000000, {sh}); }}
 menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu row:hover {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr}px;
 }}
 tooltip, tooltip.background {{ border-radius: {r}px; border-color: {c('rim')}; box-shadow: 0 4px 12px alpha(#000000, 0.30); }}
-progressbar trough, levelbar trough {{ min-height: 10px; border-radius: 99px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.6); border: 1px solid alpha(#000000, 0.5); }}
-progressbar progress {{ min-height: 10px; border-radius: 99px; background-image: {gel}; box-shadow: 0 0 6px alpha({c('signal')}, 0.55); }}
-scale trough {{ min-height: 6px; min-width: 6px; border-radius: 99px; background-color: {c('readout')}; box-shadow: inset 0 1px 2px alpha(#000000, 0.6); }}
-scale highlight {{ border-radius: 99px; background-image: {gel_flat}; }}
-scale slider {{ min-width: 22px; min-height: 13px; border: 1px solid {c('rim')}; border-radius: 99px; background-image: {face}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
-switch {{ border-radius: 99px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.5); border-color: {c('rim')}; }}
+progressbar trough, levelbar trough {{ min-height: 10px; border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.6); border: 1px solid alpha(#000000, 0.5); }}
+progressbar progress {{ min-height: 10px; border-radius: {cr}px; background-image: {gel}; box-shadow: 0 0 6px alpha({c('signal')}, 0.55); }}
+scale trough {{ min-height: 6px; min-width: 6px; border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 1px 2px alpha(#000000, 0.6); }}
+scale highlight {{ border-radius: {cr}px; background-image: {gel_flat}; }}
+scale slider {{ min-width: 22px; min-height: 13px; border: 1px solid {c('rim')}; border-radius: {cr}px; background-image: {face}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
+switch {{ border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.5); border-color: {c('rim')}; }}
 switch:checked {{ background-image: {gel}; border-color: {c('gel_lo')}; }}
-switch slider {{ border-radius: 99px; background-image: {face}; border: 1px solid {c('rim')}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
-scrollbar slider {{ border-radius: 99px; min-width: 8px; min-height: 8px; background-image: {face}; border: 1px solid {c('rim')}; }}
+switch slider {{ border-radius: {cr}px; background-image: {face}; border: 1px solid {c('rim')}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
+scrollbar slider {{ border-radius: {cr}px; min-width: 8px; min-height: 8px; background-image: {face}; border: 1px solid {c('rim')}; }}
 notebook > header tab:checked, tabbar tab:selected {{
-  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr + 1}px;
+  background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr}px;
 }}
 /* the sidebar is brushed metal (the media library's source list), so a window is two
    materials: glass for the content, metal for the places beside it */
@@ -603,19 +603,18 @@ notebook > header tab:checked, tabbar tab:selected {{
     linear-gradient(to right, {c('shell_hi')}, {c('shell')} 30%, {c('shell_lo')});
   color: {c('ink')};
 }}
-.sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected {{ border-radius: {cr + 1}px; }}
-notebook > header.top tab:checked {{ border-radius: {cr + 1}px {cr + 1}px 0 0; }}
-notebook > header.bottom tab:checked {{ border-radius: 0 0 {cr + 1}px {cr + 1}px; }}
-notebook > header.left tab:checked {{ border-radius: {cr + 1}px 0 0 {cr + 1}px; }}
-notebook > header.right tab:checked {{ border-radius: 0 {cr + 1}px {cr + 1}px 0; }}
+.sidebar row:selected, placessidebar row:selected, .navigation-sidebar row:selected {{ border-radius: {cr}px; }}
+notebook > header.top tab:checked {{ border-radius: {cr}px {cr}px 0 0; }}
+notebook > header.bottom tab:checked {{ border-radius: 0 0 {cr}px {cr}px; }}
+notebook > header.left tab:checked {{ border-radius: {cr}px 0 0 {cr}px; }}
+notebook > header.right tab:checked {{ border-radius: 0 {cr}px {cr}px 0; }}
 """
 
 
 def gtk():
     for ed in EDS:
         for v in (3, 4):
-            extra = gtk_y2k(v, ed) if look_of(ed) == "y2k" else ""
-            write(f"gtk/.config/gtk-{v}.0/fui-{ed}.css", gtk_css(v, ed) + extra)
+            write(f"gtk/.config/gtk-{v}.0/fui-{ed}.css", gtk_css(v, ed) + gtk_look(v, ed))
     for v in (3, 4):
         for tier in TIERS:
             write(f"gtk/.config/gtk-{v}.0/fui-tier-{tier}.css",
@@ -709,12 +708,13 @@ QStatusBar {{ background: {q('panel')}; color: {q('muted')}; border-top: 1px sol
 QSplitter::handle {{ background: {q('rule')}; }}
 QCheckBox::indicator, QRadioButton::indicator {{ width: 14px; height: 14px; border: 1px solid {q('edge')}; background: {q('well')}; border-radius: 0; }}
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {q('signal')}; border-color: {q('signal')}; }}
-""" + (qss_y2k(p) if look_of(ed) == "y2k" else ""))
+""" + qss_look(p))
 
 
-def qss_y2k(p):
-    """The y2k look for Qt: chrome bars and headers, chrome capsule buttons, gel on the default
-    button, the selection and the progress, pressed-in fields, capsule slider handles."""
+def qss_look(p):
+    """The look for Qt: chrome bars and headers, chrome keys cut square, gel on the default
+    button, the selection and the progress, pressed-in fields."""
+    r, cr = LOOK["radius"], LOOK["control"]
     q = lambda k: qcss(p[k])
     v = lambda *stops: "qlineargradient(x1:0, y1:0, x2:0, y2:1, " + ", ".join(f"stop:{t} {q(k)}" for t, k in stops) + ")"
     metal = v((0, "chrome_lip"), (0.08, "shell_hi"), (0.46, "chrome_mid"), (0.52, "chrome_horizon"), (0.84, "chrome_low"), (1, "chrome_reflect"))
@@ -723,35 +723,35 @@ def qss_y2k(p):
     pressed = v((0, "face_horizon"), (1, "face_mid"))
     gel = v((0, "gel_hi"), (0.48, "gel_mid"), (0.52, "signal"), (1, "gel_lo"))
     return f"""
-/* the y2k look: an owned device. Chrome bars, chrome capsule buttons, gel on the primary action and the selection. */
+/* the look: an owned device, cut square. Chrome bars, chrome keys, gel on the primary action and the selection. */
 QMenuBar, QToolBar, QHeaderView::section, QStatusBar {{ background: {metal}; color: {q('ink')}; border: none; border-bottom: 1px solid {q('rim')}; }}
-QMenu {{ border: 1px solid {q('rim')}; border-radius: 10px; }}
-QMenu::item:selected, QMenuBar::item:selected {{ background: {gel}; color: {q('on_gel')}; border-left: none; border-radius: 6px; }}
-QPushButton, QToolButton {{ background: {face}; color: {q('mark')}; border: 1px solid {q('rim')}; border-radius: 11px; padding: 4px 16px; }}
+QMenu {{ border: 1px solid {q('rim')}; border-radius: {r}px; }}
+QMenu::item:selected, QMenuBar::item:selected {{ background: {gel}; color: {q('on_gel')}; border-left: none; border-radius: {cr}px; }}
+QPushButton, QToolButton {{ background: {face}; color: {q('mark')}; border: 1px solid {q('rim')}; border-radius: {cr}px; padding: 4px 16px; }}
 QPushButton:hover, QToolButton:hover {{ background: {face_hover}; border-color: {q('signal')}; }}
 QPushButton:pressed, QPushButton:checked, QToolButton:checked, QToolButton:pressed {{ background: {pressed}; border-color: {q('rim')}; }}
 QPushButton:default {{ background: {gel}; color: {q('on_gel')}; border: 1px solid {q('gel_lo')}; }}
 QToolButton[autoRaise="true"] {{ background: transparent; border-color: transparent; color: {q('ink')}; }}
 QToolButton[autoRaise="true"]:hover {{ background: {face}; border-color: {q('rim')}; color: {q('mark')}; }}
-QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{ border-radius: 11px; padding: 3px 12px; border: 1px solid {q('edge')}; }}
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{ border-radius: {cr}px; padding: 3px 12px; border: 1px solid {q('edge')}; }}
 QComboBox {{ background: {face}; color: {q('mark')}; border-color: {q('rim')}; }}
-QProgressBar {{ background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: 5px; max-height: 10px; }}
-QProgressBar::chunk {{ background: {gel}; border-radius: 4px; }}
-QSlider::groove:horizontal {{ height: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: 3px; }}
-QSlider::sub-page:horizontal {{ background: {gel}; border-radius: 3px; }}
-QSlider::handle:horizontal {{ background: {face}; border: 1px solid {q('rim')}; width: 22px; margin: -5px 0; border-radius: 7px; }}
-QSlider::groove:vertical {{ width: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: 3px; }}
-QSlider::add-page:vertical {{ background: {gel}; border-radius: 3px; }}
-QSlider::handle:vertical {{ background: {face}; border: 1px solid {q('rim')}; height: 22px; margin: 0 -5px; border-radius: 7px; }}
-QScrollBar::handle {{ background: {face}; border: 1px solid {q('rim')}; border-radius: 4px; }}
-QTabBar::tab:selected {{ background: {gel}; color: {q('on_gel')}; border: 1px solid {q('gel_lo')}; border-radius: 10px; }}
+QProgressBar {{ background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; max-height: 10px; }}
+QProgressBar::chunk {{ background: {gel}; border-radius: {cr}px; }}
+QSlider::groove:horizontal {{ height: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
+QSlider::sub-page:horizontal {{ background: {gel}; border-radius: {cr}px; }}
+QSlider::handle:horizontal {{ background: {face}; border: 1px solid {q('rim')}; width: 22px; margin: -5px 0; border-radius: {cr}px; }}
+QSlider::groove:vertical {{ width: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
+QSlider::add-page:vertical {{ background: {gel}; border-radius: {cr}px; }}
+QSlider::handle:vertical {{ background: {face}; border: 1px solid {q('rim')}; height: 22px; margin: 0 -5px; border-radius: {cr}px; }}
+QScrollBar::handle {{ background: {face}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
+QTabBar::tab:selected {{ background: {gel}; color: {q('on_gel')}; border: 1px solid {q('gel_lo')}; border-radius: {r}px; }}
 QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {gel}; color: {q('on_gel')}; border-left: none; }}
-QTableView, QTreeView, QListView {{ border-radius: 8px; border-color: {q('rim')}; }}
-QGroupBox {{ border-color: {q('rim')}; border-radius: 10px; }}
-QCheckBox::indicator {{ border-radius: 3px; border-color: {q('rim')}; background: {face}; }}
+QTableView, QTreeView, QListView {{ border-radius: {r}px; border-color: {q('rim')}; }}
+QGroupBox {{ border-color: {q('rim')}; border-radius: {r}px; }}
+QCheckBox::indicator {{ border-radius: {cr}px; border-color: {q('rim')}; background: {face}; }}
 QRadioButton::indicator {{ border-radius: 7px; border-color: {q('rim')}; background: {face}; }}
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {gel}; border-color: {q('gel_lo')}; }}
-QToolTip {{ border-color: {q('rim')}; border-radius: 8px; }}
+QToolTip {{ border-color: {q('rim')}; border-radius: {r}px; }}
 """
 
 
@@ -990,18 +990,18 @@ def hypr():
     for ed in EDS:
         e = E(ed)
         crt = {r: T(ed, "crt")[r] for r in CRT_SWAP}
-        eds += (f"    {ed} = {{ scheme = {json.dumps(TOK['edition'][ed]['scheme'])}, look = {json.dumps(look_of(ed))}, "
+        eds += (f"    {ed} = {{ scheme = {json.dumps(TOK['edition'][ed]['scheme'])}, "
                 f"crt = {lua(crt)}, deep = {lua({'void': T(ed, 'deep')['void']})},\n")
         eds += "      " + ", ".join(f"{k} = {lua_val(v)}" for k, v in e.items()) + " },\n"
     tiers = "".join(f"    {t} = {lua(TIER[t])},\n" for t in TIERS)
-    looks = "".join(f"    {lk} = {lua({k: v for k, v in LOOK[lk].items() if not isinstance(v, list)})},\n" for lk in LOOKS)
-    looks_ease = "".join(f"    {lk} = {{ glide = {{ {', '.join(str(x) for x in LOOK[lk]['glide'])} }}, "
-                         f"pop = {{ {', '.join(str(x) for x in LOOK[lk]['pop'])} }} }},\n" for lk in LOOKS)
+    look = lua({k: v for k, v in LOOK.items() if not isinstance(v, list)})
+    curves = (f"{{ glide = {{ {', '.join(str(x) for x in LOOK['glide'])} }}, "
+              f"pop = {{ {', '.join(str(x) for x in LOOK['pop'])} }} }}")
     order = "{ " + ", ".join(json.dumps(x) for x in EDS) + " }"
     renamed = lua(TOK["meta"].get("renamed", {}))
     write("hypr/.config/hypr/fui.lua", banner("--") + "return {\n"
           f"  editions = {{\n{eds}  }},\n  order = {order},\n  renamed = {renamed},\n  tiers = {{\n{tiers}  }},\n"
-          f"  looks = {{\n{looks}  }},\n  curves = {{\n{looks_ease}  }},\n"
+          f"  look = {look},\n  curves = {curves},\n"
           f"  desktop = {{ dark = {lua(D['dark'])}, light = {lua(D['light'])} }},\n"
           f"  cursor = {{ theme = {json.dumps(D['cursor_theme'])}, size = {D['cursor_size']} }},\n"
           f"  geometry = {lua({k: v for k, v in G.items()})},\n  opacity = {lua(O)},\n  blur = {lua(BL)},\n  screen = {lua(SCR)},\n"
@@ -1049,16 +1049,21 @@ def startpage():
                       + f" --hair: {TIER['crt']['hair']}px; --stripe: {TIER['crt']['stripe']}px; }}")
         blocks.append(f'html[data-theme="{ed}"][data-display="deep"] {{ --void: {css(T(ed, "deep")["void"])}; }}')
         blocks.append(f'@media (color-gamut: p3) {{ html[data-theme="{ed}"]:not([data-display="crt"]) {{ --signal: {dp["signal_p3"]}; }} }}')
-    # every edition surveys its own terrain: one backdrop per edition, the current one shown
+    # one backdrop per edition (its own: the survey's terrain or a figure of light), the current one shown
     maps = ""
     for ed in EDS:
-        if LOOK.get(look_of(ed), {}).get("backdrop") == "ribbon":      # y2k: the ribbon of light
-            maps += f'<div class="map ribbon" data-for="{ed}"><span class="r">{ribbon_svg(ed)}</span></div>'
+        b = backdrop_of(ed)
+        if b == "ribbon" or b in LIGHTS:                                # light over the haze
+            art = ribbon_svg(ed) if b == "ribbon" else light_svg(b, ed)
+            maps += f'<div class="map ribbon" data-for="{ed}"><span class="r">{art}</span></div>'
             continue
         art = survey(ed)
         maps += (f'<div class="map" data-for="{ed}"><span class="l">{svg_lines(art, "currentColor")}</span>'
                  f'<span class="b">{svg_beads(art, "currentColor")}</span></div>')
     maps_css = " ".join(f'html[data-theme="{ed}"] .map[data-for="{ed}"] {{ display: block; }}' for ed in EDS)
+    # the ribbon fills the page; the survey fades down it (the mask)
+    maps_css += " " + " ".join(f'html[data-theme="{ed}"] .backdrop {{ -webkit-mask: none; mask: none; }}'
+                               for ed in EDS if backdrop_of(ed) != "survey")
     values = {"palettes": "\n  ".join(blocks), "default": EDS[0], "maps": maps, "maps_css": maps_css,
               "font_brand": F["brand"], "font_ui": F["ui"], "font_mono": F["mono"],
               "hair": f"{TIER['lcd']['hair']}px", "stripe": f"{TIER['lcd']['stripe']}px", "notice": WS["notice"],
@@ -1182,8 +1187,7 @@ def labwc_files():
         write(f"{base}/themerc", labwc.themerc(ed))
         for name, svg in labwc.buttons(ed).items():
             write(f"{base}/{name}", svg)
-    for look in LOOKS:
-        write(f"labwc/.config/labwc/rc-{look}.xml", labwc.rc(look))
+    write("labwc/.config/labwc/rc.xml", labwc.rc())
 
 
 # ── run ─────────────────────────────────────────────────────────────────

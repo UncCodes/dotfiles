@@ -1,4 +1,4 @@
-"""The y2k backdrop: a ribbon of light over a haze.
+"""A backdrop: a ribbon of light over a haze.
 
 A sheaf of fine lines follows two slow sine fields across the screen, pinching together where
 the ribbon crests and fanning apart in its troughs, brightest at its spine (the console menus'

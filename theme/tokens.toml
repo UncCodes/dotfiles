@@ -1,8 +1,8 @@
 # ┌─ fui // DESIGN TOKENS ── the single source of truth ──────────────────┐
-# │ An instrument for a trained operator, named by its own machine: dark, │
-# │ quiet fields, one signal colour, hairline structure, labels and codes │
-# │ everywhere, numbers shown large and honestly, ornament that measures, │
-# │ frames or indexes something. Drawn for the display it runs on.        │
+# │ The owned device of the millennium, cut square: chrome shells lit     │
+# │ from above, gel keys, glowing LCD wells, one soft shadow, set in an   │
+# │ instrument's type (labels and codes, numbers shown large and          │
+# │ honestly). Drawn for the display it runs on.                          │
 # │                                                                       │
 # │ Components use ROLES (floor, panel, ink, signal ...), never raw hex.  │
 # │ An EDITION is a complete palette named for its signal colour.         │
@@ -15,9 +15,6 @@
 name     = "fui"
 # The editions, in the order `fui mode toggle` cycles them. The first is the default.
 editions = ["cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab", "ice", "chrome", "slate", "ruby"]
-# The looks: complete visual languages on the shared core. Every edition belongs to one
-# (its `look`, instrument when absent). `fui look` switches looks; `fui mode` editions.
-looks    = ["instrument", "y2k"]
 # Names from earlier versions, so a saved choice survives an update.
 renamed  = { night = "cyan", concrete = "paper" }
 tiers    = ["crt", "lcd", "deep"]
@@ -41,12 +38,15 @@ notice   = "Authorized personnel only. Activity on this workstation is logged."
 #   on_signal  text on a signal fill             counter the second data series, never focus
 #   ok warn bad info   status, always with a word
 # [edition.X.crt] and [edition.X.deep] replace roles on those display tiers.
-# Material roles (the y2k look draws them; instrument editions derive them in palette.py):
+#   backdrop   the wallpaper it opens with: survey ribbon helix orbit fibre mesh (fui wallpaper pick
+#              chooses one for every edition)
+# Material roles (the device editions define them; the others derive them in palette.py):
 #   shell      the device's chassis: window frames, the bar   shell_hi  its lit top
 #   lcd        the backing of a lit display well               readout_ink   what it lights
 
 [edition.cyan]      # night operations: obsidian and signal cyan (the default)
 scheme     = "dark"
+backdrop   = "survey"
 void       = "#000000"
 floor      = "#07090C"
 panel      = "#0E1217"
@@ -81,6 +81,7 @@ void       = "#000000"
 
 [edition.amber]     # amber terminals: warm black and P3 amber
 scheme     = "dark"
+backdrop   = "fibre"
 void       = "#000000"
 floor      = "#0B0906"
 panel      = "#14110C"
@@ -115,6 +116,7 @@ void       = "#000000"
 
 [edition.phosphor]  # green-screen terminals: green-black and P1 green
 scheme     = "dark"
+backdrop   = "mesh"
 void       = "#000000"
 floor      = "#050A07"
 panel      = "#0B140F"
@@ -149,6 +151,7 @@ void       = "#000000"
 
 [edition.acid]      # techwear and dither prints: black and acid lime
 scheme     = "dark"
+backdrop   = "helix"
 void       = "#000000"
 floor      = "#080908"
 panel      = "#101210"
@@ -183,6 +186,7 @@ void       = "#000000"
 
 [edition.hazard]    # industrial plates: black and signal yellow
 scheme     = "dark"
+backdrop   = "survey"
 void       = "#000000"
 floor      = "#0A0A0A"
 panel      = "#141414"
@@ -217,6 +221,7 @@ void       = "#000000"
 
 [edition.mono]      # black, white and one red: focus by inversion
 scheme     = "dark"
+backdrop   = "orbit"
 void       = "#000000"
 floor      = "#08090A"
 panel      = "#111214"
@@ -251,6 +256,7 @@ void       = "#000000"
 
 [edition.paper]     # technical print: warm paper and oxide red
 scheme     = "light"
+backdrop   = "survey"
 void       = "#FBFAF7"
 floor      = "#ECE9E1"
 panel      = "#F7F5EF"
@@ -285,6 +291,7 @@ signal_p3  = "color(display-p3 0.675 0.200 0.060)"
 
 [edition.lab]       # the research lab: clinical white and cobalt
 scheme     = "light"
+backdrop   = "orbit"
 void       = "#FFFFFF"
 floor      = "#F4F6F8"
 panel      = "#FFFFFF"
@@ -318,11 +325,11 @@ edge       = "#76808C"
 signal_oklch = "oklch(49.8% 0.271 264.7)"
 signal_p3  = "color(display-p3 0.124 0.251 0.938)"
 
-# ── the y2k look: the owned device of the millennium ────────────────────
-# Shells of frost, aluminium, gunmetal or ruby; lit LCD wells; gel on the primary action.
+# ── the device editions: their own chassis ──────────────────────────────
+# Shells of frost, aluminium, gunmetal or ruby, defined rather than derived.
 [edition.ice]       # the 1998 sleeve: ice haze and electric blue (soft strand)
-look       = "y2k"
 scheme     = "light"
+backdrop   = "ribbon"
 void       = "#D5E3F1"
 floor      = "#DCE7F2"
 panel      = "#F3F7FB"
@@ -360,8 +367,8 @@ signal_oklch = "oklch(51.6% 0.232 259.6)"
 signal_p3  = "color(display-p3 0.097 0.343 0.880)"
 
 [edition.chrome]    # the modern player skin: brushed aluminium and a blue LCD (skin strand)
-look       = "y2k"
 scheme     = "light"
+backdrop   = "helix"
 void       = "#8E98A3"
 floor      = "#B4BCC5"
 panel      = "#E1E5EA"
@@ -399,8 +406,8 @@ signal_oklch = "oklch(50.0% 0.235 261.0)"
 signal_p3  = "color(display-p3 0.100 0.313 0.867)"
 
 [edition.slate]     # the skinned desktop: gunmetal and periwinkle (skin and console strands)
-look       = "y2k"
 scheme     = "dark"
+backdrop   = "ribbon"
 void       = "#07080D"
 floor      = "#121521"
 panel      = "#1B2033"
@@ -438,8 +445,8 @@ signal_p3  = "color(display-p3 0.588 0.658 0.990)"
 void       = "#000000"
 
 [edition.ruby]      # the disc suite: a ruby shell around navy (skin strand)
-look       = "y2k"
 scheme     = "dark"
+backdrop   = "fibre"
 void       = "#05070F"
 floor      = "#0A1122"
 panel      = "#111C35"
@@ -476,38 +483,25 @@ signal_oklch = "oklch(78.1% 0.127 243.7)"
 signal_p3  = "color(display-p3 0.498 0.746 0.991)"
 void       = "#000000"
 
-# ── looks: what each visual language changes beyond colour ──────────────
-# instrument: flat hairline panels, square-ish, decisive motion, no shadows.
-# y2k: rounded shells lit from above, bevels, gel on the primary action, one soft shadow,
-# expo-out glides with a hint of spring.
-[look.instrument]
-radius     = 4
-control    = 2
-shell      = 4
-shadow     = false
-glide      = [0.25, 0.9, 0.25, 1.0]
-pop        = [0.2, 0.9, 0.1, 1.0]
-popin      = "94%"
-backdrop   = "survey"      # theme/survey.py: a topographic map per edition
-
-[look.y2k]
-radius     = 10
-frame      = 4          # the chrome chassis around every window, px (crt: +1)
-control    = 4
-shell      = 14
+# ── the look: one visual language for every edition ────────────────────
+# The owned device of the millennium, cut square: chrome shells lit from above (a bright lip,
+# a dark horizon, a lighter reflection), gel keys with a specular highlight on the primary
+# action, lit LCD wells, bevels, one soft shadow, expo-out glides with a hint of spring.
+# The corners are the instrument's (boxy: 4 px panels, 2 px controls), and so is the type.
+[look]
+radius     = 4          # windows, panels, popups
+control    = 2          # buttons, fields, rows, keys
+frame      = 2          # the chrome chassis around every window, px (crt: +1)
 bevel      = 1
 shadow     = true
-shadow_y   = 6
-shadow_blur = 18
+shadow_y   = 4
+shadow_blur = 16
 shadow_dark = 0.36
 shadow_light = 0.22
 glide      = [0.16, 1.0, 0.3, 1.0]
 pop        = [0.3, 1.25, 0.6, 1.0]
 popin      = "86%"
 gloss_band = 0.48
-font_pixel = "Silkscreen"      # title bars and tiny caps (AUR ttf-silkscreen); falls back to the mono face
-font_lcd   = "DSEG7 Classic"   # digits in LCD wells (AUR ttf-dseg); falls back to the mono face
-backdrop   = "ribbon"      # theme/ribbon.py: a sheaf of light lines on a haze
 
 # ── display tiers ───────────────────────────────────────────────────────
 # `fui display auto` picks one from the connected screen (an analog input is a crt; a
