@@ -3,7 +3,7 @@
 <!-- fui // the browser start page: the workstation's own page. One file for every edition and
      display tier; fui renders it with the machine's names, data-theme and data-display set
      (fui setup firefox). -->
-<html lang="en" data-theme="__EDITION__" data-display="__DISPLAY__" data-look="__LOOK__">
+<html lang="en" data-theme="__EDITION__" data-display="__DISPLAY__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -113,58 +113,57 @@
     font: 500 11px/1.5 var(--mono); color: var(--muted); letter-spacing: .04em; }
   footer span + span { color: var(--faint); }
 
-  /* ── the y2k look: the page is a small device. Chrome strips (a bright lip, the lit face, a
-        dark horizon, a lighter reflection), panels in rounded chassis with one soft shadow,
-        a pill search field, a gel button, the clock in a lit readout. ── */
-  html[data-look="y2k"] .backdrop .r { color: var(--signal); }
-  html[data-look="y2k"] .backdrop { -webkit-mask: none; mask: none; }
-  html[data-look="y2k"] body { background: radial-gradient(ellipse at 15% 85%, color-mix(in srgb, var(--signal) 14%, transparent), transparent 60%),
+  /* ── the look: the page is a small device, cut square. Chrome strips (a bright lip, the lit
+        face, a dark horizon, a lighter reflection), panels in boxy chassis with one soft
+        shadow, a pressed-in search field, a gel key, the clock in a lit readout. ── */
+  .backdrop .r { color: var(--signal); }
+  body { background: radial-gradient(ellipse at 15% 85%, color-mix(in srgb, var(--signal) 14%, transparent), transparent 60%),
     radial-gradient(ellipse at 90% 5%, color-mix(in srgb, var(--shell) 30%, transparent), transparent 55%), var(--floor); }
-  html[data-look="y2k"] header, html[data-look="y2k"] .plate {
+  header, .plate {
     background: linear-gradient(to bottom, var(--chrome-lip) 0%, var(--shell-hi) 8%, var(--chrome-mid) 46%,
       var(--chrome-horizon) 52%, var(--chrome-low) 84%, var(--chrome-reflect) 100%);
     border-bottom: 1px solid var(--rim); box-shadow: inset 0 1px rgba(255, 255, 255, .6); text-shadow: 0 1px var(--emboss); }
-  html[data-look="y2k"] header .division, html[data-look="y2k"] .plate .code { color: var(--ink); opacity: .75; }
-  html[data-look="y2k"] header .ro { color: var(--ink); }
-  html[data-look="y2k"] .panel { border: 1px solid var(--rim); border-radius: 12px; padding: 4px;
+  header .division, .plate .code { color: var(--ink); opacity: .75; }
+  header .ro { color: var(--ink); }
+  .panel { border: 1px solid var(--rim); border-radius: 4px; padding: 4px;
     background: linear-gradient(to bottom, var(--chrome-lip), var(--shell-hi) 6%, var(--chrome-mid) 40%, var(--chrome-low) 92%, var(--chrome-reflect));
     box-shadow: 0 10px 28px rgba(0, 0, 0, .35), inset 0 1px rgba(255, 255, 255, .55); }
-  html[data-look="y2k"] .panel { display: flex; flex-direction: column; }
-  html[data-look="y2k"] .panel > .body, html[data-look="y2k"] .panel > .frame { flex: 1; }
-  html[data-look="y2k"] .panel > .plate { border-radius: 8px 8px 0 0; box-shadow: inset 0 1px rgba(255, 255, 255, .6); }
-  html[data-look="y2k"] .panel > .body, html[data-look="y2k"] .panel > .frame { background: var(--panel); border-radius: 0 0 8px 8px;
+  .panel { display: flex; flex-direction: column; }
+  .panel > .body, .panel > .frame { flex: 1; }
+  .panel > .plate { border-radius: 3px 3px 0 0; box-shadow: inset 0 1px rgba(255, 255, 255, .6); }
+  .panel > .body, .panel > .frame { background: var(--panel); border-radius: 0 0 3px 3px;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
-  html[data-look="y2k"] .plate h2 { font-family: var(--brand); font-weight: 400; letter-spacing: .08em; }
-  html[data-look="y2k"] .plate .ic { color: var(--ink); }
-  html[data-look="y2k"] input { border-radius: 99px; padding: 0 18px; border-color: var(--edge); box-shadow: inset 0 2px 3px rgba(0, 0, 0, .28); }
-  html[data-look="y2k"] input:focus { box-shadow: inset 0 2px 3px rgba(0, 0, 0, .28), 0 0 0 3px color-mix(in srgb, var(--signal) 45%, transparent); }
-  html[data-look="y2k"] button { clip-path: none; border-radius: 99px; letter-spacing: .06em; color: var(--on-gel);
+  .plate h2 { font-family: var(--brand); font-weight: 400; letter-spacing: .08em; }
+  .plate .ic { color: var(--ink); }
+  input { border-radius: 2px; padding: 0 14px; border-color: var(--edge); box-shadow: inset 0 2px 3px rgba(0, 0, 0, .28); }
+  input:focus { box-shadow: inset 0 2px 3px rgba(0, 0, 0, .28), 0 0 0 3px color-mix(in srgb, var(--signal) 45%, transparent); }
+  button { clip-path: none; border-radius: 2px; letter-spacing: .06em; color: var(--on-gel);
     border: 1px solid var(--gel-lo);
-    background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 58%),
+    background: linear-gradient(to bottom, rgba(255, 255, 255, .63), rgba(255, 255, 255, 0) 46%),
       linear-gradient(to bottom, var(--gel-hi), var(--gel-mid) 48%, var(--signal) 52%, var(--gel-lo));
     box-shadow: 0 0 8px color-mix(in srgb, var(--signal) 50%, transparent), 0 1px 2px rgba(0, 0, 0, .3);
     transition: box-shadow 90ms cubic-bezier(.16, 1, .3, 1); }
-  html[data-look="y2k"] button:hover { box-shadow: 0 0 14px color-mix(in srgb, var(--signal) 70%, transparent), 0 1px 2px rgba(0, 0, 0, .3); }
-  html[data-look="y2k"] button:active { background: linear-gradient(to bottom, var(--gel-lo), var(--signal)); }
-  html[data-look="y2k"] .rows a { border-left: 0; border-radius: 5px; background: none; transition: box-shadow 90ms ease-out; }
-  html[data-look="y2k"] .rows a:hover { background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 60%),
+  button:hover { box-shadow: 0 0 14px color-mix(in srgb, var(--signal) 70%, transparent), 0 1px 2px rgba(0, 0, 0, .3); }
+  button:active { background: linear-gradient(to bottom, var(--gel-lo), var(--signal)); }
+  .rows a { border-left: 0; border-radius: 2px; background: none; transition: box-shadow 90ms ease-out; }
+  .rows a:hover { background: linear-gradient(to bottom, rgba(255, 255, 255, .41), rgba(255, 255, 255, 0) 46%),
       linear-gradient(to bottom, var(--face-hi), var(--face-mid) 48%, var(--face-horizon) 52%, var(--face-lo));
     color: var(--mark); box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 0 0 1px var(--rim); }
-  html[data-look="y2k"] .rows a:hover .u, html[data-look="y2k"] .rows a:hover .i, html[data-look="y2k"] .rows a:hover .ic { color: var(--mark); }
-  html[data-look="y2k"] .rows a:focus-visible { color: var(--on-gel);
+  .rows a:hover .u, .rows a:hover .i, .rows a:hover .ic { color: var(--mark); }
+  .rows a:focus-visible { color: var(--on-gel);
     background: linear-gradient(to bottom, var(--gel-hi), var(--gel-mid) 48%, var(--signal) 52%, var(--gel-lo)); }
-  html[data-look="y2k"] .rows a:focus-visible .u, html[data-look="y2k"] .rows a:focus-visible .i,
-  html[data-look="y2k"] .rows a:focus-visible .ic { color: var(--on-gel); }
-  html[data-look="y2k"] .frame::before { display: none; }
-  html[data-look="y2k"] .clock { display: inline-block; padding: 10px 18px; border-radius: 8px; color: var(--readout-ink);
-    font-family: "DSEG7 Classic", var(--brand); text-shadow: 0 0 10px color-mix(in srgb, var(--readout-ink) 70%, transparent);
+  .rows a:focus-visible .u, .rows a:focus-visible .i,
+  .rows a:focus-visible .ic { color: var(--on-gel); }
+  .frame::before { display: none; }
+  .clock { display: inline-block; padding: 10px 18px; border-radius: 2px; color: var(--readout-ink);
+    font-family: var(--brand); text-shadow: 0 0 10px color-mix(in srgb, var(--readout-ink) 70%, transparent);
     background: radial-gradient(ellipse at 50% 120%, color-mix(in srgb, var(--readout-ink) 18%, transparent), transparent 70%),
       linear-gradient(to bottom, color-mix(in srgb, var(--readout) 70%, black), var(--readout) 55%);
     border: 1px solid rgba(0, 0, 0, .6); box-shadow: inset 0 3px 6px rgba(0, 0, 0, .7), 0 1px rgba(255, 255, 255, .45); }
-  html[data-look="y2k"] .clock small { color: var(--readout-ink); opacity: .7; }
-  html[data-look="y2k"] .seg i { border-radius: 2px; background: var(--readout); box-shadow: inset 0 1px 1px rgba(0, 0, 0, .5); }
-  html[data-look="y2k"] .seg i.on { background: var(--readout-ink); box-shadow: 0 0 5px color-mix(in srgb, var(--readout-ink) 70%, transparent); }
-  @media (prefers-reduced-motion: reduce) { html[data-look="y2k"] * { transition: none !important; } }
+  .clock small { color: var(--readout-ink); opacity: .7; }
+  .seg i { border-radius: 2px; background: var(--readout); box-shadow: inset 0 1px 1px rgba(0, 0, 0, .5); }
+  .seg i.on { background: var(--readout-ink); box-shadow: 0 0 5px color-mix(in srgb, var(--readout-ink) 70%, transparent); }
+  @media (prefers-reduced-motion: reduce) { html * { transition: none !important; } }
 
   /* a tube: no translucency, a 3% safe inset, nothing under 11 px */
   html[data-display="crt"] header, html[data-display="crt"] .panel { backdrop-filter: none; }

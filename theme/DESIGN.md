@@ -1,12 +1,13 @@
 # fui design
 
-**An instrument for a trained operator.** The desktop is a workstation that names itself by
-its own machine (the distribution's logo, the host, the operating system and the operator,
-read on the machine; never a company's name or mark). Its screens are dark, quiet fields with
-one signal
-colour, hairline structure, labels and codes everywhere, numbers shown large and honestly,
-and ornament that measures, frames or indexes something. It is drawn for the display it runs
-on: a tube, a backlit panel, or a deep-black OLED / HDR panel.
+**The owned device of the millennium, cut square, set in an instrument's type.** The desktop
+is a device you own (the late 1990s and early 2000s: skinned media players, console menus,
+the sleeve design of the time): chrome shells lit from above, glossy gel on what you press,
+lit LCD wells for live values, one soft shadow, springy motion. Its corners are boxy and its
+type is an instrument's: labels and codes everywhere, numbers shown large and honestly. It
+names itself by its own machine (the distribution's logo, the host, the operating system and
+the operator, read on the machine; never a company's name or mark), and it is drawn for the
+display it runs on: a tube, a backlit panel, or a deep-black OLED / HDR panel.
 
 Tokens: [`tokens.toml`](tokens.toml) · values and contrast: [`PALETTE.md`](PALETTE.md) ·
 keys: [`../docs/KEYS.md`](../docs/KEYS.md).
@@ -18,8 +19,9 @@ keys: [`../docs/KEYS.md`](../docs/KEYS.md).
    action and live data, and nothing else; at rest it covers about 5% of the screen. A
    counter colour carries a second data series only. Status colours always come with a word
    (`WARN`, `HIGH`, `LOW`, `FAULT`).
-3. **Ornament has a job.** Stripes and brackets frame, segment meters measure, index codes
-   index, hatching marks reserved or dangerous areas. An ornament without a job is removed.
+3. **Every material has a job.** Chrome is the chassis, chrome keys are pressable, gel is the
+   primary action and the selection, a lit readout is a live value, the one soft shadow means
+   floating. Segment meters measure, index codes index. A finish without a job is removed.
 4. **Everything is labelled.** Panels carry a title and a code (`DIR-01`, `PWR-05`,
    `AUTH-00`); readouts carry a tracked capital label and a unit. Every code refers to
    something real.
@@ -29,10 +31,11 @@ keys: [`../docs/KEYS.md`](../docs/KEYS.md).
 6. **Quiet at rest, loud on event.** Nothing loops for attention. When something needs the
    operator now, the alert takeover turns the chrome's signal to the bad colour: one
    transition, then steady. Nothing flashes.
-7. **Precision.** A 4 px unit, integer strokes, three corner kinds (square, a small radius
-   where the toolkit expects one, chamfer), tabular figures with a slashed zero.
+7. **Precision, boxy.** A 4 px unit, integer strokes, one corner language: 4 px panels and
+   windows, 2 px keys, fields and rows (only a radio stays round: its shape is its meaning),
+   tabular figures with a slashed zero.
 8. **Legible before cool.** Contrast floors, flash limits and reduced motion come first;
-   the finish and the glow are the first things cut. Glass is the material and stays on
+   the finish, the gloss and the glow are the first things cut. Glass is the material and stays on
    every tier, so text on it is checked against the glass over the darkest backdrop.
 
 ## Colour: roles and editions
@@ -62,6 +65,14 @@ changes between them.
 | mono | black | white (focus by inversion; red only for faults) | the strictest edition |
 | paper | warm paper | oxide red | technical print (light) |
 | lab | clinical white | cobalt | the research lab (light) |
+| ice | ice haze | electric blue | the 1998 sleeve (light) |
+| chrome | brushed aluminium | blue LCD | the modern player skin (light) |
+| slate | gunmetal | periwinkle | the skinned desktop |
+| ruby | navy in a ruby shell | sky blue | the disc suite |
+
+Ice, chrome, slate and ruby define their own chassis (`shell`, `shell_hi`, `readout`,
+`readout_ink`); the others derive one from their palette: gunmetal tinted by the signal on the
+dark ones, aluminium on the light ones, and a dark LCD lit in the signal on all of them.
 
 Every text and control pair is checked against WCAG on every build (`build.py --check`):
 ink at 7:1 on every surface, labels and status at 4.5:1, control edges and the signal at
@@ -75,7 +86,7 @@ ink at 7:1 on every surface, labels and status at 4.5:1, control edges and the s
 |---|---|---|
 | `crt` | tubes (an analog input) | black floor, labels lifted to 7:1 or more, every stroke 2 px, a 3% safe inset at the screen edges, no screen finish ever, static-content protection |
 | `lcd` | backlit panels | the editions as they are: 1 px hairlines on the pixel grid, the optional finish |
-| `deep` | OLED, HDR, wide gamut (a 10-bit or HDR output) | true black outside the panels (wallpaper, gaps), one soft halo in the signal on the focused window, a Display P3 signal on the start page, static-content protection |
+| `deep` | OLED, HDR, wide gamut (a 10-bit or HDR output) | true black outside the panels (wallpaper, gaps), a Display P3 signal on the start page, static-content protection |
 
 **Static-content protection** (crt and deep): after 2 minutes idle the screen dims and the
 bar moves one pixel within its box (a four-step drift); after 5 minutes the screen blanks;
@@ -95,7 +106,7 @@ type down on a screen of 800 lines or fewer.
 
 | Voice | Face | Used for |
 |---|---|---|
-| brand | Michroma | the host name, the clock |
+| brand | Michroma | the host name, the clock and display numerals (the LCD readouts) |
 | interface | Inter | controls and prose |
 | data | JetBrains Mono | labels (tracked capitals), values, codes, terminals |
 
@@ -114,17 +125,17 @@ Icons lead their label and dim with it; a status word still joins an icon over a
 (`CPU HIGH`), so state is never an icon or a colour alone. Edition pickers show a swatch of
 each edition's signal. Apps keep their own (Papirus) icons in the launcher.
 
-## The panel
+## The parts
 
 | Part | Built as |
 |---|---|
-| **Panel** | glass: the panel colour at 72% with Hyprland blurring what is behind it (every tier), a hairline, 4 px corners; text is checked against the glass over the darkest backdrop |
-| **Header plate** | 34 px, the panel colour, the signal stripe at the left (3 px; 4 px on crt), a tracked capital title, a code at the right in `faint` |
-| **Field** | set in: the well colour, an `edge` boundary, 2 px corners; focus draws the signal; the caret is the signal, blinking at 1 Hz at most |
-| **Row** | flat; the selected one takes `signal_dim` and the stripe |
-| **Button** | secondary: an `edge` outline; primary: a solid signal fill; destructive: a `bad` outline that fills on hover |
+| **Panel** | glass: the panel colour at 72% with Hyprland blurring what is behind it (every tier), a rim, 4 px corners; text is checked against the glass over the darkest backdrop |
+| **Title strip** | chrome split at the horizon (a bright lip, the lit face, a dark horizon, a lighter reflection), a tracked capital title embossed on it, a code at the right |
+| **Field** | pressed in: the well colour, an inner shadow, 2 px corners; focus rings it in the signal; the caret is the signal, blinking at 1 Hz at most |
+| **Row** | flat; the selected one is gel |
+| **Key** (button) | secondary: a chrome key (`face_*`, its text in `mark`) with a specular band; primary: gel in the signal; destructive: a `bad` ring on hover. 2 px corners |
 | **Meter** | segments (`███░░`, block glyphs the data face carries), rounded down, always with the number beside it |
-| **Readout** | a label dimmed and tracked, then the value in the data voice: `CPU 12%`; over a threshold the whole readout takes the status colour and the label gains its word |
+| **Readout** | a label dimmed and tracked, then the value in the data voice: `CPU 12%`; over a threshold the whole readout takes the status colour and the label gains its word. Live values that matter most (the clock) sit in a lit LCD well in the brand face |
 
 ## Codes
 
@@ -144,26 +155,27 @@ Every code names a real panel and stays stable:
 
 | Surface | Built as |
 |---|---|
-| Windows (Hyprland) | panels, the focused edge in the signal, no shadows; a soft signal halo on deep |
-| Bar (waybar) | the status rail: the badge (the distribution's logo and the operator), workspace index segments `01 02 03`, the focused window, labelled readouts, volume and battery meters, the edition and tier, the clock in the brand voice |
-| Launcher, palette, session, keys, pickers (rofi) | a directory panel: header plate, set-in search with a signal prompt, flat rows |
-| Notifications (swaync) | memos: a stripe by urgency; a critical memo's summary is a solid plate in `bad` |
-| Control centre (swaync) | the system console: header plate, flat toggle tiles, square sliders |
-| OSD (swayosd) | a small plate with the stripe and a segment meter |
-| Lock screen (hyprlock) | authentication: header plate, the distribution's logo, the host and the OS, the clock, operator and kernel in bracketed readouts, a passphrase field, the notice |
-| Apps (GTK3/4, libadwaita, Qt) | header plates, outlined controls, square checks, set-in fields, signal selection, square progress |
+| Windows (Hyprland) | panels in a chrome chassis (a 2 px gradient frame lit from above; dimmer when unfocused), one soft shadow, 4 px corners |
+| Bar (waybar) | the status rail: the badge (the distribution's logo and the operator), workspace keys `01 02 03` (the current one gel), the focused window embossed, labelled readouts, volume and battery meters, the edition and tier, the clock in a lit readout in the brand voice; chrome, boxy |
+| Launcher, palette, session, keys, pickers (rofi) | a small device: a chrome title strip with a tracked title and code, a pressed-in search field, a striped list, gel on the selection |
+| Notifications (swaync) | tinted plastic slips; a critical one takes `bad`, its summary a solid plate |
+| Control centre (swaync) | brushed metal under a chrome strip, rubber-key toggles, boxy gel sliders |
+| OSD (swayosd) | an LCD panel in a shell bezel: lit segments, the number glowing in the brand face |
+| Lock screen (hyprlock) | the welcome screen: a boxy shell with a chrome title strip, the distribution's logo in a square tile, the operator, the passphrase pressed in, the time in a lit readout, the notice |
+| Apps (GTK3/4, libadwaita, Qt) | chrome headers, chrome keys, gel on the primary action and the selection, pressed-in fields, readout-well progress and sliders, brushed-metal sidebars, one soft shadow under a window |
 | Terminal (kitty) and console tools | the edition's console: 16 colours mapped from the roles (light editions keep a dark console); shell colours are ANSI numbers so everything follows it |
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
-| Start page | masthead (the distribution's logo, the host, the OS), bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
-| Boot (Plymouth), sign-in (greetd + ReGreet), consoles | the splash fades in the edition's survey field and the machine's logo, host and OS while traces of signal run along the contours, with a 4 px progress line; then the login screen, a glass panel in the edition over the same field; the console palette and a sign-in banner with the notice |
-| Backdrop | the survey field: a topographic map of a terrain each edition seeds differently, contour hairlines with every fifth an index contour strung with survey stations, and traces (lit stretches of contour, bright at the head) running along the lines when live; floor on lcd, true black on deep and crt. No text. Either backdrop (this or the y2k ribbon) can be chosen for every look (`fui wallpaper pick`); it is drawn in the edition's colours |
+| Start page | a small device: a chrome masthead (the distribution's logo, the host, the OS), readouts (edition, display, operator, node), a pressed-in search with a gel key, a directory with index codes in chrome panels, the clock in a lit readout and a day meter |
+| Boot (Plymouth), sign-in (greetd + ReGreet), consoles | the splash fades in the edition's survey field and the machine's logo, host and OS while traces of signal run along the contours, with a 4 px progress line; then the login screen, a boxy chrome shell over the edition's backdrop; the console palette and a sign-in banner with the notice |
+| Backdrop | light drawn as fine line work over a haze, in the edition's colours, one of six (each edition opens with its own; `fui wallpaper pick` chooses one for all): **survey** (a topographic map, traces running along its contours), **ribbon** (a sheaf of light lines pinching and fanning), **helix** (two braided strands, the near one bright), **orbit** (a gyroscope of tilted rings, beads travelling them), **fibre** (a fibre-optic lamp, its tips breathing), **mesh** (a wireframe landscape rolling in from the horizon). Live, each is a seamless 56 s loop. No text |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
 ## Motion
 
-Decisive: quick out, firm settle (`cubic-bezier(0.25, 0.9, 0.25, 1)`). Durations: 60 ms
-(state), 140 (focus), 220 (panels), 400 (screen changes, the takeover). Nothing bounces,
-glitches or blinks faster than once a second.
+Expo-out glides (`cubic-bezier(0.16, 1, 0.3, 1)`) and a pop with about 5% overshoot for
+windows and pop-ups; presses answer at once (90 ms). Durations: 60 ms (state), 140 (focus),
+220 (panels), 400 (screen changes, the takeover). The only thing that moves at rest is the
+backdrop. Nothing glitches or blinks faster than once a second.
 
 ## Sound
 
@@ -176,55 +188,44 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 
 ## Don't
 
-- No gloss, bevels, gel, drop shadows for separation, or neon glow (deep's one halo is the
-  only glow, and only in the signal).
+- No pills or circles (but radios and LEDs), and no corner over 4 px.
+- No gloss without a job: gel only on the primary action, the selection and the current
+  workspace; the shadow only under what floats; glow only on lit readouts and gel.
+- No pixel or segment typefaces: the type is the instrument's three voices.
 - No borrowed brands, logos or franchise interfaces; no weapons or targeting imagery.
 - No fake data: no decorative barcodes, waveforms, hex or progress that isn't progress.
 - One signal at a time; status is never colour alone.
 - No flashing; no emulated tube effects on a real tube.
 - No text on the backdrop.
 
-## Looks
-
-The desktop has two looks on one core. They share the roles, the display tiers, the safety
-floors, glass, the icon family and every behaviour; they differ in what the machine is.
-
-- **instrument** (this document): an instrument for a trained operator. Eight editions.
-- **y2k**: the owned device of the millennium (1997–2005: skinned media players, console
-  menus, late-1990s sleeve design). Four editions: `ice` and `chrome` (light), `slate` and
-  `ruby` (dark). `fui look` switches; `SUPER+CTRL+T`.
-
-What y2k changes, each with a job:
+## The materials
 
 | Material | Job | Where |
 |---|---|---|
-| Chrome (a bright lip, the lit face, a dark horizon, a lighter reflection; `chrome_*` roles) | the device's chassis | window frames (a 4 px gradient border), the bar, headers, title strips |
-| Chrome capsules (`face_*`, text in `mark`) | pressable | buttons, workspaces, the badge, hovered readouts |
-| Gel (`gel_*`, text in `on_gel`), with a specular lens | the primary action, the selection, the current workspace | suggested buttons, selected rows, the active workspace |
+| Chrome (a bright lip, the lit face, a dark horizon, a lighter reflection; `chrome_*` roles) | the device's chassis | window frames (a 2 px gradient border), the bar, headers, title strips |
+| Chrome keys (`face_*`, text in `mark`), with a specular band | pressable | buttons, workspaces, the badge, hovered readouts |
+| Gel (`gel_*`, text in `on_gel`), with a specular band | the primary action, the selection, the current workspace | suggested buttons, selected rows, the active workspace |
 | Readouts (`readout`, `readout_ink`), glowing | live values | the bar's clock, the lock screen's time, the OSD level, the player |
 | One soft shadow | floating | windows, menus, tooltips; never between flat panels |
 
-Motion in y2k: expo-out glides (`0.16, 1, 0.3, 1`) and a pop with about 5% overshoot for
-windows and pop-ups; presses answer at once; the only thing that moves at rest is the
-backdrop's ribbon (a 56 s seamless loop with a glint along its spine).
-
 ### One family, many parts
 
-A look is not one treatment repeated on every surface. Each surface is a different part of the
-same machine, built from the same roles, so the whole reads as designed rather than skinned:
+Each surface is a different part of the same device, built from the same roles, so the whole
+reads as designed rather than skinned:
 
-| Surface | instrument: an issued instrument | y2k: an owned device |
-|---|---|---|
-| Bar | a graduated rail: a tick scale along its foot (minor every 8 px, a major in the signal every 64) | the chrome chassis, keys for the workspaces, a readout for the clock |
-| Notification | a slip off a feed: a perforated edge (punched holes) along its top | tinted translucent plastic: the signal's tint, fine ribbing, a sheen along the top |
-| Control centre | a patch panel: square switches, each with an indicator lamp that lights in the signal | brushed metal; its switches matte rubber keys, a lit strip along the foot when on |
-| Launcher | the directory panel: a header plate, flat rows | a chrome title strip, a search field, a striped library list, gel on the selection |
-| Volume overlay | a panel meter: the level against a tick scale, the half marked | an LCD panel in a shell bezel: lit segments, the number glowing |
-| Window frame (labwc) | a flat header plate, the title left in the mono voice, hairline glyph buttons | a chrome title bar split at the horizon, gel orbs (red gel for close), a soft shadow |
-| App sidebars (GTK) | as the panel | brushed metal beside the glass content |
+| Surface | Part |
+|---|---|
+| Bar | the chrome chassis, keys for the workspaces, a readout for the clock |
+| Notification | tinted translucent plastic: the signal's tint, fine ribbing, a sheen along the top |
+| Control centre | brushed metal; its switches matte rubber keys, a lit strip along the foot when on |
+| Launcher | a chrome title strip, a pressed-in search field, a striped library list, gel on the selection |
+| Volume overlay | an LCD panel in a shell bezel: lit segments, the number glowing |
+| Window frame (labwc) | a chrome title bar split at the horizon, square gel keys (red gel for close), a soft shadow |
+| App sidebars (GTK) | brushed metal beside the glass content |
+| Music player (Audacious) | a chrome shell, square transport keys in a tray, gel play, glowing segment digits |
 
-Parts never borrow each other's material: a slip is never perforated metal, a patch-panel lamp
-never appears on a notification. Variety comes from the part, not from new colours.
+Parts never borrow each other's material: a notification is never brushed metal, a rubber key
+never appears on the bar. Variety comes from the part, not from new colours.
 
 ### Two sessions
 
@@ -235,6 +236,6 @@ shows the workspaces and the window title, and draws each window's frame in the 
 (theme/labwc.py). The keys match where the idea is the same; labwc adds window keys of its own
 (`SUPER+Up` maximise, `SUPER+Down` minimise, `SUPER+Left/Right` fill a half, `ALT+Tab`).
 
-Material roles exist in every edition (instrument editions derive them from their panels),
+Material roles exist in every edition (editions without a chassis derive them),
 so a component can always resolve them. Contrast is checked for `ink` on the shell and lit
 text in a readout, as for every other pair.

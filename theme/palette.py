@@ -13,8 +13,7 @@ TOK = tomllib.loads((HERE / "tokens.toml").read_text())
 EDS = TOK["meta"]["editions"]
 TIERS = TOK["meta"]["tiers"]
 RENAMED = TOK["meta"].get("renamed", {})
-LOOKS = TOK["meta"].get("looks", ["instrument"])
-LOOK = TOK.get("look", {})
+LOOK = TOK["look"]          # the one look: what it changes beyond colour
 GL = TOK["glass"]
 
 ROLES = ["void", "floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "faint",
@@ -29,13 +28,9 @@ def edition(name):
     return name if name in EDS else EDS[0]
 
 
-def look_of(ed):
-    """The look an edition belongs to (instrument when it names none)."""
-    return TOK["edition"][ed].get("look", "instrument")
-
-
-def editions_of(look):
-    return [e for e in EDS if look_of(e) == look]
+def backdrop_of(ed):
+    """The backdrop an edition opens with (tokens.toml: its `backdrop`, the survey when absent)."""
+    return TOK["edition"][ed].get("backdrop", "survey")
 
 
 # ── colour helpers ──────────────────────────────────────────────────────
@@ -124,15 +119,25 @@ def E(ed):
     p["bad_dim"] = mix(p["bad"], p["floor"], 0.80)
     p["on_bad"] = best_on(p["bad"])
     p["white"], p["black"] = "#FFFFFF", "#000000"
-    # material roles: y2k editions define the chassis and the LCD; the others derive them
-    p["shell"] = e.get("shell", p["panel"])
-    p["shell_hi"] = e.get("shell_hi", p["raised"])
-    p["readout"] = e.get("readout", p["well"])
-    p["readout_ink"] = e.get("readout_ink", p["signal"])
+    # material roles: the device editions define the chassis and the LCD; the others derive them
+    # derived chassis: dark editions get gunmetal tinted by the signal, light ones aluminium;
+    # the LCD is always a dark well lit in the signal (the light editions' a deep ink)
+    if dark:
+        shell = mix(mix(p["panel"], "#FFFFFF", 0.16), p["signal"], 0.12)
+        shell_hi = mix(shell, "#FFFFFF", 0.42)
+        readout, readout_ink = mix(p["well"], "#000000", 0.4), p["signal_hi"]
+    else:
+        shell = mix(mix(p["floor"], "#000000", 0.18), p["signal"], 0.06)
+        shell_hi = mix(p["panel"], "#FFFFFF", 0.7)
+        readout, readout_ink = mix(p["ink"], p["signal"], 0.12), mix(p["signal"], "#FFFFFF", 0.6)
+    p["shell"] = e.get("shell", shell)
+    p["shell_hi"] = e.get("shell_hi", shell_hi)
+    p["readout"] = e.get("readout", readout)
+    p["readout_ink"] = e.get("readout_ink", readout_ink)
     p["readout_dim"] = alpha(p["readout_ink"], 0.14)
     p["sheen"] = alpha("#FFFFFF", 0.14 if dark else 0.70)    # a bevel's lit edge
     p["shade"] = alpha("#000000", 0.45 if dark else 0.18)    # ...and its shadow edge
-    # the y2k materials, as gradient stops (theme/make-skin.py draws the same ones):
+    # the materials, as gradient stops (theme/make-skin.py draws the same ones):
     # chrome: a bright lip, the lit upper face, a dark horizon, a lighter reflection below
     sh, hi = p["shell"], p["shell_hi"]
     p["chrome_lip"] = mix(hi, "#FFFFFF", 0.55)

@@ -1,19 +1,18 @@
 # dotfiles
 
-Hyprland on EndeavourOS as **an instrument for a trained operator**: dark quiet fields,
-one signal colour, hairline structure, header plates with a signal stripe, tracked capital
-labels and codes, segment meters, numbers shown large and honestly, glass panels over a
-live survey field (a topographic map, its own terrain in every edition, with traces of
-signal running along the contours). Eight colour **editions** (cyan, amber, phosphor, acid, hazard,
-mono, paper, lab), each drawn for three display **tiers**: a tube (`crt`), a backlit panel
-(`lcd`) and a deep-black OLED / HDR panel (`deep`).
+Hyprland on EndeavourOS as **the owned device of the millennium, cut square**: windows in a
+chrome chassis (a bright lip, the lit face, a dark horizon, a lighter reflection), boxy
+corners, glossy gel keys with a specular band on the primary action and the selection, lit LCD
+wells for the clock and readouts, one soft shadow, springy motion. The type is an
+instrument's: Michroma for the clock and display numerals, Inter for controls, JetBrains Mono
+for data, with tracked capital labels and codes. Behind everything, a live backdrop of light
+drawn in the edition's colours (six to pick from: a survey map, a ribbon, a helix, a
+gyroscope, a fibre-optic lamp, a wireframe landscape), and the music player wears a skin
+drawn from the edition.
 
-A second **look** sits beside it, one key away (`SUPER+CTRL+T`): **y2k**, the owned device of
-the millennium. Windows in a chrome chassis (a bright lip, the lit face, a dark horizon, a
-lighter reflection), chrome capsule buttons, glossy gel on the primary action and the
-selection, the clock in a glowing readout, a ribbon of light drifting over a haze behind
-everything, and the music player wearing a skin drawn from the edition. Four editions: ice,
-chrome, slate and ruby. Switching back returns to the instrument exactly as it was.
+Twelve colour **editions** (cyan, amber, phosphor, acid, hazard, mono, paper, lab, ice, chrome,
+slate, ruby), each drawn for three display **tiers**: a tube (`crt`), a backlit panel (`lcd`)
+and a deep-black OLED / HDR panel (`deep`).
 
 ![backdrop](hypr/.config/hypr/wallpaper.png)
 
@@ -59,13 +58,12 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 
 | Command | Does |
 |---|---|
-| `fui mode toggle` / `pick` / `<edition>` | the next edition in this look (`SUPER+SHIFT+T`, or click it in the bar) · pick any edition from a list (`SUPER+ALT+T`) · set one |
-| `fui look toggle` / `pick` / `instrument` / `y2k` | switch looks (`SUPER+CTRL+T`); each look comes back to the edition you last used in it |
+| `fui mode toggle` / `pick` / `<edition>` | the next edition (`SUPER+SHIFT+T`, or click it in the bar) · pick any edition from a list (`SUPER+ALT+T`) · set one |
 | `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
 | `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, and every edition's loop is rendered ahead of time, so an edition change plays at once |
-| `fui wallpaper pick` | which backdrop: each look its own, or the survey (contours, traces running along them) or the ribbon (a sheaf of light lines) for every look |
+| `fui wallpaper pick` | which backdrop: each edition its own, or one for all: survey (contours, traces running along them), ribbon (a sheaf of light lines), helix (two braided strands), orbit (a gyroscope of rings), fibre (a fibre-optic lamp) or mesh (a wireframe landscape) |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
 | `fui brand` | the machine's names: host, OS, operator (the bar badge, lock screen, start page and boot use them) |
@@ -87,7 +85,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Area | What you get |
 |---|---|
 | Icons | one outline family (the Nerd Font's Material Design set) on everything: every palette command and menu row, the bar, the control centre, the lock screen, the start page, notifications, the prompt, fastfetch, terminal tabs, the key list and the doctor; registered in `tokens.toml` `[icons]` |
-| Sessions | Hyprland (tiling) or labwc (overlapping windows with title bars, a taskbar in the bar, a right-click desktop menu), picked at the sign-in screen; both share the bar, notifications, launcher, lock and `fui`, and labwc's title bars follow the look and edition |
+| Sessions | Hyprland (tiling) or labwc (overlapping windows with title bars, a taskbar in the bar, a right-click desktop menu), picked at the sign-in screen; both share the bar, notifications, launcher, lock and `fui`, and labwc's title bars (chrome, square gel keys) follow the edition |
 | Windows | flat panels, radius 4, a hairline edge (the focused one in the signal), no shadows (a soft signal halo on deep screens); dialogs, pickers and small tools float centred; picture-in-picture pinned |
 | Bar | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts (`CPU`, `MEM`, `NET`), volume and battery segment meters, now playing, updates, recording, the edition and tier, notices, the clock |
 | Launcher | apps, the command palette, the edition and tier pickers, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |
@@ -100,11 +98,11 @@ When something looks wrong, run `fui doctor` and send its output.
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
 | Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
 | Sound | deep, spacious cues as a sound theme: a sub-bass swell, a warm pad and glass bells at sign-in, glass bells for notices, soft blips for toggles, all in a stereo hall |
-| Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet in the edition's look: a glass panel over the survey field, or on y2k a rounded shell with a chrome title strip, pill fields, a gel Login button and the clock in a lit readout, over the ribbon; run `fui setup boot` again after changing look); the console palette and a sign-in banner |
+| Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet in the look: a boxy shell with a chrome title strip, pressed-in fields, a gel Login key and the clock in a lit readout, over the edition's backdrop; run `fui setup boot` again after changing edition); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
-| Music | Audacious, with a classic player skin generated per edition (a chrome shell, round transport orbs with a gel play button, glowing segment digits, an analyser, capsule faders, an equaliser and a playlist; flat panels and hairlines in the instrument editions); EasyEffects for a system equaliser; Shortwave for internet radio |
-| The y2k look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with capsule workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK headers in chrome, capsule buttons, gel selections; a welcome-screen lock; pill tabs in the terminal; a ribbon-of-light backdrop that moves (seamless 56 s loop); the start page as a small device |
+| Music | Audacious, with a classic player skin generated per edition (a chrome shell, square transport keys with a gel play key, glowing segment digits, an analyser, boxy faders, an equaliser and a playlist); EasyEffects for a system equaliser; Shortwave for internet radio |
+| The look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with key-shaped workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK and Qt headers in chrome, chrome keys, gel selections; a welcome-screen lock; slanted tabs in the terminal; backdrops that move (seamless 56 s loops); the start page as a small device. Every corner is boxy: 4 px panels, 2 px controls |
 
 ## Startup
 
@@ -144,13 +142,13 @@ reload what's running. The palette model is shared by every script
 ([`theme/survey.py`](theme/survey.py)), rendered per edition, tier and screen size into
 `~/.cache/fui` by `fui wallpaper`.
 
-**Looks.** Every edition belongs to a look (`look = "y2k"` in its table; instrument when it
-names none), and `[look.*]` holds what a look changes beyond colour: radii, the window frame,
-shadows, motion curves and the backdrop. `fui mode` also points the `fui-look.*` links (the
-bar, notices, OSD and launcher layers, and the lock screen's layout) at the edition's look;
-the GTK theme, kitty's tabs and the Hyprland frame read the look from the generated files.
-The y2k backdrop is [`theme/ribbon.py`](theme/ribbon.py); the player skin is
-[`theme/make-skin.py`](theme/make-skin.py).
+**The look.** `[look]` in the tokens holds what the look adds beyond colour: radii, the window
+frame, shadows and motion curves. The bar, notices, OSD, launcher and lock screen read their
+`look.*` layers; the GTK and Qt themes, kitty's tabs and the Hyprland frame read the look from
+the generated files. Editions without a chassis of their own derive one from their palette.
+The backdrops are [`theme/survey.py`](theme/survey.py), [`theme/ribbon.py`](theme/ribbon.py)
+and [`theme/lights.py`](theme/lights.py); each edition names the one it opens with
+(`backdrop` in its table). The player skin is [`theme/make-skin.py`](theme/make-skin.py).
 
 Not reachable by a theme: apps that draw their own UI (Blender, games). They still get the
 window frame, fonts and the dark / light preference.

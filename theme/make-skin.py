@@ -2,13 +2,12 @@
 """Draw a classic music-player skin (the Winamp 2 bitmap format, read by Audacious and qmmp)
 from an edition, so the player wears the desktop's look.
 
-y2k editions are built from the look's materials, drawn four times over and scaled down so
-every curve is smooth: a chrome shell (a bright lip, the lit upper face, a dark horizon, a
-lighter reflection below, a fine brushed grain), a recessed tray holding round transport orbs
-(play in glossy gel with a specular lens and a caustic glow underneath), lit readouts with
-glowing segment digits and a glass sheen, capsule faders, LED dots, engraved labels.
-instrument editions get the instrument look: flat panels, hairlines, square controls and the
-signal stripe. Every colour is a role from tokens.toml; nothing names a product.
+Built from the look's materials, drawn four times over and scaled down so every edge is
+smooth: a chrome shell (a bright lip, the lit upper face, a dark horizon, a lighter reflection
+below, a fine brushed grain), a recessed tray holding square transport keys (play in glossy
+gel with a specular band and a caustic glow underneath), lit readouts with glowing segment
+digits and a glass sheen, boxy faders, LED dots, engraved labels in the brand face. Corners
+are the look's: boxy. Every colour is a role from tokens.toml; nothing names a product.
 
 Usage:
   python3 theme/make-skin.py [--edition E] OUTDIR       # the bitmaps, pledit.txt, viscolor.txt
@@ -24,10 +23,13 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from palette import EDS, E, edition, is_dark, look_of, over  # noqa: E402
+from palette import EDS, LOOK, E, edition, is_dark, over  # noqa: E402
 
 S = 4                                                           # supersampling
 FONT = HERE.parent / "fui/.local/share/fonts/fui/Michroma-Regular.ttf"   # the vendored brand face
+# corners in skin pixels (the skin is drawn at 1x on a 275 px window; the desktop's 4 px panels
+# and 2 px controls become these): the shell, trays and readouts, keys
+R_SHELL, R_TRAY, R_KEY = 2.0, 1.5, 1.2
 
 # ── the format's 5x6 text font (the marquee): a 4x5 face, drawn crisp ───
 GLYPHS = {
@@ -145,10 +147,11 @@ class Canvas:
         self.paint(m, colour, alpha)
 
     def highlight(self, b, alpha=0.8, height=0.48):
-        """A specular lens: soft white over the top of a shape, fading downward."""
+        """A specular band: soft white across the top of a key, fading downward (a square
+        band, as the keys are square)."""
         x0, y0, x1, y1 = b
         w, h = x1 - x0, y1 - y0
-        lens = self.mask((x0 + w * 0.08, y0 + h * 0.03, x1 - w * 0.08, y0 + h * height * 2), ellipse=True)
+        lens = self.mask((x0 + w * 0.08, y0 + h * 0.05, x1 - w * 0.08, y0 + h * height * 1.6), R_KEY * 0.6)
         Y0, Y1 = y0 * S, (y0 + h * height) * S
         col = Image.new("L", (1, self.im.size[1]))
         col.putdata([round(255 * max(0.0, min(1.0, 1 - (yy - Y0) / max(1, Y1 - Y0))) ** 1.4) for yy in range(self.im.size[1])])
@@ -175,7 +178,7 @@ class Canvas:
 # ── the edition's materials ─────────────────────────────────────────────
 class Kit:
     def __init__(self, ed):
-        self.ed, self.y2k, self.dark = ed, look_of(ed) == "y2k", is_dark(ed)
+        self.ed, self.dark = ed, is_dark(ed)
         p = E(ed)
         k = {n: rgb(p[n]) for n in ("floor", "panel", "raised", "well", "rule", "rule_hi", "edge", "ink", "muted", "signal",
                                     "signal_hi", "signal_dim", "on_signal", "shell", "shell_hi", "readout", "readout_ink")}
@@ -212,34 +215,22 @@ class Kit:
     # ── parts ──
     def body(self, cv, b, r, height=H_MAIN):
         m = cv.mask(b, r)
-        if self.y2k:
-            cv.gradient(m, lambda y: self.chrome_at(y, height))
-            cv.stroke(b, r, self.rim, 1.0)
-            x0, y0, x1, y1 = b
-            cv.stroke((x0 + 1, y0 + 1, x1 - 1, y1 - 1), max(0, r - 1), self.lip, 0.75, 0.75 if not self.dark else 0.35)
-        else:
-            cv.paint(m, self.k["panel"])
-            cv.stroke(b, r, self.k["rule_hi"], 1.0)
+        cv.gradient(m, lambda y: self.chrome_at(y, height))
+        cv.stroke(b, r, self.rim, 1.0)
+        x0, y0, x1, y1 = b
+        cv.stroke((x0 + 1, y0 + 1, x1 - 1, y1 - 1), max(0, r - 1), self.lip, 0.75, 0.75 if not self.dark else 0.35)
 
     def recess(self, cv, b, r, fn):
         """A tray set into the shell: darker, shadowed at its top, lit along its bottom edge."""
         m = cv.mask(b, r)
-        if self.y2k:
-            cv.gradient(m, fn)
-            cv.inner_shadow(m, blur=1.4, dy=1.2, alpha=0.65)
-            x0, y0, x1, y1 = b
-            cv.stroke((x0 - 0.5, y0 - 0.5, x1 + 0.5, y1 + 0.5), r + 0.5, self.lip, 0.6, 0.55 if not self.dark else 0.25)
-        else:
-            cv.paint(m, self.k["well"])
-            cv.stroke(b, r, self.k["edge"], 1.0)
+        cv.gradient(m, fn)
+        cv.inner_shadow(m, blur=1.4, dy=1.2, alpha=0.65)
+        x0, y0, x1, y1 = b
+        cv.stroke((x0 - 0.5, y0 - 0.5, x1 + 0.5, y1 + 0.5), r + 0.5, self.lip, 0.6, 0.55 if not self.dark else 0.25)
 
     def lcd(self, cv, b, r, glass=True):
         """A lit readout: dark glass, an inner shadow, a faint glow of its own light, a sheen."""
         m = cv.mask(b, r)
-        if not self.y2k:
-            cv.paint(m, self.k["readout"])
-            cv.stroke(b, r, self.k["edge"], 1.0)
-            return
         x0, y0, x1, y1 = b
         cv.gradient(m, lambda y: stops_at(self.lcd_stops, (y - y0) / max(1, y1 - y0)))
         w, h = x1 - x0, y1 - y0
@@ -252,29 +243,23 @@ class Kit:
             sheen = cv.mask((x0 - w * 0.2, y0 - h * 0.9, x1 + w * 0.1, y0 + h * 0.42), ellipse=True)
             cv.paint(ImageChops.multiply(sheen, m), WHITE, 0.07)
 
-    def _face(self, cv, fb, r, gel, pressed, ellipse=False):
-        face = cv.mask(fb, ellipse=True) if ellipse else cv.mask(fb, r)
+    def _face(self, cv, fb, r, gel, pressed):
+        face = cv.mask(fb, r)
         stops = self.gel if gel else self.face
         if pressed:
             stops = [(1 - t, mix(c, BLACK, 0.18)) for t, c in reversed(stops)]
         cv.gradient(face, lambda y: stops_at(stops, (y - fb[1]) / max(0.5, fb[3] - fb[1])))
         return face
 
-    def orb(self, cv, cx, cy, rad, kind=None, gel=False, pressed=False):
-        """A round button: a rim, a face lit from above, a specular lens; gel ones glow below."""
+    def key(self, cv, cx, cy, rad, kind=None, gel=False, pressed=False):
+        """A square key: a rim, a face lit from above, a specular band; gel ones glow below."""
         b = (cx - rad, cy - rad, cx + rad, cy + rad)
         k = self.k
-        if not self.y2k:
-            cv.paint(cv.mask(b, 1), k["signal"] if gel else (k["signal_dim"] if pressed else k["raised"]))
-            cv.stroke(b, 1, k["signal"] if (gel or pressed) else k["edge"], 1.0)
-            if kind:
-                self.glyph(cv, kind, cx, cy, rad, k["on_signal"] if gel else k["ink"])
-            return
-        outer = cv.mask(b, ellipse=True)
+        outer = cv.mask(b, R_KEY)
         cv.shadow(outer, blur=1.1, dy=0.9, alpha=0.5)
         cv.paint(outer, self.rim)
         fb = (b[0] + 0.9, b[1] + 0.9, b[2] - 0.9, b[3] - 0.9)
-        face = self._face(cv, fb, 0, gel, pressed, ellipse=True)
+        face = self._face(cv, fb, max(0.4, R_KEY - 0.9), gel, pressed)
         if gel:                                               # the caustic: light gathering at the bottom of the glass
             cau = cv.mask((cx - rad * 0.6, cy + rad * 0.12, cx + rad * 0.6, cy + rad * 0.92), ellipse=True)
             cv.paint(ImageChops.multiply(cau.filter(ImageFilter.GaussianBlur(1.2 * S)), face), mix(k["signal"], WHITE, 0.55), 0.6)
@@ -287,26 +272,22 @@ class Kit:
             self.glyph(cv, kind, cx + off, cy + off, rad, self.on_gel if gel else self.mark)
 
     def capsule(self, cv, b, gel=False, pressed=False, label=None, led=None):
-        """A pill button (or a fader thumb): the orb's materials, stretched."""
+        """A wide key (or a fader thumb): the key's materials, stretched."""
         x0, y0, x1, y1 = b
-        r = (y1 - y0) / 2
+        r = R_KEY
         k = self.k
-        if not self.y2k:
-            cv.paint(cv.mask(b, 1), k["signal"] if gel else (k["signal_dim"] if pressed else k["raised"]))
-            cv.stroke(b, 1, k["signal"] if (gel or pressed) else k["edge"], 1.0)
-        else:
-            outer = cv.mask(b, r)
-            cv.shadow(outer, blur=0.9, dy=0.7, alpha=0.45)
-            cv.paint(outer, self.rim)
-            fb = (x0 + 0.8, y0 + 0.8, x1 - 0.8, y1 - 0.8)
-            self._face(cv, fb, max(0.5, r - 0.8), gel, pressed)
-            cv.highlight(fb, alpha=0.3 if pressed else 0.72, height=0.5)
+        outer = cv.mask(b, r)
+        cv.shadow(outer, blur=0.9, dy=0.7, alpha=0.45)
+        cv.paint(outer, self.rim)
+        fb = (x0 + 0.8, y0 + 0.8, x1 - 0.8, y1 - 0.8)
+        self._face(cv, fb, max(0.5, r - 0.8), gel, pressed)
+        cv.highlight(fb, alpha=0.3 if pressed else 0.72, height=0.5)
         tx = x0 + 3.0
         if led is not None:
             self.led(cv, x0 + 4.4, (y0 + y1) / 2, led)
             tx = x0 + 7.2
         if label:
-            ink = (self.on_gel if gel else self.mark) if self.y2k else k["ink"]
+            ink = self.on_gel if gel else self.mark
             cv.text(((tx + x1 - 2.6) / 2, (y0 + y1) / 2 + 0.25 + (0.5 if pressed else 0)), label, ink, size=4.8, anchor="mm")
 
     def led(self, cv, cx, cy, on):
@@ -314,8 +295,7 @@ class Kit:
         m = cv.mask(b, ellipse=True)
         k = self.k
         if on:
-            if self.y2k:
-                cv.glow(m, k["signal"], blur=1.3, alpha=0.9)
+            cv.glow(m, k["signal"], blur=1.3, alpha=0.9)
             cv.paint(m, mix(k["signal"], WHITE, 0.35))
             cv.paint(cv.mask((cx - 0.9, cy - 1.2, cx + 0.3, cy - 0.3), ellipse=True), WHITE, 0.85)
         else:
@@ -366,111 +346,90 @@ class Kit:
             bb = cv.box((x + a + 0.15, y + b + 0.15, x + c - 0.15, y + d - 0.15))
             (dl if name in on else du).rounded_rectangle(bb, radius=round(0.45 * S), fill=255)
         cv.paint(unlit, self.k["readout_ink"], 0.12)
-        if self.y2k:
-            cv.glow(lit, self.k["readout_ink"], blur=0.9, alpha=0.55)
-        cv.paint(lit, mix(self.k["readout_ink"], WHITE, 0.15) if self.y2k else self.k["readout_ink"])
+        cv.glow(lit, self.k["readout_ink"], blur=0.9, alpha=0.55)
+        cv.paint(lit, mix(self.k["readout_ink"], WHITE, 0.15))
 
     def fill_bar(self, cv, b):
-        m = cv.mask(b, (b[3] - b[1]) / 2)
-        if self.y2k:
-            cv.glow(m, self.k["signal"], 1.0, 0.55)
-            cv.gradient(m, lambda y: stops_at(self.gel, (y - b[1]) / max(0.5, b[3] - b[1])))
-        else:
-            cv.paint(m, self.k["signal"])
+        m = cv.mask(b, min(0.6, (b[3] - b[1]) / 2))
+        cv.glow(m, self.k["signal"], 1.0, 0.55)
+        cv.gradient(m, lambda y: stops_at(self.gel, (y - b[1]) / max(0.5, b[3] - b[1])))
 
     def label(self, cv, xy, s, size=5.0, anchor="la"):
-        if self.y2k:
-            cv.text(xy, s, self.engrave_ink, size=size + 0.4, anchor=anchor, engrave=self.engrave_lit)
-        else:
-            cv.text(xy, s, self.k["muted"], size=size, anchor=anchor)
+        cv.text(xy, s, self.engrave_ink, size=size + 0.4, anchor=anchor, engrave=self.engrave_lit)
 
     def ground(self, cv, b, fn):
         """A sprite's own background, matching what the window draws under it."""
         m = cv.mask(b)
-        if self.y2k:
-            cv.gradient(m, fn)
-        else:
-            cv.paint(m, self.k["panel"])
+        cv.gradient(m, fn)
 
 
 # ── the main window ─────────────────────────────────────────────────────
 def main_bmp(K):
-    cv = Canvas(275, 116, K.rim if K.y2k else K.k["floor"])
-    K.body(cv, (0.5, 0.5, 274.5, 115.5), 9 if K.y2k else 0)
-    if not K.y2k:
-        cv.paint(cv.mask((0, 14, 2, 116)), K.k["signal"])
-    K.lcd(cv, (8, 18, 107, 64), 6)                            # time, status, the analyser
+    cv = Canvas(275, 116, K.rim)
+    K.body(cv, (0.5, 0.5, 274.5, 115.5), R_SHELL)
+    K.lcd(cv, (8, 18, 107, 64), R_TRAY)                            # time, status, the analyser
     for y in (30, 35):                                        # the time's colon
         cv.paint(cv.mask((72.2, y, 73.8, y + 1.6), 0.6), K.k["readout_ink"])
-    K.lcd(cv, (109, 22, 267, 37), 4)                          # the marquee
-    K.lcd(cv, (109, 40.5, 129.5, 51.5), 3, glass=False)       # kbps
-    K.lcd(cv, (153, 40.5, 169.5, 51.5), 3, glass=False)       # kHz
+    K.lcd(cv, (109, 22, 267, 37), R_TRAY)                          # the marquee
+    K.lcd(cv, (109, 40.5, 129.5, 51.5), R_KEY, glass=False)       # kbps
+    K.lcd(cv, (153, 40.5, 169.5, 51.5), R_KEY, glass=False)       # kHz
     K.label(cv, (132, 46.4), "KBPS", 4.4, "lm")
     K.label(cv, (172, 46.4), "KHZ", 4.4, "lm")
-    K.recess(cv, SEEK, 7, lambda y: K.tray_at(y, SEEK))       # behind the seek groove
-    K.recess(cv, TRAY, 11.5, K.tray_at)                       # the transport's tray
-    K.orb(cv, 259.5, 97, 6)                                   # the maker's place: an orb with a lit point, no name
+    K.recess(cv, SEEK, R_TRAY, lambda y: K.tray_at(y, SEEK))       # behind the seek groove
+    K.recess(cv, TRAY, R_TRAY, K.tray_at)                       # the transport's tray
+    K.key(cv, 259.5, 97, 6)                                   # the maker's place: a key with a lit point, no name
     K.led(cv, 259.5, 97, True)
     return cv.out()
 
 
 def titlebar_bmp(K):
-    cv = Canvas(344, 87, K.rim if K.y2k else K.k["floor"])
+    cv = Canvas(344, 87, K.rim)
     k = K.k
 
     def bar(y, focused):
         b = (27, y, 302, y + 14)
-        if K.y2k:
-            cv.gradient(cv.mask(b), lambda yy: K.chrome_at(yy - y))
-            slot = (115, y + 5.6, 214, y + 8.4)                # the grip: a slot pressed into the chrome
-            sm = cv.mask(slot, 1.4)
-            cv.paint(sm, mix(k["shell"], BLACK, 0.55))
-            cv.inner_shadow(sm, blur=0.6, dy=0.5, alpha=0.6)
-            if focused:                                       # ...lit in the signal while the window has focus
-                cv.glow(sm, k["signal"], blur=1.4, alpha=0.75)
-                cv.paint(cv.mask((116.5, y + 6.4, 212.5, y + 7.6), 0.6), mix(k["signal"], WHITE, 0.3), 0.9)
-            cv.stroke((27.5, y + 0.6, 301.5, y + 14), 0, K.lip, 0.5, 0.5 if focused else 0.25)
-        else:
-            cv.paint(cv.mask(b), k["raised"] if focused else k["panel"])
-            if focused:
-                cv.paint(cv.mask((27, y, 30, y + 14)), k["signal"])
+        cv.gradient(cv.mask(b), lambda yy: K.chrome_at(yy - y))
+        slot = (115, y + 5.6, 214, y + 8.4)                # the grip: a slot pressed into the chrome
+        sm = cv.mask(slot, 1.4)
+        cv.paint(sm, mix(k["shell"], BLACK, 0.55))
+        cv.inner_shadow(sm, blur=0.6, dy=0.5, alpha=0.6)
+        if focused:                                       # ...lit in the signal while the window has focus
+            cv.glow(sm, k["signal"], blur=1.4, alpha=0.75)
+            cv.paint(cv.mask((116.5, y + 6.4, 212.5, y + 7.6), 0.6), mix(k["signal"], WHITE, 0.3), 0.9)
+        cv.stroke((27.5, y + 0.6, 301.5, y + 14), 0, K.lip, 0.5, 0.5 if focused else 0.25)
     for y, foc in ((0, True), (15, False), (57, True), (72, False), (29, True), (42, False)):
         bar(y, foc)
     for x, y, kind, pressed in ((0, 0, "opt", False), (0, 9, "opt", True), (9, 0, "min", False), (9, 9, "min", True),
                                 (18, 0, "close", False), (18, 9, "close", True), (0, 18, "shade", False),
                                 (9, 18, "shade", True), (0, 27, "shade", False), (9, 27, "shade", True)):
         K.ground(cv, (x, y, x + 9, y + 9), lambda yy, y=y: K.chrome_at(yy - y + 3))
-        K.orb(cv, x + 4.5, y + 4.5, 4.0, kind, pressed=pressed)
+        K.key(cv, x + 4.5, y + 4.5, 4.0, kind, pressed=pressed)
     for x, lit in ((304, True), (312, False)):                # the clutter bar (8x43)
-        K.lcd(cv, (x + 0.5, 0.5, x + 7.5, 42.5), 2.5, glass=False)
+        K.lcd(cv, (x + 0.5, 0.5, x + 7.5, 42.5), R_KEY, glass=False)
         for i, ch in enumerate("OAIDV"):
             cv.text((x + 4, 5 + i * 8), ch, k["readout_ink"], 4.2, "mm", alpha=0.85 if lit else 0.25)
     for i, (x, y, h) in enumerate(((304, 47, 8), (312, 55, 7), (320, 62, 7), (328, 69, 8), (336, 77, 7))):
         cv.paint(cv.mask((x, y, x + 8, y + h)), k["readout"])
         cv.text((x + 4, y + h / 2), "OAIDV"[i], mix(k["readout_ink"], WHITE, 0.3), 4.2, "mm")
-    K.lcd(cv, (0, 36, 17, 43), 2, glass=False)                # the shaded window's small seek bar
+    K.lcd(cv, (0, 36, 17, 43), R_KEY, glass=False)                # the shaded window's small seek bar
     for x in (17, 20, 23):
         cv.paint(cv.mask((x, 36, x + 3, 43), 1.4), k["signal"])
     return cv.out()
 
 
 def cbuttons_bmp(K):
-    """The transport: round orbs in the tray; play is gel."""
+    """The transport: square keys in the tray; play is gel."""
     cv = Canvas(136, 36, K.rim)
     oy, ey = AT["cbuttons"][1], AT["eject"][1]
     kinds = [("prev", 0, 23), ("play", 23, 23), ("pause", 46, 23), ("stop", 69, 23), ("next", 92, 22)]
     for row, pressed in ((0, False), (18, True)):
         K.ground(cv, (0, row, 114, row + 18), lambda y, row=row: K.tray_at(y - row + oy))
-        if not K.y2k:
-            cv.paint(cv.mask((0, row, 114, row + 18)), K.k["well"])
         for kind, x, w in kinds:
-            K.orb(cv, x + w / 2, row + 9, 8.4 if kind == "play" else 7.6, kind, gel=kind == "play", pressed=pressed)
+            K.key(cv, x + w / 2, row + 9, 8.4 if kind == "play" else 7.6, kind, gel=kind == "play", pressed=pressed)
     for row, pressed in ((0, False), (16, True)):
         K.ground(cv, (114, row, 136, row + 16), lambda y, row=row: K.tray_at(y - row + ey))
-        if not K.y2k:
-            cv.paint(cv.mask((114, row, 136, row + 16)), K.k["well"])
         K.capsule(cv, (116, row + 2.5, 134, row + 13.5), pressed=pressed)
-        K.glyph(cv, "eject", 125, row + 8 + (0.5 if pressed else 0), 8, K.mark if K.y2k else K.k["ink"])
+        K.glyph(cv, "eject", 125, row + 8 + (0.5 if pressed else 0), 8, K.mark)
     return cv.out()
 
 
@@ -492,7 +451,7 @@ def shufrep_bmp(K):
 def text_bmp(K):
     im = Image.new("RGB", (155, 18), K.k["readout"])
     d = ImageDraw.Draw(im)
-    ink = mix(K.k["readout_ink"], WHITE, 0.15) if K.y2k else K.k["readout_ink"]
+    ink = mix(K.k["readout_ink"], WHITE, 0.15)
     for ch, (row, col) in CELLS.items():
         for j, line in enumerate(GLYPHS[ch].split("|")):
             for i, v in enumerate(line):
@@ -528,8 +487,8 @@ def monoster_bmp(K):
     for y, lit in ((0, True), (12, False)):
         for x, w, lab in ((0, 29, "STEREO"), (29, 27, "MONO")):
             K.ground(cv, (x, y, x + w, y + 12), lambda yy, y=y: K.chrome_at(yy - y + AT["monoster"][1]))
-            K.lcd(cv, (x + 0.6, y + 0.6, x + w - 0.6, y + 11.4), 2.5, glass=False)
-            if lit and K.y2k:
+            K.lcd(cv, (x + 0.6, y + 0.6, x + w - 0.6, y + 11.4), R_KEY, glass=False)
+            if lit:
                 cv.glow(cv.mask((x + 4, y + 4, x + w - 4, y + 8), 2), K.k["readout_ink"], 2.0, 0.22)
             cv.text((x + w / 2, y + 6.3), lab, K.k["readout_ink"], 4.2, "mm", alpha=1.0 if lit else 0.18)
     return cv.out()
@@ -539,9 +498,7 @@ def posbar_bmp(K):
     cv = Canvas(307, 10, K.rim)
     oy = AT["posbar"][1]
     K.ground(cv, (0, 0, 307, 10), lambda y: K.tray_at(y + oy, SEEK))
-    if not K.y2k:
-        cv.paint(cv.mask((0, 0, 307, 10)), K.k["well"])
-    K.lcd(cv, (1, 3, 247, 7.5), 2.2, glass=False)
+    K.lcd(cv, (1, 3, 247, 7.5), R_KEY, glass=False)
     for x0, pressed in ((248, False), (278, True)):
         K.capsule(cv, (x0 + 0.5, 0.5, x0 + 28.5, 9.5), gel=True, pressed=pressed)
     return cv.out()
@@ -553,7 +510,7 @@ def fader_frames(K, width, x0, centred, abs_y):
     for i in range(28):
         y = i * 15
         K.ground(cv, (0, y, 68, y + 13), lambda yy, y=y: K.chrome_at(yy - y + abs_y))
-        K.lcd(cv, (x0 + 0.5, y + 4.6, x0 + width - 0.5, y + 8.4), 1.9, glass=False)
+        K.lcd(cv, (x0 + 0.5, y + 4.6, x0 + width - 0.5, y + 8.4), R_KEY, glass=False)
         t = i / 27
         if centred:
             mid, half = x0 + width / 2, (width / 2 - 1.5) * t
@@ -564,7 +521,7 @@ def fader_frames(K, width, x0, centred, abs_y):
     for x, pressed in ((15, False), (0, True)):
         K.ground(cv, (x, 422, x + 14, 433), lambda yy: K.chrome_at(yy - 422 + abs_y + 1))
         K.capsule(cv, (x + 0.5, 423, x + 13.5, 432), pressed=pressed)
-        cv.paint(cv.mask((x + 6.3, 425, x + 7.7, 430), 0.5), K.k["signal"] if K.y2k else K.k["ink"], 0.9)
+        cv.paint(cv.mask((x + 6.3, 425, x + 7.7, 430), 0.5), K.k["signal"], 0.9)
     return cv.out()
 
 
@@ -575,13 +532,11 @@ EQ_TRAYS = ((15, 36, 41, 103), (73, 36, 263, 103))
 def eqmain_bmp(K):
     cv = Canvas(275, 315, K.rim)
     k = K.k
-    K.body(cv, (0.5, 0.5, 274.5, 115.5), 9 if K.y2k else 0)
-    if not K.y2k:
-        cv.paint(cv.mask((0, 14, 2, 116)), k["signal"])
+    K.body(cv, (0.5, 0.5, 274.5, 115.5), R_SHELL)
     eq_tray = lambda y: stops_at(K.tray, (y - 36) / 67)
     for tb in EQ_TRAYS:
-        K.recess(cv, tb, 6, eq_tray)
-    K.lcd(cv, (85, 16, 200, 37), 3)                           # the curve graph's place
+        K.recess(cv, tb, R_TRAY, eq_tray)
+    K.lcd(cv, (85, 16, 200, 37), R_TRAY)                           # the curve graph's place
     K.label(cv, (28, 109), "PREAMP", 4.2, "mm")
     for i, f in enumerate(("60", "170", "310", "600", "1K", "3K", "6K", "12K", "14K", "16K")):
         K.label(cv, (85 + i * 18, 109), f, 4.2, "mm")
@@ -589,19 +544,13 @@ def eqmain_bmp(K):
         K.label(cv, (70, y), lab, 4.0, "rm")
     for y, foc in ((134, True), (149, False)):               # title bars
         m = cv.mask((0, y, 275, y + 14))
-        if K.y2k:
-            cv.gradient(m, lambda yy, y=y: K.chrome_at(yy - y))
-            if foc:
-                cv.glow(cv.mask((96, y + 6, 179, y + 8), 1), k["signal"], 1.6, 0.6)
-            K.label(cv, (137.5, y + 7.4), "EQUALIZER", 4.8, "mm")
-        else:
-            cv.paint(m, k["raised"] if foc else k["panel"])
-            if foc:
-                cv.paint(cv.mask((0, y, 3, y + 14)), k["signal"])
-            cv.text((137.5, y + 7.4), "EQUALIZER", k["ink"], 4.8, "mm")
+        cv.gradient(m, lambda yy, y=y: K.chrome_at(yy - y))
+        if foc:
+            cv.glow(cv.mask((96, y + 6, 179, y + 8), 1), k["signal"], 1.6, 0.6)
+        K.label(cv, (137.5, y + 7.4), "EQUALIZER", 4.8, "mm")
     for y, pressed in ((116, False), (125, True)):
         K.ground(cv, (0, y, 9, y + 9), lambda yy, y=y: K.chrome_at(yy - y + 3))
-        K.orb(cv, 4.5, y + 4.5, 4.0, "close", pressed=pressed)
+        K.key(cv, 4.5, y + 4.5, 4.0, "close", pressed=pressed)
     for x_on, x_auto, lit, pressed in ((10, 36, False, False), (128, 154, False, True), (69, 95, True, False), (187, 213, True, True)):
         for x, w, lab in ((x_on, 26, "ON"), (x_auto, 32, "AUTO")):
             K.ground(cv, (x, 119, x + w, 131), lambda yy: K.chrome_at(yy - 119 + 18))
@@ -609,16 +558,14 @@ def eqmain_bmp(K):
     for n in range(28):                                       # fader frames: 14x63, 14 a row, 15 apart
         x, y = 13 + (n % 14) * 15, 164 + (n // 14) * 65
         K.ground(cv, (x, y, x + 14, y + 63), lambda yy, y=y: eq_tray(yy - y + 38))
-        if not K.y2k:
-            cv.paint(cv.mask((x, y, x + 14, y + 63)), k["well"])
-        K.lcd(cv, (x + 5.2, y + 1.5, x + 8.8, y + 61.5), 1.8, glass=False)
+        K.lcd(cv, (x + 5.2, y + 1.5, x + 8.8, y + 61.5), R_KEY, glass=False)
         top, zero = y + 59.5 - 56 * n / 27, y + 31.5
         if abs(top - zero) > 0.6:
             K.fill_bar(cv, (x + 5.9, min(top, zero), x + 8.1, max(top, zero)))
     for y, pressed in ((164, False), (176, True)):           # the capsule thumb
         K.ground(cv, (0, y, 11, y + 11), lambda yy: stops_at(K.tray, 0.5))
         K.capsule(cv, (0.5, y + 2, 10.5, y + 9), pressed=pressed)
-        cv.paint(cv.mask((2.5, y + 5.1, 8.5, y + 5.9), 0.3), k["signal"] if K.y2k else k["ink"])
+        cv.paint(cv.mask((2.5, y + 5.1, 8.5, y + 5.9), 0.3), k["signal"])
     K.lcd(cv, (0, 294, 113, 313), 0, glass=False)            # the graph's background
     for yy in (298.5, 303.5, 308.5):
         cv.paint(cv.mask((1, yy, 112, yy + 0.4)), k["readout_ink"], 0.10)
@@ -637,31 +584,20 @@ def pledit_bmp(K):
     k = K.k
 
     def strip(b, focused=False):
-        if K.y2k:
-            h = b[3] - b[1]
-            cv.gradient(cv.mask(b), lambda y: K.chrome_at((y - b[1]) / h * 20, 20))
-            cv.stroke((b[0], b[1] + 0.5, b[2], b[3]), 0, K.lip, 0.5, 0.35)
-        else:
-            cv.paint(cv.mask(b), k["raised"] if focused else k["panel"])
+        h = b[3] - b[1]
+        cv.gradient(cv.mask(b), lambda y: K.chrome_at((y - b[1]) / h * 20, 20))
+        cv.stroke((b[0], b[1] + 0.5, b[2], b[3]), 0, K.lip, 0.5, 0.35)
 
     for y, foc in ((0, True), (21, False)):
         for x, w in ((0, 25), (26, 100), (127, 25), (153, 25)):
             strip((x, y, x + w, y + 20), foc)
-        if K.y2k:
-            if foc:
-                cv.glow(cv.mask((44, y + 9, 108, y + 11), 1), k["signal"], 1.6, 0.55)
-            K.label(cv, (76, y + 10.4), "PLAYLIST", 4.8, "mm")
-        else:
-            if foc:
-                cv.paint(cv.mask((26, y, 29, y + 20)), k["signal"])
-            cv.text((76, y + 10.4), "PLAYLIST", k["ink"], 4.8, "mm")
+        if foc:
+            cv.glow(cv.mask((44, y + 9, 108, y + 11), 1), k["signal"], 1.6, 0.55)
+        K.label(cv, (76, y + 10.4), "PLAYLIST", 4.8, "mm")
     for x0, x1 in ((0, 12), (31, 51)):                        # the side edges: chrome lit from the left
-        if K.y2k:
-            row = Image.new("RGB", ((x1 - x0) * S, 1))
-            row.putdata([stops_at(K.chrome, 0.12 + 0.6 * i / ((x1 - x0) * S)) for i in range((x1 - x0) * S)])
-            cv.im.paste(row.resize(((x1 - x0) * S, 29 * S)).convert("RGBA"), (x0 * S, 42 * S))
-        else:
-            cv.paint(cv.mask((x0, 42, x1, 71)), k["panel"])
+        row = Image.new("RGB", ((x1 - x0) * S, 1))
+        row.putdata([stops_at(K.chrome, 0.12 + 0.6 * i / ((x1 - x0) * S)) for i in range((x1 - x0) * S)])
+        cv.im.paste(row.resize(((x1 - x0) * S, 29 * S)).convert("RGBA"), (x0 * S, 42 * S))
     K.lcd(cv, (36, 42, 44, 71), 0, glass=False)               # the scroll groove
     for x, sel in ((52, False), (61, True)):
         cv.paint(cv.mask((x, 53, x + 8, 71)), k["readout"])
@@ -672,19 +608,19 @@ def pledit_bmp(K):
         x = 11 + i * 29
         K.capsule(cv, (x, 86, x + 23, 103), label=lab)
     strip((126, 72, 276, 110))
-    K.lcd(cv, (133, 78, 217, 92), 3)
+    K.lcd(cv, (133, 78, 217, 92), R_TRAY)
     K.capsule(cv, (226, 86, 252, 103), label="LIST")
-    K.lcd(cv, (205.5, 0.5, 279.5, 37.5), 3, glass=False)      # the visualiser's place
+    K.lcd(cv, (205.5, 0.5, 279.5, 37.5), R_KEY, glass=False)      # the visualiser's place
     for x, y, w in ((72, 57, 25), (72, 42, 25), (99, 57, 50), (99, 42, 50)):
         strip((x, y, x + w, y + 14))
     for x, y, kind in ((52, 42, "close"), (62, 42, "min"), (150, 42, "shade")):
         K.ground(cv, (x, y, x + 9, y + 9), lambda yy, y=y: K.chrome_at(yy - y + 3))
-        K.orb(cv, x + 4.5, y + 4.5, 4.0, kind, pressed=True)
+        K.key(cv, x + 4.5, y + 4.5, 4.0, kind, pressed=True)
     for col, x in enumerate((0, 54, 104, 154, 204)):          # the menus: 22x18 buttons and 3 px bars
         for row in range(4 if col == 1 else 3):
             y = 111 + row * 19
             for dx, sel in ((0, False), (23, True)):
-                cv.paint(cv.mask((x + dx, y, x + dx + 22, y + 18)), stops_at(K.tray, 0.5) if K.y2k else k["well"])
+                cv.paint(cv.mask((x + dx, y, x + dx + 22, y + 18)), stops_at(K.tray, 0.5))
                 K.capsule(cv, (x + dx + 1, y + 2, x + dx + 21, y + 16), gel=sel)
     for x in (48, 100, 150, 200, 250):
         cv.paint(cv.mask((x, 111, x + 3, 183), 1.5), k["signal"])
@@ -704,11 +640,9 @@ def write(out, ed):
         im.save(out / f"{name}.bmp")
     k = K.k
     hexc = lambda t: "#%02X%02X%02X" % t
-    if K.y2k:          # a lit playlist: the readout's colours
-        normal, current, bg = k["readout_ink"], mix(k["readout_ink"], WHITE, 0.7), k["readout"]
-        sel = mix(k["readout"], k["signal"], 0.45)
-    else:
-        normal, current, bg, sel = k["ink"], k["signal"], k["well"], k["signal_dim"]
+    # a lit playlist: the readout's colours
+    normal, current, bg = k["readout_ink"], mix(k["readout_ink"], WHITE, 0.7), k["readout"]
+    sel = mix(k["readout"], k["signal"], 0.45)
     (out / "pledit.txt").write_text(f"[Text]\nNormal={hexc(normal)}\nCurrent={hexc(current)}\nNormalBG={hexc(bg)}\n"
                                     f"SelectedBG={hexc(sel)}\nmbFG={hexc(k['ink'])}\nmbBG={hexc(k['panel'])}\nFont=Inter\n")
     # viscolor: 0 background, 1 dots, 2..17 analyser bars (top to bottom), 18..22 scope, 23 peaks
@@ -718,7 +652,7 @@ def write(out, ed):
     vis += [mix(k["readout_ink"], k["signal"], i / 4) for i in range(5)]
     vis += [mix(k["signal_hi"], WHITE, 0.5)]
     (out / "viscolor.txt").write_text("".join(f"{r},{g},{b}\n" for r, g, b in vis))
-    (out / "readme.txt").write_text(f"fui skin, edition {ed} ({look_of(ed)} look). Generated by theme/make-skin.py from the\n"
+    (out / "readme.txt").write_text(f"fui skin, edition {ed}. Generated by theme/make-skin.py from the\n"
                                     f"dotfiles' tokens: run fui skin again after changing them.\n")
     return images
 
@@ -734,7 +668,7 @@ def main(argv):
         print(__doc__, file=sys.stderr)
         return 2
     write(Path(args[0]), ed)
-    print(f"wrote {args[0]} ({ed}, {look_of(ed)})")
+    print(f"wrote {args[0]} ({ed})")
     return 0
 
 

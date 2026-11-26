@@ -28,7 +28,7 @@ BEAD_GAP = 46                # survey stations along the index contours
 
 
 SEEDS = {"cyan": 19, "amber": 61, "phosphor": 23, "acid": 88, "hazard": 37, "mono": 74, "paper": 52, "lab": 95,
-         "ice": 43, "chrome": 67, "slate": 29, "ruby": 81}   # the y2k editions survey their own land too
+         "ice": 43, "chrome": 67, "slate": 29, "ruby": 81}   # the device editions survey their own land too
 
 
 def _field(seed):
