@@ -154,6 +154,10 @@ OUT="$OUT" FUI="$FUI" TMPD="$TMPD" HOME="$HOME" XDG_RUNTIME_DIR="$XDG_RUNTIME_DI
 # ── the second session: labwc (title bars, the taskbar), headless ────────
 if command -v labwc >/dev/null; then
   echo "desktop (headless labwc)"
+  # Arch's labwc carries a file capability, which an unprivileged container refuses to exec
+  # ("Operation not permitted"); a plain copy has none and runs the same
+  getcap "$(command -v labwc)" 2>/dev/null | sed 's/^/  /'
+  cp "$(command -v labwc)" "$TMPD/labwc-bin"
   cat > "$TMPD/labwc.sh" <<'EOS'
 set -u
 export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1
@@ -170,7 +174,7 @@ swaybg -i "$TMPD/lwall.png" -m fill &
 GTK_THEME=$base gtk3-widget-factory &
 sleep 1; kitty --hold sh -c 'fastfetch' &
 AUTO
-  timeout 40 labwc -C "$C" >"$OUT/labwc-$m.log" 2>&1 &
+  timeout 40 "$TMPD/labwc-bin" -C "$C" >"$OUT/labwc-$m.log" 2>&1 &
   local pid=$!
   for _ in $(seq 15); do ls "$XDG_RUNTIME_DIR"/wayland-* >/dev/null 2>&1 && break; sleep 1; done
   sleep 9
