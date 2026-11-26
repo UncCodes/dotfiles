@@ -95,7 +95,7 @@ t "one corner language: boxy (no pills or circles but radios and LEDs; panels 4 
       "$1"/swayosd/.config/swayosd/look.css "$1"/rofi/.config/rofi/look.rasi "$1"/theme/templates/start.html.in &&
   ! grep -nE "rounding = ([5-9]|[1-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
   [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
-t "the type is the instrument'"'"'s: no pixel or segment faces anywhere" bash -c '
+t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
   ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests"' _ "$DOTS"
 t "the bar meters round down (100 icons, full only at 99 and up)" python3 -c '
 import json, re, sys
