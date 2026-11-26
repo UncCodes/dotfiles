@@ -15,6 +15,7 @@
 #   fui shot [region|screen|edit|tour]               screenshots (Print, SHIFT+Print, SUPER+Print)
 #   fui record [toggle|start|stop|status]            screen recording (SUPER+R)
 #   fui bar | tabs | layout | tui <command>          the bar, the startup tabs and layout, a floating terminal tool
+#   fui showcase [open|on|off|status]                a composed scene for a screenshot (on: at every sign-in)
 #   fui updates | brand                              count pending package updates · the machine's name and OS
 #   fui update | version | rollback [version]        pull the dotfiles and install · show / go back to a version
 #   fui doctor [--fix]                               check the machine, optionally fix what it can
@@ -1023,7 +1024,37 @@ cmd_tabs() {
   exec kitty --class fui-main --session "$session"
 }
 
+# ── showcase: a composed scene for a screenshot ─────────────────────────
+# Workspace 1 becomes a still life of the desktop: fastfetch and the editor down the left,
+# btop across the top right, cava below it, the skinned player floating in the corner (each
+# pane placed by share of the screen: hyprland.lua, fui-show-*). `fui showcase on` opens it at
+# every sign-in instead of the startup layout; `off` goes back.
+cmd_showcase() {
+  case "${1:-open}" in
+    on)  mkdir -p "$STATE"; echo on > "$STATE/showcase"; note "SHOWCASE" "opens at sign-in (fui showcase off)"; return 0 ;;
+    off) rm -f "$STATE/showcase"; note "SHOWCASE" "the startup layout again"; return 0 ;;
+    status) [ "$(cat "$STATE/showcase" 2>/dev/null)" = on ] && echo "on (at sign-in)" || echo off; return 0 ;;
+    open) ;;
+    *) die "usage: fui showcase [open|on|off|status]" ;;
+  esac
+  have hyprctl || die "the showcase needs Hyprland"
+  local ws=1 term="kitty"
+  run() { hyprctl dispatch "hl.dsp.exec_cmd(\"${1//\"/\\\"}\", { workspace = \"$ws silent\" })" >/dev/null 2>&1; sleep 0.35; }
+  hyprctl dispatch "hl.dsp.focus({ workspace = '$ws' })" >/dev/null 2>&1
+  run "$term --class fui-show-fetch --hold sh -c 'clear; fastfetch'"
+  run "$term --class fui-show-code -d $DOTS nvim theme/tokens.toml"
+  run "$term --class fui-show-btop btop"
+  if have cava; then run "$term --class fui-show-cava cava"; fi
+  if have audacious; then
+    cmd_skin apply --quiet
+    # the player's own window: launched with its place, into the corner beside cava
+    hyprctl dispatch "hl.dsp.exec_cmd(\"audacious\", { workspace = \"$ws silent\", float = true, move = \"monitor_w*0.765 monitor_h*0.63\" })" >/dev/null 2>&1
+  fi
+  note "SHOWCASE" "set: Print takes a region, SHIFT+Print the screen" camera-photo
+}
+
 cmd_layout() {   # the startup layout: one app per line, "workspace  command"
+  [ "$(cat "$STATE/showcase" 2>/dev/null)" = on ] && { cmd_showcase open; return 0; }
   local file="$CFG/fui/layout.conf.local"
   [ -e "$file" ] || file="$CFG/fui/layout.conf"
   [ -s "$file" ] || return 0
@@ -1058,6 +1089,7 @@ cmd_palette() {   # every action in one window; each row is "icon|label|command"
     "${I_audio-}|Player skin: draw it for this edition|$SELF skin apply"
     "${I_display-}|Display tier: auto, crt, lcd, deep|$SELF display pick"
     "${I_backdrop-}|Backdrop: pick one|$SELF wallpaper pick"
+    "${I_screen-}|Showcase: lay out the desktop for a screenshot|$SELF showcase"
     "${I_backdrop-}|Backdrop: live or still|$SELF wallpaper toggle"
     "${I_finish-}|Screen finish (lcd, deep)|$SELF screen toggle"
     "${I_alert_clear-}|Clear the alert|$SELF alert off"
@@ -1915,6 +1947,7 @@ case "$sub" in
   bar)       cmd_bar "$@" ;;
   tabs)      cmd_tabs "$@" ;;
   layout)    cmd_layout "$@" ;;
+  showcase)  cmd_showcase "$@" ;;
   tui)       cmd_tui "$@" ;;
   palette)   cmd_palette "$@" ;;
   power)     cmd_power "$@" ;;

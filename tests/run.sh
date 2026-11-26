@@ -259,6 +259,9 @@ t "fui skin draws the player skin for the edition and points Audacious at it" ba
   "$f" mode slate --quiet && FUI_SKIN_ALWAYS=1 "$f" skin apply --quiet &&
   [ -s "$HOME/.local/share/fui/skin/main.bmp" ] && [ "$(readlink "$HOME/.local/share/fui/skin")" = "$HOME/.local/share/fui/skins/slate" ] &&
   grep -qx "skin=$HOME/.local/share/fui/skin" "$HOME/.config/audacious/config" && "$f" mode cyan --quiet' 
+t "fui showcase on / off / status (the sign-in switch)" bash -c 'f="$HOME/.local/bin/fui"
+  "$f" showcase on >/dev/null 2>&1 && [ "$("$f" showcase status)" = "on (at sign-in)" ] &&
+  "$f" showcase off >/dev/null 2>&1 && [ "$("$f" showcase status)" = off ]'
 t "a saved name from an earlier version still works (night is cyan)" bash -c '
   echo night > "$1/mode"; [ "$("$HOME/.local/bin/fui" mode status)" = cyan ] && "$HOME/.local/bin/fui" mode concrete --quiet && [ "$("$HOME/.local/bin/fui" mode status)" = paper ]' _ "$ST"
 for tier in crt lcd deep; do
