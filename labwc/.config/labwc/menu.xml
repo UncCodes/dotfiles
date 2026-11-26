@@ -9,6 +9,7 @@
     <separator/>
     <item label="Edition…"><action name="Execute" command="~/.local/bin/fui mode pick"/></item>
     <item label="Look: instrument / y2k"><action name="Execute" command="~/.local/bin/fui look toggle"/></item>
+    <item label="Backdrop…"><action name="Execute" command="~/.local/bin/fui wallpaper pick"/></item>
     <item label="Backdrop: live / still"><action name="Execute" command="~/.local/bin/fui wallpaper toggle"/></item>
     <separator/>
     <item label="Lock"><action name="Execute" command="hyprlock"/></item>

@@ -64,7 +64,8 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the survey backdrop live (traces running along the contours) or still (`SUPER+SHIFT+W`); it follows the edition |
+| `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, and every edition's loop is rendered ahead of time, so an edition change plays at once |
+| `fui wallpaper pick` | which backdrop: each look its own, or the survey (contours, traces running along them) or the ribbon (a sheaf of light lines) for every look |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
 | `fui brand` | the machine's names: host, OS, operator (the bar badge, lock screen, start page and boot use them) |

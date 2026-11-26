@@ -156,7 +156,7 @@ Every code names a real panel and stays stable:
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
 | Start page | masthead (the distribution's logo, the host, the OS), bracketed readouts (edition, display, operator, node), search, a directory with index codes, the clock framed by brackets and a day meter |
 | Boot (Plymouth), sign-in (greetd + ReGreet), consoles | the splash fades in the edition's survey field and the machine's logo, host and OS while traces of signal run along the contours, with a 4 px progress line; then the login screen, a glass panel in the edition over the same field; the console palette and a sign-in banner with the notice |
-| Backdrop | the survey field: a topographic map of a terrain each edition seeds differently, contour hairlines with every fifth an index contour strung with survey stations, and traces (lit stretches of contour, bright at the head) running along the lines when live; floor on lcd, true black on deep and crt. No text |
+| Backdrop | the survey field: a topographic map of a terrain each edition seeds differently, contour hairlines with every fifth an index contour strung with survey stations, and traces (lit stretches of contour, bright at the head) running along the lines when live; floor on lcd, true black on deep and crt. No text. Either backdrop (this or the y2k ribbon) can be chosen for every look (`fui wallpaper pick`); it is drawn in the edition's colours |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
 ## Motion

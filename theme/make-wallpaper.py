@@ -15,8 +15,10 @@ The ground follows the display tier: the floor on lcd; true black (void) outside
 on deep and on a tube (the light editions keep their floor, dimmed on crt).
 
 Usage:
-  python3 theme/make-wallpaper.py [--edition E] [--tier T] [out.png] [width] [height]
-  python3 theme/make-wallpaper.py --live [--edition E] [--tier T] [--seconds N] out.mp4 [width] [height]
+  python3 theme/make-wallpaper.py [--edition E] [--tier T] [--scene S] [out.png] [width] [height]
+  python3 theme/make-wallpaper.py --live [--edition E] [--tier T] [--scene S] [--seconds N] out.mp4 [width] [height]
+--scene picks the backdrop: auto (the look's own, the default), survey or ribbon. Either one
+draws in any edition's colours, so the backdrop need not follow the look.
   python3 theme/make-wallpaper.py --all     # the fallback still (first edition, lcd) into hypr/.config/hypr/
 `fui wallpaper` renders the current edition and tier at the screen's size into ~/.cache/fui.
 The live loop is seamless at its default length (56 s, every bead speed divides it).
@@ -60,9 +62,19 @@ def ground(ed, tier):
     return T(ed, tier)["void"]
 
 
-def Scene(mode, W, H, tier="lcd"):
-    """The edition's backdrop: its look names it (tokens.toml [look.*] backdrop)."""
-    if LOOK.get(look_of(mode), {}).get("backdrop") == "ribbon":
+SCENES = ("survey", "ribbon")
+
+
+def scene_of(mode, scene=None):
+    """The backdrop to draw: one chosen by name (any look, in the edition's colours), or by
+    default the look's own (tokens.toml [look.*] backdrop)."""
+    if scene in SCENES:
+        return scene
+    return LOOK.get(look_of(mode), {}).get("backdrop") or "survey"
+
+
+def Scene(mode, W, H, tier="lcd", scene=None):
+    if scene_of(mode, scene) == "ribbon":
         return RibbonScene(mode, W, H, tier)
     return SurveyScene(mode, W, H, tier)
 
@@ -148,19 +160,20 @@ class SurveyScene:
             tile.crop((max(0, -x0), max(0, -y0), tile.width, tile.height)), (max(0, x0), max(0, y0)))
 
 
-def render_still(mode, out, W, H, tier="lcd"):
-    scene = Scene(mode, W, H, tier)
+def render_still(mode, out, W, H, tier="lcd", scene=None):
+    name = scene_of(mode, scene)
+    scene = Scene(mode, W, H, tier, name)
     img = scene.still()
     for route in scene.packets():                   # the traces where they stand at t = 0
         scene.trace(img, route, 0.0)
     out.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out, optimize=True)
-    print(f"wrote {out} ({W}x{H}, {mode}, {tier})")
+    print(f"wrote {out} ({W}x{H}, {name}, {mode}, {tier})")
 
 
-def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd"):
+def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd", scene=None):
     W, H = W // 2 * 2, H // 2 * 2
-    scene = Scene(mode, W, H, tier)
+    scene = Scene(mode, W, H, tier, scene)
     base = scene.still()
     routes = scene.packets()
     ff = subprocess.Popen(
@@ -195,6 +208,10 @@ def main(argv):
     live, every = flag("--live"), flag("--all")
     mode = edition(opt("--edition", opt("--mode", EDS[0])))
     tier = opt("--tier", "lcd")
+    scene = opt("--scene", "auto")
+    if scene not in SCENES + ("auto",):
+        print(f"--scene is one of: auto {' '.join(SCENES)}", file=sys.stderr)
+        return 2
     seconds = float(opt("--seconds", LOOP))
     if every:                        # --all [width] [height]: no output path
         args.insert(0, "")
@@ -207,8 +224,8 @@ def main(argv):
         if not args:
             print("--live needs an output file", file=sys.stderr)
             return 2
-        return render_live(mode, Path(args[0]), W, H, seconds, tier=tier)
-    render_still(mode, Path(args[0]) if args else HYPR / f"wallpaper-{mode}-{tier}.png", W, H, tier)
+        return render_live(mode, Path(args[0]), W, H, seconds, tier=tier, scene=scene)
+    render_still(mode, Path(args[0]) if args else HYPR / f"wallpaper-{mode}-{tier}.png", W, H, tier, scene)
     return 0
 
 

@@ -6,7 +6,8 @@
 #   fui skin [apply|status]                          the music player's skin, drawn from the edition (Audacious)
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
 #   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
-#   fui wallpaper [start|toggle|live|still]          the survey backdrop, live or still (SUPER+SHIFT+W)
+#   fui wallpaper [start|toggle|live|still]          the backdrop, live or still (SUPER+SHIFT+W)
+#   fui wallpaper [pick|auto|survey|ribbon]          which backdrop: each look its own, or one for every look
 #   fui screen [toggle|on|off]                       the screen finish, a faint vignette (SUPER+SHIFT+C)
 #   fui sound <event>|on|off|toggle|status           interface sounds
 #   fui palette | power | keys | clipboard           launcher windows (SUPER+Space, SUPER+X, SUPER+/, SUPER+SHIFT+V)
@@ -232,7 +233,7 @@ cmd_mode() {
     [ -n "$icons" ] && t3 gsettings set org.gnome.desktop.interface icon-theme "$icons"
   fi
   restart_services
-  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+  if in_session; then
     detach "$SELF" wallpaper start
     cmd_sound move
   fi
@@ -446,7 +447,7 @@ cmd_display() {
   # at sign-in: reload only if the screen changed since the last session
   [ "${1:-}" = start ] && [ "$t" = "$before" ] && return 0
   restart_services
-  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && detach "$SELF" wallpaper start
+  in_session && detach "$SELF" wallpaper start
   [ "${1:-}" = start ] || note "DISPLAY TIER" "$t ($reason)" video-display
   return 0
 }
@@ -561,14 +562,121 @@ cmd_lockclock() {
 }
 
 
-# ── wallpaper: the survey field ─────────────────────────────────────────
-# Every edition surveys its own terrain in its own colours. Rendered for the edition, the
-# display tier (the ground: floor, or true black on deep and crt) and the screen's size by
-# theme/make-wallpaper.py into ~/.cache/fui/. Live: traces run along the contours, played by
-# mpvpaper. Still: swaybg with the PNG (also shown while the loop renders); before the still
-# exists, the edition's ground colour.
-# Stop every other `fui wallpaper` run (including ones an older version left waiting on a
-# lock), but never this one, what started it (a shell, a timeout) or its own subshells.
+# ── wallpaper: the backdrop ─────────────────────────────────────────────
+# Two backdrops, each drawn in any edition's colours: the survey (a contour map with traces
+# running along it) and the ribbon (a sheaf of light lines). By default each look shows its own
+# (tokens.toml [look.*] backdrop); `fui wallpaper pick` chooses one for every look. Rendered for
+# the backdrop, the edition, the display tier and the screen's size by theme/make-wallpaper.py
+# into ~/.cache/fui/. Live: the loop, played by mpvpaper. Still: swaybg with the PNG (also shown
+# while a loop renders); before the still exists, the edition's ground colour.
+# A loop takes minutes to render, so after showing the wallpaper `fui wallpaper warm` renders
+# every other edition's in the background (idle priority): a later edition change finds its
+# loop ready, and a running player swaps to it in place, with no gap.
+WP_SCENES="survey ribbon"
+
+backdrop_pref() {   # auto (each look its own) or a backdrop for every look
+  local s; s=$(cat "$STATE/backdrop" 2>/dev/null)
+  case " $WP_SCENES " in *" $s "*) echo "$s" ;; *) echo auto ;; esac
+}
+backdrop_of() {     # the backdrop an edition shows
+  local s; s=$(backdrop_pref)
+  [ "$s" = auto ] && s=$(tok "look.$(look_of "$1").backdrop")
+  case " $WP_SCENES " in *" $s "*) echo "$s" ;; *) echo survey ;; esac
+}
+wp_size() {         # "<w> <h>": the largest screen in device pixels, even numbers
+  local w h
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
+import json, sys
+try:
+    m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
+    print(m["width"], m["height"])
+except Exception:
+    pass
+' 2>/dev/null)
+  else
+    read -r w h < <(screen_size)
+  fi
+  w=${w:-1920}; h=${h:-1080}
+  echo "$(( w / 2 * 2 )) $(( h / 2 * 2 ))"
+}
+wp_screens() {      # how many screens are on
+  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    hyprctl -j monitors 2>/dev/null | python3 -c 'import json, sys; print(len(json.load(sys.stdin)))' 2>/dev/null || echo 1
+  elif have wlr-randr; then
+    wlr-randr --json 2>/dev/null | python3 -c 'import json, sys; print(sum(1 for o in json.load(sys.stdin) if o.get("enabled")))' 2>/dev/null || echo 1
+  else echo 1; fi
+}
+wp_key() {          # changes when anything that draws the backdrops changes
+  cat "$DOTS/theme/make-wallpaper.py" "$DOTS/theme/survey.py" "$DOTS/theme/ribbon.py" \
+      "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8
+}
+wp_file() {         # wp_file still|live <backdrop> <edition> <tier> <w>x<h> <key>
+  local ext=png; [ "$1" = live ] && ext=mp4
+  echo "$CACHE/$1-$2-$3-$4-$5-$6.$ext"
+}
+wp_render() {       # wp_render still|live <backdrop> <edition> <tier> <w> <h> <out> <part>: draw into <part>, then move it to <out>
+  local live=(); [ "$1" = live ] && live=(--live)
+  python3 "$DOTS/theme/make-wallpaper.py" ${live[@]+"${live[@]}"} --scene "$2" --edition "$3" --tier "$4" "$8" "$5" "$6" \
+      >/dev/null 2>"$CACHE/render.log" 8>&- 9>&- && [ -s "$8" ] && mv "$8" "$7" && return 0
+  rm -f "$8"; return 1
+}
+wp_wait() {         # wait while another run (the warm-up) draws <out>; true once it exists
+  local out="$1"
+  while [ ! -s "$out" ] && pgrep -f -- "$out\." >/dev/null 2>&1; do sleep 1; done
+  [ -s "$out" ]
+}
+wp_still() {        # show a picture (or a colour) with swaybg; the old one goes once the new is up
+  local old; old=$(pgrep -x swaybg)
+  if [ -f "$1" ]; then detach swaybg -i "$1" -m fill; else detach swaybg -c "$1"; fi
+  sleep 0.3
+  # shellcheck disable=SC2086  # one or more pids
+  [ -n "$old" ] && kill $old 2>/dev/null
+  return 0
+}
+wp_play() {         # play a loop; a running player (one screen) swaps to it in place
+  local video="$1" sock="$CACHE/mpvpaper.sock"
+  if pgrep -x mpvpaper >/dev/null && [ -S "$sock" ] && [ "$(wp_screens)" = 1 ] &&
+     python3 - "$sock" "$video" <<'PY' 2>/dev/null
+import json, socket, sys
+s = socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect(sys.argv[1])
+s.sendall((json.dumps({"command": ["loadfile", sys.argv[2], "replace"], "request_id": 7}) + "\n").encode())
+buf = b""
+while True:
+    chunk = s.recv(4096)
+    if not chunk:
+        sys.exit(1)
+    buf += chunk
+    for line in buf.split(b"\n"):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("request_id") == 7:
+            sys.exit(0 if r.get("error") == "success" else 1)
+PY
+  then
+    pkill -x swaybg 2>/dev/null; return 0
+  fi
+  pkill -x mpvpaper 2>/dev/null
+  rm -f "$sock"
+  # -p pauses the loop while a fullscreen window hides the wallpaper
+  mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0 input-ipc-server=$sock" ALL "$video" \
+    >"$CACHE/mpvpaper.log" 2>&1 7>&- 8>&- 9>&-
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    sleep 0.2
+    [ -S "$sock" ] && break
+  done
+  sleep 0.3
+  if pgrep -x mpvpaper >/dev/null; then pkill -x swaybg 2>/dev/null
+  else echo "mpvpaper exited; still image kept" >> "$CACHE/render.log"; fi
+  return 0
+}
+
+# Stop every other foreground `fui wallpaper` run (including ones an older version left waiting
+# on a lock) and its renders, but never this one, what started it (a shell, a timeout), its own
+# subshells, or the warm-up.
 wallpaper_takeover() {
   local pid ppid p mine=" $$ "
   p=$$
@@ -577,12 +685,24 @@ wallpaper_takeover() {
   done
   for pid in $(pgrep -f "fui wallpaper" 2>/dev/null); do
     [[ "$mine" == *" $pid "* ]] && continue
+    ps -o args= -p "$pid" 2>/dev/null | grep -q "fui wallpaper warm" && continue
     ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     [ "$ppid" = "$$" ] && continue
     kill "$pid" 2>/dev/null
   done
+  pkill -f 'make-wallpaper\.py.*\.part\.' 2>/dev/null
   rm -f "$CACHE/.wallpaper.lock"
   return 0
+}
+
+wallpaper_pick() {
+  local cur rows choice names=(auto survey ribbon)
+  cur=$(backdrop_pref)
+  rows=$(printf '%s  Each look its own\n%s  Survey: a contour map, traces running along it\n%s  Ribbon: a sheaf of light lines\n' \
+    "$([ "$cur" = auto ] && echo "●" || echo "○")" "$([ "$cur" = survey ] && echo "●" || echo "○")" "$([ "$cur" = ribbon ] && echo "●" || echo "○")")
+  choice=$(echo "$rows" | rofi_window "${I_backdrop-}  BACKDROP" "BKD-03" -dmenu -i -p "SHOW" -no-custom -lines 3 -format i) || return 1
+  [ -n "$choice" ] && [ "$choice" -ge 0 ] 2>/dev/null && [ "$choice" -lt 3 ] || return 1
+  echo "${names[$choice]}"
 }
 
 cmd_wallpaper() {
@@ -594,27 +714,38 @@ cmd_wallpaper() {
     start) ;;
     toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "BACKDROP" "$pref" preferences-desktop-wallpaper ;;
     live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
-    status) echo "$pref"; return 0 ;;
-    *) die "usage: fui wallpaper [start|toggle|live|still|status]" ;;
+    pick|auto|survey|ribbon)
+      local s="$1"
+      if [ "$s" = pick ]; then s=$(wallpaper_pick) || return 0; fi
+      if [ "$s" = auto ]; then rm -f "$STATE/backdrop"; else echo "$s" > "$STATE/backdrop"; fi
+      note "BACKDROP" "$([ "$s" = auto ] && echo "each look its own" || echo "$s")" preferences-desktop-wallpaper ;;
+    warm) wallpaper_warm; return 0 ;;
+    status) echo "$pref $(backdrop_pref)"; return 0 ;;
+    *) die "usage: fui wallpaper [start|toggle|live|still|pick|auto|survey|ribbon|warm|status]" ;;
   esac
 
-  local mode tier w h key still video tmp maker="$DOTS/theme/make-wallpaper.py"
-  mode=$(current_mode); tier=$(current_tier)
-  read -r w h < <(hyprctl -j monitors 2>/dev/null | python3 -c '
-import json, sys
-try:
-    m = max(json.load(sys.stdin), key=lambda x: x["width"] * x["height"])
-    print(m["width"] // 2 * 2, m["height"] // 2 * 2)
-except Exception:
-    print(1920, 1080)
-' 2>/dev/null)
-  w=${w:-1920}; h=${h:-1080}
-  key=$(cat "$maker" "$DOTS/theme/survey.py" "$DOTS/theme/palette.py" "$DOTS/theme/tokens.toml" 2>/dev/null | sha1sum | cut -c1-8)
-  still="$CACHE/still-$mode-$tier-${w}x$h-$key.png"
-  video="$CACHE/live-$mode-$tier-${w}x$h-$key.mp4"
-  # until this edition's survey is drawn, its ground colour (never another edition's picture)
-  local ground
-  ground=$(python3 -c '
+  local mode tier w h size key scene still video
+  mode=$(current_mode); tier=$(current_tier); scene=$(backdrop_of "$mode")
+  read -r w h < <(wp_size); size="${w}x$h"; key=$(wp_key)
+  still=$(wp_file still "$scene" "$mode" "$tier" "$size" "$key")
+  video=$(wp_file live "$scene" "$mode" "$tier" "$size" "$key")
+
+  # A newer call (an edition change) takes over from an older one: stop it and its renders.
+  # (No lock: the players would inherit it and block every later call.)
+  wallpaper_takeover
+
+  # the loop is ready: play it at once (a running player swaps to it with no gap)
+  if [ "$pref" = live ] && [ -s "$video" ] && have mpvpaper; then
+    wp_play "$video"
+    in_session && detach "$SELF" wallpaper warm
+    return 0
+  fi
+  [ "$pref" = live ] || pkill -x mpvpaper 2>/dev/null
+
+  # until this edition's backdrop is drawn, its ground colour (never another edition's picture)
+  if [ ! -s "$still" ]; then
+    local ground
+    ground=$(python3 -c '
 import json, sys
 t = json.load(open(sys.argv[1])); e = t["edition"][sys.argv[2]]; tier = sys.argv[3]
 if tier == "lcd" or e["scheme"] != "dark":
@@ -622,48 +753,47 @@ if tier == "lcd" or e["scheme"] != "dark":
 else:
     print("#000000")
 ' "$CFG/fui/tokens.json" "$mode" "$tier" 2>/dev/null)
-  ground="${ground:-#07090C}"
-
-  # A newer call (an edition change) takes over from an older one: stop it, its renderer and
-  # its players. (No lock: the players would inherit it and block every later call; that
-  # kept the wallpaper from following the edition.)
-  wallpaper_takeover
-  pkill -f "make-wallpaper.py" 2>/dev/null
-  pkill -x mpvpaper 2>/dev/null
-  pkill -x swaybg 2>/dev/null
-  if [ -s "$still" ]; then detach swaybg -i "$still" -m fill; else detach swaybg -c "$ground"; fi
-
-  [ -f "$maker" ] || return 0
-  if [ ! -s "$still" ]; then
-    rm -f "$CACHE/still-$mode-$tier-${w}x$h-"*.png
-    if python3 "$maker" --edition "$mode" --tier "$tier" "$still.part.png" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
-      mv "$still.part.png" "$still"
-      pkill -x swaybg 2>/dev/null; detach swaybg -i "$still" -m fill
-    else
-      rm -f "$still.part.png"
-    fi
+    pgrep -x mpvpaper >/dev/null || wp_still "${ground:-#07090C}"
+    [ -f "$DOTS/theme/make-wallpaper.py" ] || return 0
+    wp_wait "$still" || wp_render still "$scene" "$mode" "$tier" "$w" "$h" "$still" "$still.part.png" || true
   fi
+  if [ -s "$still" ]; then pkill -x mpvpaper 2>/dev/null; wp_still "$still"; fi
 
-  [ "$pref" = live ] || return 0
-  have mpvpaper && have ffmpeg || return 0
-  if [ ! -s "$video" ]; then
-    rm -f "$CACHE/live-$mode-$tier-${w}x$h-"*.mp4
-    tmp="$video.part.mp4"
-    if ! python3 "$maker" --live --edition "$mode" --tier "$tier" "$tmp" "$w" "$h" >/dev/null 2>"$CACHE/render.log"; then
-      rm -f "$tmp"
-      return 0                        # keep the still image; see ~/.cache/fui/render.log
-    fi
-    mv "$tmp" "$video"
+  if [ "$pref" = live ] && have mpvpaper && have ffmpeg; then
+    if wp_wait "$video" || wp_render live "$scene" "$mode" "$tier" "$w" "$h" "$video" "$video.part.mp4"; then
+      wp_play "$video"
+    fi                                # else the still stays; see ~/.cache/fui/render.log
   fi
+  in_session && detach "$SELF" wallpaper warm
+  return 0
+}
 
-  # -p pauses the loop while a fullscreen window hides the wallpaper
-  mpvpaper -f -p -o "no-audio loop-file=inf hwdec=auto-safe panscan=1.0" ALL "$video" >"$CACHE/mpvpaper.log" 2>&1 7>&- 8>&- 9>&-
-  sleep 1.5
-  if pgrep -x mpvpaper >/dev/null; then
-    pkill -x swaybg
-  else
-    echo "mpvpaper exited; still image kept. See $CACHE/mpvpaper.log" >> "$CACHE/render.log"
-  fi
+# Render every edition's backdrop ahead of time, at idle priority, one at a time: the stills
+# first (a second each), then the loops, the current look's editions before the other look's.
+# One warm-up at a time; a foreground run that needs a file being warmed waits for it.
+wallpaper_warm() {
+  have flock || return 0
+  exec 8>"$CACHE/.warm.lock"
+  flock -n 8 || return 0
+  have renice && renice -n 19 -p $$ >/dev/null 2>&1
+  have ionice && ionice -c 3 -p $$ >/dev/null 2>&1
+  local w h size key tier pref look m kind scene out eds=""
+  read -r w h < <(wp_size); size="${w}x$h"; key=$(wp_key); tier=$(current_tier)
+  pref=$(cat "$STATE/wallpaper" 2>/dev/null); look=$(current_look)
+  # the cache holds only what the current drawing code makes
+  find "$CACHE" -maxdepth 1 \( -name 'still-*.png' -o -name 'live-*.mp4' \) ! -name "*-$key.*" -delete 2>/dev/null
+  for m in $(modes_of "$look"); do eds="$eds $m"; done
+  for m in $(modes); do [[ " $eds " == *" $m "* ]] || eds="$eds $m"; done
+  for kind in still live; do
+    [ "$kind" = live ] && { [ "$pref" = still ] || ! have mpvpaper || ! have ffmpeg; } && break
+    for m in $eds; do
+      scene=$(backdrop_of "$m")
+      out=$(wp_file "$kind" "$scene" "$m" "$tier" "$size" "$key")
+      [ -s "$out" ] && continue
+      pgrep -f -- "$out\." >/dev/null 2>&1 && continue          # a foreground run is drawing it
+      wp_render "$kind" "$scene" "$m" "$tier" "$w" "$h" "$out" "$out.warm.$( [ "$kind" = live ] && echo mp4 || echo png)" || true
+    done
+  done
   return 0
 }
 
@@ -846,6 +976,7 @@ cmd_palette() {   # every action in one window; each row is "icon|label|command"
     "${I_look-}|Look: instrument or y2k|$SELF look toggle"
     "${I_audio-}|Player skin: draw it for this edition|$SELF skin apply"
     "${I_display-}|Display tier: auto, crt, lcd, deep|$SELF display pick"
+    "${I_backdrop-}|Backdrop: pick one|$SELF wallpaper pick"
     "${I_backdrop-}|Backdrop: live or still|$SELF wallpaper toggle"
     "${I_finish-}|Screen finish (lcd, deep)|$SELF screen toggle"
     "${I_alert_clear-}|Clear the alert|$SELF alert off"
@@ -1385,7 +1516,10 @@ for m in json.load(sys.stdin):
 
   section "wallpaper"
   local pref; pref=$(cat "$STATE/wallpaper" 2>/dev/null || echo live)
-  info "set to: $pref (SUPER+SHIFT+W switches)"
+  info "set to: $pref (SUPER+SHIFT+W switches) · backdrop: $(backdrop_pref) (fui wallpaper pick)"
+  if pgrep -f "fui wallpaper warm" >/dev/null; then
+    info "rendering the other editions' backdrops ahead of time ($(find "$CACHE" -maxdepth 1 -name "live-*-$(wp_key).mp4" 2>/dev/null | wc -l | tr -d ' ') loops ready)"
+  fi
   if pgrep -x mpvpaper >/dev/null; then ok "live wallpaper playing"
   elif pgrep -x swaybg >/dev/null; then
     if [ "$pref" = live ]; then

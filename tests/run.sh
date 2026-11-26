@@ -142,6 +142,12 @@ wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the insta
     ! cmp -s /tmp/fui-test.png /tmp/fui-test-amber.png &&
     python3 "$1/theme/make-wallpaper.py" --edition amber --tier deep /tmp/fui-test-deep.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition concrete --tier crt /tmp/fui-test-crt.png 320 180' _ "$DOTS"
+  t "either backdrop renders in any edition (--scene): the ribbon in cyan, the survey in ruby" bash -c '
+    python3 "$1/theme/make-wallpaper.py" --edition cyan --scene ribbon /tmp/fui-test-cr.png 320 180 &&
+    python3 "$1/theme/make-wallpaper.py" --edition cyan /tmp/fui-test-cs.png 320 180 &&
+    ! cmp -s /tmp/fui-test-cr.png /tmp/fui-test-cs.png &&
+    python3 "$1/theme/make-wallpaper.py" --edition ruby --scene survey /tmp/fui-test-rs.png 320 180 &&
+    ! python3 "$1/theme/make-wallpaper.py" --scene nope /tmp/fui-test-x.png 320 180 2>/dev/null' _ "$DOTS"
   t "the y2k backdrop renders: a ribbon of light, its own per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" --edition slate /tmp/fui-test-slate.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition ice --tier crt /tmp/fui-test-ice.png 320 180 &&
@@ -252,7 +258,16 @@ t "a second wallpaper change never waits on the first (the backdrop follows the 
   PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the first change did not finish"; exit 1; }
   PATH="$fake:$PATH" "$f" mode phosphor --quiet
   PATH="$fake:$PATH" timeout 120 "$f" wallpaper still || { echo "the second change hung"; exit 1; }
-  ls "${XDG_CACHE_HOME:-$HOME/.cache}"/fui/still-phosphor-* >/dev/null || { echo "no phosphor still"; exit 1; }
+  ls "${XDG_CACHE_HOME:-$HOME/.cache}"/fui/still-survey-phosphor-* >/dev/null || { echo "no phosphor still"; exit 1; }
+  pkill -x swaybg; rm -rf "$fake"'
+t "the backdrop can be chosen apart from the look: the ribbon behind an instrument edition, and back" bash -c '
+  fake=$(mktemp -d); printf "#!/bin/bash\nwhile :; do sleep 1; done\n" > "$fake/swaybg"; chmod +x "$fake/swaybg"
+  f="$HOME/.local/bin/fui"; c="${XDG_CACHE_HOME:-$HOME/.cache}/fui"
+  PATH="$fake:$PATH" "$f" mode amber --quiet
+  PATH="$fake:$PATH" "$f" wallpaper ribbon >/dev/null 2>&1; PATH="$fake:$PATH" timeout 120 "$f" wallpaper still
+  ls "$c"/still-ribbon-amber-* >/dev/null || { echo "no ribbon behind amber"; exit 1; }
+  [ "$("$f" wallpaper status)" = "still ribbon" ] || { echo "status: $("$f" wallpaper status)"; exit 1; }
+  PATH="$fake:$PATH" "$f" wallpaper auto >/dev/null 2>&1; [ "$("$f" wallpaper status)" = "still auto" ] || exit 1
   pkill -x swaybg; rm -rf "$fake"'
 t "idle steps do nothing on lcd" bash -c 'f="$HOME/.local/bin/fui"; "$f" display lcd >/dev/null; "$f" idle dim && "$f" idle wake; r=$?; "$f" display auto >/dev/null; exit $r'
 t "key list reads hyprland.lua" bash -c '"$HOME/.local/bin/fui" keys --text | grep -q "command palette"'
