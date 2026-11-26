@@ -112,6 +112,9 @@ t = tomllib.load(open(sys.argv[1], "rb")); g = t["geometry"]
 bad = [k for k in ("gaps_in", "gaps_out", "bar", "radius", "control") if g[k] % 2 or (k.startswith("gaps") and g[k] % 4)]
 bad += [v for v in t["space"]["scale"] if v % 4]
 assert not bad, bad' "$DOTS/theme/tokens.toml"
+t "one cursor theme everywhere (macOS, from the AUR), no generated cursors left" bash -c '
+  grep -q "^cursor_theme = \"macOS\"" "$1/theme/tokens.toml" && grep -q "^apple_cursor" "$1/aur.txt" &&
+  ! git -C "$1" grep -n -E "make-cursor|cursorTheme fui|setcursor fui" -- . ":!tests"' _ "$DOTS"
 t "display auto tells a panel from a tube on an analog input (the EDID range limits)" bash -c '
   d=$(mktemp -d); python3 - "$d" <<PY
 import sys
@@ -155,13 +158,6 @@ t "every package exists in the official repos" bash -c '
 
 wallpaper_checks() {   # needs Pillow (and ffmpeg for the loop), which the install provides
   python3 -c "import PIL" 2>/dev/null || { echo "  [skip] wallpaper renders (no Pillow)"; return; }
-  t "the cursor theme builds: Xcursor files at 24, 32 and 48 px, the busy ones animated, every alias linked" bash -c '
-    d=$(mktemp -d) && python3 "$1/theme/make-cursor.py" --edition ruby "$d" >/dev/null &&
-    for c in default pointer text wait progress crosshair not-allowed move ns-resize ew-resize nwse-resize nesw-resize left_ptr hand2 xterm watch; do
-      [ "$(head -c 4 "$d/cursors/$c")" = Xcur ] || { echo "no cursor $c"; exit 1; }
-    done
-    python3 -c "import struct,sys; n = struct.unpack(\"<I\", open(sys.argv[1], \"rb\").read()[12:16])[0]; sys.exit(0 if n == 24 else 1)" "$d/cursors/wait" &&
-    grep -q "Inherits=Adwaita" "$d/index.theme"' _ "$DOTS"
   t "still wallpaper renders (cyan lcd, amber deep, paper crt), a different survey per edition" bash -c '
     python3 "$1/theme/make-wallpaper.py" /tmp/fui-test.png 320 180 &&
     python3 "$1/theme/make-wallpaper.py" --edition amber /tmp/fui-test-amber.png 320 180 &&
@@ -183,11 +179,11 @@ s = u.spec_from_file_location(\"w\", sys.argv[1] + \"/theme/make-wallpaper.py\")
 sc = w.Scene(\"ruby\", 320, 180, scene=\"ribbon\"); a, b, c = sc.frame(0), sc.frame(14), sc.frame(56)
 assert list(a.getdata()) != list(b.getdata()), \"the ribbon does not move\"
 assert list(a.getdata()) == list(c.getdata()), \"the loop is not seamless at 56 s\"" "$1"' _ "$DOTS"
-  t "the four figures of light render, move and loop seamlessly (helix orbit fibre mesh)" bash -c '
+  t "the figures of light render, move and loop seamlessly (helix orbit fibre mesh veil)" bash -c '
     python3 -c "import sys; sys.path.insert(0, sys.argv[1] + \"/theme\"); import importlib.util as u
 s = u.spec_from_file_location(\"w\", sys.argv[1] + \"/theme/make-wallpaper.py\"); w = u.module_from_spec(s); s.loader.exec_module(w)
 import lights
-for name in (\"helix\", \"orbit\", \"fibre\", \"mesh\"):
+for name in (\"helix\", \"orbit\", \"fibre\", \"mesh\", \"veil\"):
     sc = w.Scene(\"amber\", 320, 180, scene=name); a, b, c = sc.frame(0), sc.frame(7), sc.frame(56)
     assert list(a.getdata()) != list(b.getdata()), name + \" does not move\"
     assert list(a.getdata()) == list(c.getdata()), name + \" does not loop at 56 s\"
@@ -253,7 +249,7 @@ for m in $EDITIONS; do
     grep -q "fui-$1.conf" "$HOME/.config/qt6ct/qt6ct.conf" &&
     grep -q "data-theme=\"$1\"" "$HOME/.local/share/fui/start.html"' _ "$m"
 done
-t "all twelve editions cycle in order and wrap" bash -c 'f="$HOME/.local/bin/fui"; set -- $1; first=$1; "$f" mode "$first" --quiet
+t "every edition cycles in order and wraps" bash -c 'f="$HOME/.local/bin/fui"; set -- $1; first=$1; "$f" mode "$first" --quiet
   for want in "${@:2}" "$first"; do "$f" mode toggle --quiet; [ "$("$f" mode status)" = "$want" ] || { echo "expected $want, got $("$f" mode status)"; exit 1; }; done' _ "$EDITIONS"
 t "links from the two looks and from labwc are cleared" bash -c 'f="$HOME/.local/bin/fui"
   mkdir -p "$HOME/.local/share/themes" && ln -sfn fui-cyan "$HOME/.local/share/themes/fui" &&

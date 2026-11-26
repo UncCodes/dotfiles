@@ -1,6 +1,8 @@
 /* fui // WAYBAR · the compact bar (screens narrower than 1400 px): a 32 px capsule, the type a
  * step smaller than the standard bar's. style-compact.css loads this after style.css. */
 window#waybar { border-radius: 16px; }
+#custom-brand { border-radius: 12px 2px 2px 12px; }     /* nested: 16 - 4 */
+#custom-power { border-radius: 2px 11px 11px 2px; }     /* nested: 16 - 5 */
 * { font-size: 12px; }
 #custom-brand { font-size: 12px; }
 #workspaces button, #clock,

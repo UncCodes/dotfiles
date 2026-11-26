@@ -16,4 +16,4 @@ style = "Bold"
 
 # the signal first, then the counter colour and the status colours
 [color-palette]
-palette = ["#1F4FE0", "#C23C0A", "#B3261E", "#1B6E44", "#0E6E84", "#F2F5F8"]
+palette = ["#1F4FE0", "#C23C0A", "#B3261E", "#1B6E44", "#0E6E84", "#F6F4FC"]

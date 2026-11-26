@@ -14,14 +14,16 @@
   border-radius: 0;
 }
 
+/* the bar is frosted glass: the edition's chrome, translucent, with the compositor blurring the
+   desktop behind it; a gloss over the upper half, a lit top edge, a hairline below. Opaque enough
+   (72% and up) that the type reads over any wallpaper. */
 window#waybar {
-  background-color: transparent;
+  background-color: alpha(@chrome_mid, 0.72);
   background-image:
-    linear-gradient(to bottom, alpha(@chrome_lip, 0.92) 0%, alpha(@chrome_top, 0.86) 8%, alpha(@chrome_mid, 0.84) 46%,
-                    alpha(@chrome_horizon, 0.88) 52%, alpha(@chrome_low, 0.90) 84%, alpha(@chrome_reflect, 0.90) 100%);
-  border: 1px solid @rim;
-  border-radius: 18px;   /* the chassis: a capsule (half the bar's height); everything on it is boxy */
-  box-shadow: inset 0 1px alpha(#FFFFFF, 0.55), inset 0 -1px alpha(#000000, 0.25);
+    linear-gradient(to bottom, alpha(#FFFFFF, 0.16), alpha(#FFFFFF, 0.05) 50%, alpha(#FFFFFF, 0) 51%, alpha(#000000, 0.06));
+  border: 1px solid alpha(@rim, 0.85);
+  border-radius: 18px;   /* the chassis: a capsule (half the bar's height) */
+  box-shadow: inset 0 1px alpha(#FFFFFF, 0.45), inset 0 -1px alpha(#000000, 0.18);
   color: @ink;
   text-shadow: 0 1px @emboss;
 }
@@ -34,8 +36,10 @@ window#waybar {
   color: @mark;
   text-shadow: 0 1px alpha(#FFFFFF, 0.6);
   margin: 4px 6px 4px 4px;
-  padding: 0 13px;
-  border-radius: 2px;
+  padding: 0 12px 0 14px;
+  /* the end key nests in the capsule: its outer corners follow the bar's curve, inset 4 px
+     (18 - 4 = 14); its inner corners stay boxy */
+  border-radius: 14px 2px 2px 14px;
   border: 1px solid @rim;
   background-image:
     linear-gradient(to bottom, alpha(#FFFFFF, 0.56), alpha(#FFFFFF, 0) 46%),
@@ -98,7 +102,7 @@ window#waybar.empty #window { color: @muted; }
 #pulseaudio.muted { color: @muted; }
 #custom-updates.pending { color: @signal; }
 #custom-rec { color: @on_bad; background-color: @bad; text-shadow: none; margin: 6px 4px; padding: 0 9px; }
-#custom-power { padding: 0 12px 0 10px; font-size: 14px; margin-right: 4px; }
+#custom-power { padding: 0 14px 0 10px; font-size: 14px; margin: 5px 5px 5px 0; border-radius: 2px 13px 13px 2px; }   /* nests in the capsule's end: 18 - 5 */
 #custom-power:hover, #custom-mode:hover, #custom-sound:hover, #custom-notify:hover, #battery:hover,
 #cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #mpris:hover, #custom-updates:hover {
   color: @mark;

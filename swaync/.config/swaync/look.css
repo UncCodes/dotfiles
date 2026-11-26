@@ -82,12 +82,10 @@ scale slider { min-width: 20px; min-height: 12px; border-radius: 2px; border: 1p
     repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.06) 0px, alpha(#FFFFFF, 0.06) 1px, transparent 1px, transparent 3px);
 }
 
-/* ── the control centre: brushed metal ── */
+/* ── the control centre: frosted glass (the desktop blurred behind it), a gloss over its top ── */
 .control-center {
-  background-color: @shell;
-  background-image:
-    repeating-linear-gradient(to bottom, alpha(#FFFFFF, 0.05) 0px, alpha(#FFFFFF, 0.05) 1px, alpha(#000000, 0.04) 1px, alpha(#000000, 0.04) 2px, transparent 2px, transparent 3px),
-    linear-gradient(to bottom, @chrome_top, @shell 18%, @shell 82%, @shell_lo);
+  background-color: alpha(@panel, 0.80);
+  background-image: linear-gradient(to bottom, alpha(#FFFFFF, 0.10), alpha(#FFFFFF, 0) 120px);
 }
 /* its switches: matte rubber keys, pressed in when on, with a lit strip along the foot */
 .widget-buttons-grid flowboxchild > button {

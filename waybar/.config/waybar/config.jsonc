@@ -24,6 +24,7 @@
   "custom/brand": {
     "exec": "~/.local/bin/fui brand --badge",
     "interval": "once",
+    "max-length": 28,
     "tooltip": false,
     "on-click": "~/.local/bin/fui palette"
   },
@@ -45,8 +46,7 @@
   },
 
   "custom/rec": {
-    "exec": "~/.local/bin/fui record status",
-    "interval": 2,
+    "exec": "~/.local/bin/fui record status --follow",
     "return-type": "json",
     "on-click": "~/.local/bin/fui record stop"
   },

@@ -177,7 +177,7 @@ def render_still(mode, out, W, H, tier="lcd", scene=None):
     print(f"wrote {out} ({W}x{H}, {name}, {mode}, {tier})")
 
 
-def render_live(mode, out, W, H, seconds=LOOP, fps=24, tier="lcd", scene=None):
+def render_live(mode, out, W, H, seconds=LOOP, fps=20, tier="lcd", scene=None):
     W, H = W // 2 * 2, H // 2 * 2
     scene = Scene(mode, W, H, tier, scene)
     base = scene.still()

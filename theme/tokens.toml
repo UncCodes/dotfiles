@@ -14,7 +14,7 @@
 [meta]
 name     = "fui"
 # The editions, in the order `fui mode toggle` cycles them. The first is the default.
-editions = ["cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab", "ice", "chrome", "slate", "ruby"]
+editions = ["aurora", "cyan", "amber", "phosphor", "acid", "hazard", "mono", "paper", "lab", "ice", "chrome", "slate", "ruby"]
 # Names from earlier versions, so a saved choice survives an update.
 renamed  = { night = "cyan", concrete = "paper" }
 tiers    = ["crt", "lcd", "deep"]
@@ -44,7 +44,46 @@ notice   = "Authorized personnel only. Activity on this workstation is logged."
 #   shell      the device's chassis: window frames, the bar   shell_hi  its lit top
 #   lcd        the backing of a lit display well               readout_ink   what it lights
 
-[edition.cyan]      # night operations: obsidian and signal cyan (the default)
+[edition.aurora]    # the cosmic night of the 2007 desktops: deep indigo, a violet signal, magenta (the default)
+scheme     = "dark"
+backdrop   = "veil"
+void       = "#000000"
+floor      = "#0B0916"
+panel      = "#151129"
+raised     = "#211B3B"
+well       = "#07060F"
+rule       = "#2A2346"
+rule_hi    = "#3F3566"
+edge       = "#6E63A3"
+ink        = "#EDE9F8"
+muted      = "#A79ECB"
+faint      = "#6E63A3"
+signal     = "#A47CFF"
+signal_hi  = "#C4A6FF"
+signal_dim = "#2C2052"
+on_signal  = "#0B0716"
+counter    = "#FF7AC6"
+ok         = "#3DDC97"
+warn       = "#F2A93B"
+bad        = "#FF5C6C"
+info       = "#6FC0FF"
+shell      = "#3A2F68"
+shell_hi   = "#9A8BD8"
+readout    = "#06040E"
+readout_ink = "#CBB6FF"
+
+[edition.aurora.crt]
+muted      = "#B5ADD3"
+faint      = "#837AAE"
+void       = "#000000"
+floor      = "#000000"
+
+[edition.aurora.deep]
+signal_oklch = "oklch(66.5% 0.190 293.0)"
+signal_p3  = "color(display-p3 0.620 0.495 0.985)"
+void       = "#000000"
+
+[edition.cyan]      # night operations: obsidian and signal cyan
 scheme     = "dark"
 backdrop   = "survey"
 void       = "#000000"
@@ -568,8 +607,8 @@ window_active   = 0.92
 window_inactive = 0.86
 
 [blur]
-size       = 7
-passes     = 3
+size       = 6
+passes     = 2            # each pass is a full-screen sweep per blurred surface, every frame something under it moves
 noise      = 0.015
 contrast   = 1.0
 brightness = 1.0
@@ -611,7 +650,7 @@ heat_alert     = 95     # °C
 
 # ── desktop ─────────────────────────────────────────────────────────────
 [desktop]
-cursor_theme = "fui"           # theme/make-cursor.py: chrome with a gel inset, per edition (Adwaita underneath)
+cursor_theme = "macOS"         # apple_cursor (AUR): the macOS-style set; Hyprland, GTK, Qt, XWayland, Plasma, the login screen
 cursor_size  = 24
 sound_theme  = "fui"             # theme/make-sounds.py
 

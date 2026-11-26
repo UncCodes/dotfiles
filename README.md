@@ -10,8 +10,8 @@ drawn in the edition's colours (six to pick from: a survey map, a ribbon, a heli
 gyroscope, a fibre-optic lamp, a wireframe landscape), and the music player wears a skin
 drawn from the edition.
 
-Twelve colour **editions** (cyan, amber, phosphor, acid, hazard, mono, paper, lab, ice, chrome,
-slate, ruby), each drawn for three display **tiers**: a tube (`crt`), a backlit panel (`lcd`)
+Thirteen colour **editions** (aurora, cyan, amber, phosphor, acid, hazard, mono, paper, lab, ice,
+chrome, slate, ruby; aurora, the cosmic night of the 2007 desktops, is the default), each drawn for three display **tiers**: a tube (`crt`), a backlit panel (`lcd`)
 and a deep-black OLED / HDR panel (`deep`).
 
 ![backdrop](hypr/.config/hypr/wallpaper.png)
@@ -62,8 +62,8 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui skin` | the music player's skin, drawn from the edition (runs on every edition change when Audacious is installed) |
 | `fui display auto` / `crt` / `lcd` / `deep` / `pick` | the display tier; `auto` reads the screen (`SUPER+SHIFT+D`); `fui display status` says why |
 | `fui alert on` / `off` | the alert takeover: the chrome's signal turns to the bad colour (`fui watch` does it on its own for a nearly empty battery or overheating) |
-| `fui wallpaper toggle` | the backdrop live or still (`SUPER+SHIFT+W`); it is drawn in the edition's colours, every edition's still and the loops of this edition and the next are rendered ahead of time (loops only on mains power), so the next edition plays at once |
-| `fui wallpaper pick` | which backdrop: each edition its own, or one for all: survey (contours, traces running along them), ribbon (a sheaf of light lines), helix (two braided strands), orbit (a gyroscope of rings), fibre (a fibre-optic lamp) or mesh (a wireframe landscape) |
+| `fui wallpaper toggle` | the backdrop still (the default: it costs nothing once drawn) or live (`SUPER+SHIFT+W`; a loop keeps the video decoder and the compositor's blur busy); it is drawn in the edition's colours, every edition's still and the loops of this edition and the next are rendered ahead of time (loops only on mains power), so the next edition plays at once |
+| `fui wallpaper pick` | which backdrop: each edition its own, or one for all: survey (contours, traces running along them), ribbon (a sheaf of light lines), helix (two braided strands), orbit (a gyroscope of rings), fibre (a fibre-optic lamp), mesh (a wireframe landscape) or veil (curtains of light in a night sky) |
 | `fui screen toggle` | the screen finish (a faint vignette) on / off, lcd and deep only (`SUPER+SHIFT+C`) |
 | `fui sound on` / `off` | the interface cues |
 | `fui brand` | the machine's names: host, OS, operator (the bar badge, lock screen, start page and boot use them) |
@@ -85,7 +85,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Area | What you get |
 |---|---|
 | Icons | one outline family (the Nerd Font's Material Design set) on everything: every palette command and menu row, the bar, the control centre, the lock screen, the start page, notifications, the prompt, fastfetch, terminal tabs, the key list and the doctor; registered in `tokens.toml` `[icons]` |
-| Sessions | Hyprland (tiling, our bar and tools) or KDE Plasma (the full desktop with its own panel, settings and apps), picked at the sign-in screen. Plasma wears the edition: a colour scheme for every KDE app, a window frame of unified chrome with square gel keys, the panel and pop-ups as round chrome shells, the fui cursor and the edition's backdrop (`fui plasma`, run at Plasma sign-in and on an edition change). Both sessions share one keyring |
+| Sessions | Hyprland (tiling, our bar and tools) or KDE Plasma (the full desktop with its own panel, settings and apps), picked at the sign-in screen. Plasma wears the edition: a colour scheme for every KDE app, a window frame of unified chrome with square gel keys, the panel and pop-ups as round chrome shells, the macOS-style cursor and the edition's backdrop (`fui plasma`, run at Plasma sign-in and on an edition change). Both sessions share one keyring |
 | Windows | flat panels, radius 4, a hairline edge (the focused one in the signal), no shadows (a soft signal halo on deep screens); dialogs, pickers and small tools float centred; picture-in-picture pinned |
 | Bar | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts (`CPU`, `MEM`, `NET`), volume and battery segment meters, now playing, updates, recording, the edition and tier, notices, the clock |
 | Launcher | apps, the command palette, the edition and tier pickers, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |
@@ -103,7 +103,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
 | System | keyring, firewall, weekly package-cache cleanup, firmware updates, the right graphics driver |
 | Music | Audacious, with a classic player skin generated per edition (a chrome shell, square transport keys with a gel play key, glowing segment digits, an analyser, boxy faders, an equaliser and a playlist); EasyEffects for a system equaliser; Shortwave for internet radio |
-| The look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with key-shaped workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK and Qt headers in chrome, chrome keys, gel selections; a welcome-screen lock; slanted tabs in the terminal; backdrops that move (seamless 56 s loops); the start page as a small device; a cursor theme drawn per edition (chrome with a gel inset; `fui cursor`). From the 2007 desktops: unified window headers (one smooth fall of light), a deep soft shadow under the focused window, source-list sidebars. The device's outer shells are round (the bar a capsule; the launcher, console, OSD, lock and login panels); everything on them is boxy: 4 px panels and windows, 2 px keys |
+| The look | windows in a chrome chassis with one soft shadow and a springy pop-in; a chrome bar with key-shaped workspaces (the current one gel) and an LCD clock; a launcher, notices and OSD in the same materials; GTK and Qt headers in chrome, chrome keys, gel selections; a welcome-screen lock; slanted tabs in the terminal; backdrops that move (seamless 56 s loops); the start page as a small device; the macOS-style cursor set everywhere (apple_cursor; `fui cursor`). From the 2007 desktops: a frosted-glass menu bar, launcher, control centre and OSD (translucent, the desktop blurred behind, a gloss over the top), unified window headers, a deep soft shadow under the focused window, source-list sidebars, and the aurora edition with its veil backdrop. The device's outer shells are round (the bar a capsule; the launcher, console, OSD, lock and login panels); everything on them is boxy: 4 px panels and windows, 2 px keys |
 
 ## Startup
 
