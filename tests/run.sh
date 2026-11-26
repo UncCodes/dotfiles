@@ -96,7 +96,7 @@ t "one corner language: boxy (no pills or circles but radios and LEDs; panels 4 
   ! grep -nE "rounding = ([5-9]|[1-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
   [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
 t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
-  ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests"' _ "$DOTS"
+  ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests" | grep -v "RETIRED="' _ "$DOTS"
 t "one tool per job: settings open windowed apps, not terminal screens (no nmtui, wiremix, bluetui)" bash -c '
   ! git -C "$1" grep -n -E "nmtui|wiremix|bluetui" -- hypr waybar swaync labwc theme/labwc.py packages.txt aur.txt fui/.local/bin/fui \
       | grep -v "RETIRED=\|tui <command>"' _ "$DOTS"
