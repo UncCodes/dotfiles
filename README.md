@@ -97,7 +97,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Terminal | the edition's console (light editions keep a dark one); zsh, starship, fastfetch (the workstation's asset sheet), btop, Neovim, git, mpv, zathura, imv and satty on the same palette |
 | Terminal tools | yazi, lazygit, wiremix, nmtui, gdu, nvtop, cava, tealdeer, glow, zoxide |
 | Browser | Firefox with a flat tab strip and signal details; the start page is the intranet (true readouts, a day meter, a Display P3 signal on wide-gamut screens) |
-| Apps by default | zathura (PDF), mpv (video and images, both through a colour halftone screen: `d` toggles it; imv stays installed as a plain viewer), satty (annotation), Thunar (files) |
+| Apps by default | zathura (PDF), imv (images), mpv (video), satty (annotation), Thunar (files) |
 | Sound | deep, spacious cues as a sound theme: a sub-bass swell, a warm pad and glass bells at sign-in, glass bells for notices, soft blips for toggles, all in a stereo hall |
 | Boot and sign-in | an animated Plymouth splash (the survey field fading in with the machine's logo, host and OS while traces of signal run along the contours, a 4 px progress line), then a graphical login screen (greetd + ReGreet in the edition's look: a glass panel over the survey field, or on y2k a rounded shell with a chrome title strip, pill fields, a gel Login button and the clock in a lit readout, over the ribbon; run `fui setup boot` again after changing look); the console palette and a sign-in banner |
 | Displays | three tiers: tubes get black floors, 2 px lines, a safe inset and burn-in protection; OLED / HDR gets true black and burn-in protection; `fui display auto` picks one |
