@@ -87,7 +87,7 @@
         },
         {
           "label": "󰌗  NETWORK",
-          "command": "sh -c '$HOME/.local/bin/fui tui nmtui'"
+          "command": "nm-connection-editor"
         },
         {
           "label": "󰍁  LOCK",

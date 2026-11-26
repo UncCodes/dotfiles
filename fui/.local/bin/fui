@@ -192,9 +192,10 @@ cmd_mode() {
   mode_link "$CFG/zathura" "colors-$new"       fui-colors
   mode_link "$CFG/imv"     "config-$new"       config
   mode_link "$CFG/satty"   "config-$new.toml"  config.toml
-  if [ -f "$CFG/qt6ct/qt6ct.conf" ]; then
-    sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$CFG/qt6ct/qt6ct.conf"
-  fi
+  local qtc
+  for qtc in "$CFG/qt6ct/qt6ct.conf" "$CFG/qt5ct/qt5ct.conf"; do      # Qt6 and Qt5 read the same colours and sheet
+    [ -f "$qtc" ] && sed -i -E "s|(colors/fui)[^/]*\.conf|\1-$new.conf|; s|(qss/fui)[^/]*\.qss|\1-$new.qss|" "$qtc"
+  done
   local prof
   while IFS= read -r prof; do
     [ -L "$prof/chrome/fui-colors.css" ] && ln -sfn "$CFG/fui/firefox/colors-$new.css" "$prof/chrome/fui-colors.css"
@@ -957,8 +958,9 @@ cmd_palette() {   # every action in one window; each row is "icon|label|command"
     "${I_emoji-}|Emoji|rofi -config $CFG/rofi/config.rasi -modi emoji -show emoji"
     "${I_calculator-}|Calculator|rofi -config $CFG/rofi/config.rasi -modi calc -show calc -no-show-match -no-sort"
     "${I_files-}|Files|$SELF tui yazi"
-    "${I_network-}|Network|$SELF tui nmtui"
-    "${I_audio-}|Audio|$SELF tui wiremix"
+    "${I_network-}|Network|nm-connection-editor"
+    "${I_audio-}|Audio|pavucontrol"
+    "${I_bluetooth-}|Bluetooth|blueman-manager"
     "${I_monitor-}|System monitor|$SELF tui btop"
     "${I_notices-}|Notices|swaync-client -t -sw"
     "${I_keys-}|Key reference|$SELF keys"
@@ -1290,6 +1292,11 @@ fix_packages() { bash "$DOTS/install.sh" --no-hardware --no-chsh; }
 fix_gpu() { cmd_setup gpu; }
 fix_bar() { bar_start; }
 fix_mako() { pkill -x mako; sudo pacman -Rns --noconfirm mako; pgrep -x swaync >/dev/null || detach swaync; }
+# packages an earlier version installed whose job another one does now: one tool per job
+RETIRED="wiremix:pavucontrol bluetui:blueman ttf-silkscreen:Michroma ttf-dseg:Michroma"
+retired_installed() { local r; for r in $RETIRED; do pacman -Qq "${r%%:*}" >/dev/null 2>&1 && printf '%s ' "${r%%:*}"; done; }
+# shellcheck disable=SC2086
+fix_retired() { local p; p=$(retired_installed); [ -n "$p" ] && sudo pacman -Rns --noconfirm $p; }
 stale_links() {   # links into the dotfiles whose target no longer exists
   local l repo
   repo="$(basename "$DOTS")/"
@@ -1389,13 +1396,19 @@ for m in json.load(sys.stdin):
   elif pacman -Qq mako >/dev/null 2>&1; then
     info "mako is still installed (unused): sudo pacman -Rns mako"
   fi
+  if have pacman; then
+    local retired; retired=$(retired_installed)
+    if [ -n "$retired" ]; then
+      info "no longer used (another tool does the job now): ${retired% }"; fix fix_retired "remove them"
+    fi
+  fi
 
   section "network"
   if have nmcli; then
     case "$(nmcli networking connectivity 2>/dev/null)" in
       full) ok "online" ;;
       limited|portal) warn "limited connectivity (captive portal or no internet)" ;;
-      *) bad "offline"; info "connect with: fui tui nmtui  (or SUPER+SHIFT+N)" ;;
+      *) bad "offline"; info "connect with the network icon in the bar (or SUPER+SHIFT+N)" ;;
     esac
   else
     warn "NetworkManager (nmcli) not installed"
@@ -1590,8 +1603,8 @@ setup_bluetooth() {
   if [ -z "$(ls /sys/class/bluetooth 2>/dev/null)" ]; then
     echo "  no Bluetooth adapter: nothing to do"; return 0
   fi
-  sudo pacman -S --needed --noconfirm bluez bluez-utils bluetui && sudo systemctl enable --now bluetooth.service
-  echo "  ready: run bluetui to pair devices"
+  sudo pacman -S --needed --noconfirm bluez bluez-utils blueman && sudo systemctl enable --now bluetooth.service
+  echo "  ready: pair devices in Bluetooth (the palette, SUPER+Space)"
 }
 
 setup_firmware() {
