@@ -83,3 +83,25 @@ window#waybar.empty #window { color: @muted; }
 /* tooltips: a raised plate with a hairline */
 tooltip { background-color: @raised; border: 1px solid @rule_hi; border-radius: 2px; }
 tooltip label { color: @ink; font-family: "JetBrainsMono Nerd Font", monospace; }
+
+/* ── the rail: a graduated scale along the bar's foot, like the edge of a rule (a minor tick
+      every 8 px, a major tick in the signal every 64). The bar is the one surface that measures. ── */
+window#waybar {
+  background-image:
+    repeating-linear-gradient(to right, alpha(@signal, 0.55) 0px, alpha(@signal, 0.55) 1px, transparent 1px, transparent 64px),
+    repeating-linear-gradient(to right, alpha(@rule_hi, 0.9) 0px, alpha(@rule_hi, 0.9) 1px, transparent 1px, transparent 8px);
+  background-size: 100% 5px, 100% 3px;
+  background-position: left bottom, left bottom;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* labwc's taskbar: index tabs, the focused window's tab lifted with the signal along its top */
+#taskbar { padding: 0 6px; }
+#taskbar button {
+  padding: 0 10px; margin: 4px 1px 6px; color: @muted; background: transparent;
+  border: 1px solid transparent; border-radius: 0;
+  font-family: "JetBrainsMono Nerd Font", monospace; font-size: 11px;
+}
+#taskbar button:hover { color: @ink; border-color: @rule_hi; }
+#taskbar button.active { color: @ink; background: @raised; border-color: @rule_hi; box-shadow: inset 0 2px @signal; }
+#taskbar button.minimized { color: @faint; }

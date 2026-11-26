@@ -208,6 +208,33 @@ Motion in y2k: expo-out glides (`0.16, 1, 0.3, 1`) and a pop with about 5% overs
 windows and pop-ups; presses answer at once; the only thing that moves at rest is the
 backdrop's ribbon (a 56 s seamless loop with a glint along its spine).
 
+### One family, many parts
+
+A look is not one treatment repeated on every surface. Each surface is a different part of the
+same machine, built from the same roles, so the whole reads as designed rather than skinned:
+
+| Surface | instrument: an issued instrument | y2k: an owned device |
+|---|---|---|
+| Bar | a graduated rail: a tick scale along its foot (minor every 8 px, a major in the signal every 64) | the chrome chassis, keys for the workspaces, a readout for the clock |
+| Notification | a slip off a feed: a perforated edge (punched holes) along its top | tinted translucent plastic: the signal's tint, fine ribbing, a sheen along the top |
+| Control centre | a patch panel: square switches, each with an indicator lamp that lights in the signal | brushed metal; its switches matte rubber keys, a lit strip along the foot when on |
+| Launcher | the directory panel: a header plate, flat rows | a chrome title strip, a search field, a striped library list, gel on the selection |
+| Volume overlay | a panel meter: the level against a tick scale, the half marked | an LCD panel in a shell bezel: lit segments, the number glowing |
+| Window frame (labwc) | a flat header plate, the title left in the mono voice, hairline glyph buttons | a chrome title bar split at the horizon, gel orbs (red gel for close), a soft shadow |
+| App sidebars (GTK) | as the panel | brushed metal beside the glass content |
+
+Parts never borrow each other's material: a slip is never perforated metal, a patch-panel lamp
+never appears on a notification. Variety comes from the part, not from new colours.
+
+### Two sessions
+
+Hyprland (tiling, no title bars) and labwc (overlapping windows with title bars, Openbox's
+manner) are both offered at the sign-in screen. The bar, notifications, launcher, lock,
+wallpaper and `fui` are the same in both; labwc shows its windows as a taskbar where Hyprland
+shows the workspaces and the window title, and draws each window's frame in the look
+(theme/labwc.py). The keys match where the idea is the same; labwc adds window keys of its own
+(`SUPER+Up` maximise, `SUPER+Down` minimise, `SUPER+Left/Right` fill a half, `ALT+Tab`).
+
 Material roles exist in every edition (instrument editions derive them from their panels),
 so a component can always resolve them. Contrast is checked for `ink` on the shell and lit
 text in a readout, as for every other pair.

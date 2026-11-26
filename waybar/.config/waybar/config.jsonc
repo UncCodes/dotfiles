@@ -154,6 +154,18 @@
     "spacing": 8
   },
 
+  // labwc only (fui bar puts it where Hyprland shows the workspaces and the window): the open
+  // windows as buttons, the stacking desktop's taskbar; click raises or minimises
+  "wlr/taskbar": {
+    "format": "{icon} {title:.24}",
+    "icon-size": 14,
+    "all-outputs": false,
+    "on-click": "activate",
+    "on-click-middle": "close",
+    "on-click-right": "minimize-raise",
+    "tooltip-format": "{title}"
+  },
+
   // the clock in the brand voice, the date small beside it (24-hour; ISO in the alternate view)
   "clock": {
     "format": "{:%H:%M  <span alpha='60%%' size='small' letter_spacing='1600'>%a %d %b</span>}",

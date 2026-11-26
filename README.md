@@ -86,6 +86,7 @@ When something looks wrong, run `fui doctor` and send its output.
 | Area | What you get |
 |---|---|
 | Icons | one outline family (the Nerd Font's Material Design set) on everything: every palette command and menu row, the bar, the control centre, the lock screen, the start page, notifications, the prompt, fastfetch, terminal tabs, the key list and the doctor; registered in `tokens.toml` `[icons]` |
+| Sessions | Hyprland (tiling) or labwc (overlapping windows with title bars, a taskbar in the bar, a right-click desktop menu), picked at the sign-in screen; both share the bar, notifications, launcher, lock and `fui`, and labwc's title bars follow the look and edition |
 | Windows | flat panels, radius 4, a hairline edge (the focused one in the signal), no shadows (a soft signal halo on deep screens); dialogs, pickers and small tools float centred; picture-in-picture pinned |
 | Bar | the status rail: the badge, workspace index segments `01 02 03`, the focused window, labelled readouts (`CPU`, `MEM`, `NET`), volume and battery segment meters, now playing, updates, recording, the edition and tier, notices, the clock |
 | Launcher | apps, the command palette, the edition and tier pickers, the session menu, the key reference, clipboard, emoji, calculator: one directory panel |

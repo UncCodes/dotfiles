@@ -102,9 +102,8 @@ t "every look has its layer for the bar, notices, OSD, launcher and lock screen"
       [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
     done
   done' _ "$DOTS"
-t "the instrument look is untouched: its layers add nothing over the shared rules" bash -c '
-  ! grep -v "^/\*\|^ \*" "$1/swaync/.config/swaync/look-instrument.css" | grep -q . &&
-  ! grep -v "^/\*\|^ \*" "$1/rofi/.config/rofi/look-instrument.rasi" | grep -q .' _ "$DOTS"
+t "the instrument look keeps its own parts: no y2k material (chrome, gel, faces, readouts) in its layers" bash -c '
+  ! grep -nE "@(chrome|gel|face)[_-]|@readout|@shell" "$1"/*/.config/*/look-instrument.* "$1"/hypr/.config/hypr/lock-instrument.conf' _ "$DOTS"
 t "the bar meters round down (100 icons, full only at 99 and up)" python3 -c '
 import json, re, sys
 m = json.loads(re.sub(r"^\s*//.*$", "", open(sys.argv[1]).read(), flags=re.M))
@@ -199,7 +198,7 @@ t "fui is on the default PATH" env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/b
 # Hyprland wants a runtime folder even just to check the config; containers have none
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"; chmod 700 "$XDG_RUNTIME_DIR"; export XDG_RUNTIME_DIR
 t "Hyprland --verify-config" Hyprland --verify-config
-LINKS="waybar/fui-look.css swaync/fui-look.css swayosd/fui-look.css rofi/fui-look.rasi hypr/fui-look-lock.conf waybar/fui-colors.css waybar/fui-tier.css waybar/fui-alert.css rofi/fui-colors.rasi rofi/fui-tier.rasi swaync/fui-colors.css swaync/fui-tier.css swaync/fui-alert.css swayosd/fui-colors.css swayosd/fui-tier.css hypr/fui-colors.conf hypr/fui-tier.conf kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors imv/config satty/config.toml"
+LINKS="labwc/rc.xml waybar/fui-look.css swaync/fui-look.css swayosd/fui-look.css rofi/fui-look.rasi hypr/fui-look-lock.conf waybar/fui-colors.css waybar/fui-tier.css waybar/fui-alert.css rofi/fui-colors.rasi rofi/fui-tier.rasi swaync/fui-colors.css swaync/fui-tier.css swaync/fui-alert.css swayosd/fui-colors.css swayosd/fui-tier.css hypr/fui-colors.conf hypr/fui-tier.conf kitty/fui-colors.conf kitty/fui-console.conf kitty/fui-tier.conf gtk-3.0/fui-mode.css gtk-3.0/fui-tier.css gtk-4.0/fui-mode.css gtk-4.0/fui-tier.css btop/themes/fui.theme mpv/fui-colors.conf zathura/fui-colors imv/config satty/config.toml"
 t "edition and tier links in place" bash -c 'for l in $1; do [ -e "$HOME/.config/$l" ] || { echo "missing ~/.config/$l"; exit 1; }; done' _ "$LINKS"
 for m in $EDITIONS; do
   t "switch to $m" bash -c '"$HOME/.local/bin/fui" mode "$1" --quiet &&
@@ -276,6 +275,20 @@ t "boot splash, login screen and consoles render (and the splash animates its tr
     [ -s "/tmp/fui-boot-test/$f" ] || { echo "missing $f"; exit 1; }
   done
   grep -q "SetRefreshFunction" /tmp/fui-boot-test/plymouth/fui.script && grep -q "regreet" /tmp/fui-boot-test/greeter/config.toml' _ "$DOTS"
+t "labwc: a theme per edition (themerc and the title-bar buttons) and an rc per look, all well formed" bash -c '
+  for d in "$1"/labwc/.local/share/themes/fui-*/openbox-3; do
+    [ -s "$d/themerc" ] || { echo "no themerc in $d"; exit 1; }
+    for b in iconify max max_toggled close; do for v in "" _hover; do for s in active inactive; do
+      [ -s "$d/$b$v-$s.svg" ] || { echo "missing $d/$b$v-$s.svg"; exit 1; }
+    done; done; done
+  done
+  [ "$(ls -d "$1"/labwc/.local/share/themes/fui-* | wc -l)" -eq "$(python3 -c "import tomllib,sys; print(len(tomllib.load(open(sys.argv[1],\"rb\"))[\"meta\"][\"editions\"]))" "$1/theme/tokens.toml")" ] || exit 1
+  python3 -c "
+import sys, xml.dom.minidom as m, glob
+for f in glob.glob(sys.argv[1] + \"/labwc/.config/labwc/*.xml\") + glob.glob(sys.argv[1] + \"/labwc/.local/share/themes/*/openbox-3/*.svg\"):
+    m.parse(f)
+" "$1"
+  [ "$(readlink "$HOME/.local/share/themes/fui")" = "fui-$("$HOME/.local/bin/fui" mode status)" ] || { echo "the labwc theme link does not follow the edition"; exit 1; }' _ "$DOTS"
 t "rofi themes put no @reference inside linear-gradient() (rofi rejects it)" bash -c '
   ! grep -n "linear-gradient([^)]*@" "$1"/rofi/.config/rofi/*.rasi' _ "$DOTS"
 t "the login screen follows the look, and styles only ReGreet's two panels" bash -c '

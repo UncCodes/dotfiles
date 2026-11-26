@@ -1,19 +1,25 @@
-/* fui // SWAYOSD · look y2k: a small chrome device with a lit readout level. Over base.css. */
+/* fui // SWAYOSD · look y2k, over base.css: the LCD panel. The whole overlay is a lit readout
+   in a shell bezel (the player's display, not its chrome): the icon and the number glow in
+   the readout's ink, and the level is a row of lit segments. */
 window#osd {
   border: 1px solid @rim;
   border-radius: 14px;
-  background-image: linear-gradient(to bottom, alpha(@chrome_lip, 0.92), alpha(@shell_hi, 0.88) 8%, alpha(@chrome_mid, 0.86) 46%,
-                    alpha(@chrome_horizon, 0.88) 52%, alpha(@chrome_low, 0.90) 84%, alpha(@chrome_reflect, 0.90));
-  box-shadow: inset 0 1px alpha(#FFFFFF, 0.55), inset 0 -1px alpha(#000000, 0.25);
+  background-color: @readout;
+  background-image: linear-gradient(to bottom, alpha(#FFFFFF, 0.08), alpha(#FFFFFF, 0) 45%);
+  box-shadow: inset 0 0 0 4px @shell, inset 0 0 0 5px @rim, inset 0 2px 10px alpha(#000000, 0.6);
 }
-window#osd #container { margin: 10px 22px; }
-window#osd image, window#osd label { color: @ink; text-shadow: 0 1px @emboss; }
+window#osd #container { margin: 14px 24px; }
+window#osd image, window#osd label {
+  color: @readout_ink; text-shadow: 0 0 6px alpha(@readout_ink, 0.7);
+  font-family: "DSEG7 Classic", "JetBrainsMono Nerd Font", monospace;
+}
 window#osd trough, window#osd segment {
-  min-height: 8px; border-radius: 3px; border: 1px solid alpha(#000000, 0.6);
-  background-image: linear-gradient(to bottom, shade(@readout, 0.7), @readout);
-  box-shadow: inset 0 1px 2px alpha(#000000, 0.7);
+  min-height: 8px; border-radius: 1px; border: none;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to right, @readout_dim 0px, @readout_dim 6px, transparent 6px, transparent 8px);
 }
 window#osd progress, window#osd segment.active {
-  min-height: 8px; border-radius: 3px; background-image: none; background-color: @readout_ink;
-  box-shadow: 0 0 6px alpha(@readout_ink, 0.7);
+  min-height: 8px; border-radius: 1px; background-color: transparent;
+  background-image: repeating-linear-gradient(to right, @readout_ink 0px, @readout_ink 6px, transparent 6px, transparent 8px);
+  box-shadow: 0 0 6px alpha(@readout_ink, 0.6);
 }
