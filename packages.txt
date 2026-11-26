@@ -63,6 +63,14 @@ libsecret
 
 # terminal tools (TUIs)
 lazygit       # git
+github-cli    # gh: pull requests, issues, CI from the terminal
+openssh       # ssh keys and remotes
+base-devel    # make, gcc and the rest: building from source and from the AUR
+man-db        # man pages
+man-pages
+wget
+zip
+unzip
 gdu           # disk usage
 cava          # audio visualiser
 tealdeer      # tldr: short command examples

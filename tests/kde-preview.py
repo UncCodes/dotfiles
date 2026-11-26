@@ -49,7 +49,7 @@ def main(out, eds):
         for ed in eds:
             p = E(ed)
             bg = tuple(int(p["void"].lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
-            c = Image.new("RGBA", (1040 * Z // 2, 300 * Z // 2), (*bg, 255))
+            c = Image.new("RGBA", (520 * Z, 280 * Z), (*bg, 255))
             a, d = kde.aurorae(ed), kde.desktoptheme(ed)
             c.alpha_composite(frame(a["decoration.svg"], "decoration", 300, 180, tmp), (20, 20))
             x = 20 + 300 * Z - (3 * 21 + 12) * Z

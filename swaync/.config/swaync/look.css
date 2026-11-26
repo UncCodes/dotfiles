@@ -84,7 +84,7 @@ scale slider { min-width: 20px; min-height: 12px; border-radius: 2px; border: 1p
 
 /* ── the control centre: frosted glass (the desktop blurred behind it), a gloss over its top ── */
 .control-center {
-  background-color: alpha(@panel, 0.80);
+  background-color: alpha(@panel, 0.90);   /* frosted, but the text must read over any window, blurred or not */
   background-image: linear-gradient(to bottom, alpha(#FFFFFF, 0.10), alpha(#FFFFFF, 0) 120px);
 }
 /* its switches: matte rubber keys, pressed in when on, with a lit strip along the foot */
