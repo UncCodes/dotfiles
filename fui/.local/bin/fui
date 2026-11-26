@@ -3,7 +3,7 @@
 #
 #   fui mode [toggle|pick|<edition>|apply|status]    the edition (toggle: the next one; pick: from a list)
 #   fui plasma [apply|status]                        the Plasma session in the edition (colours, frame, style)
-#   fui cursor [apply|status]                        the pointer: chrome with a gel inset, drawn from the edition
+#   fui cursor [apply|status]                        the pointer: the macOS-style set (apple_cursor), everywhere
 #   fui skin [apply|status]                          the music player's skin, drawn from the edition (Audacious)
 #   fui display [auto|crt|lcd|deep|pick|status]      the display tier (SUPER+SHIFT+D)
 #   fui alert [on|off|status] · watch · idle         the alert takeover · battery/heat watch · idle steps
@@ -205,7 +205,7 @@ cmd_mode() {
   render_startpage
   if in_session; then detach "$SELF" skin apply --quiet   # drawing a skin takes seconds: never hold the change up
   else cmd_skin apply --quiet; fi
-  if in_session; then detach "$SELF" cursor apply; else cmd_cursor apply; fi
+  cmd_cursor apply
   if in_plasma; then detach "$SELF" plasma apply; fi
   # links from earlier versions, which no longer exist in the repo (the two looks became one)
   rm -f "$CFG/waybar/fui-look.css" "$CFG/swaync/fui-look.css" "$CFG/swayosd/fui-look.css" "$CFG/rofi/fui-look.rasi" \
@@ -298,7 +298,7 @@ cmd_plasma() {
     $kw --file kwinrc --group org.kde.kdecoration2 --key theme "__aurorae__svg__fui-$ed"
     $kw --file kwalletrc --group Wallet --key Enabled false                    # gnome-keyring serves both sessions
     $kw --file kwalletrc --group org.freedesktop.secrets --key apiEnabled false
-    $kw --file kcminputrc --group Mouse --key cursorTheme fui
+    $kw --file kcminputrc --group Mouse --key cursorTheme "$(tok desktop.cursor_theme)"
     $kw --file kdeglobals --group General --key font "$(tok font.ui),10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
     $kw --file kdeglobals --group General --key fixed "$(tok font.mono),10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
   fi
@@ -306,7 +306,7 @@ cmd_plasma() {
   local ed_camel; ed_camel="Fui$(printf '%s' "${ed:0:1}" | tr '[:lower:]' '[:upper:]')${ed:1}"
   have plasma-apply-colorscheme && t3 plasma-apply-colorscheme "$ed_camel" >/dev/null 2>&1
   have plasma-apply-desktoptheme && t3 plasma-apply-desktoptheme "fui-$ed" >/dev/null 2>&1
-  have plasma-apply-cursortheme && t3 plasma-apply-cursortheme fui >/dev/null 2>&1
+  have plasma-apply-cursortheme && t3 plasma-apply-cursortheme "$(tok desktop.cursor_theme)" >/dev/null 2>&1
   if have qdbus6; then t3 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1
   elif have dbus-send; then t3 dbus-send --session --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1; fi
   # the wallpaper: the edition's still at the screen's size (Plasma draws its own desktop)
@@ -318,24 +318,28 @@ cmd_plasma() {
 }
 tok_kde() { grep -m1 "^$1=" "$CFG/kdeglobals" 2>/dev/null | cut -d= -f2; }
 
-# ── cursor: chrome with a gel inset, in the edition ─────────────────────
-# theme/make-cursor.py draws the theme (under a second); ~/.local/share/icons/fui points at the
-# current edition's, and the compositor is told to load it again.
+# ── cursor: the macOS-style set (apple_cursor, AUR), everywhere ───────────
+# One theme for Hyprland, GTK, Qt and XWayland (XCURSOR_THEME and gsettings carry its name;
+# ~/.local/share/icons/default makes it the fallback for anything that asks for "default"),
+# Plasma and the login screen. This also clears the cursors earlier versions generated.
 cmd_cursor() {
-  local ed dir link="$HOME/.local/share/icons/fui" size
-  ed=$(current_mode); dir="$HOME/.local/share/icons/fui-cursors-$ed"; size=$(tok desktop.cursor_size)
+  local theme size dflt="$HOME/.local/share/icons/default"
+  theme=$(tok desktop.cursor_theme); theme="${theme:-macOS}"; size=$(tok desktop.cursor_size)
   case "${1:-apply}" in
     apply) ;;
-    status) echo "edition $ed · cursors $(readlink "$link" 2>/dev/null || echo none)"; return 0 ;;
+    status) echo "cursor: $theme ($(cursor_installed "$theme" && echo installed || echo "not installed: yay -S apple_cursor"))"; return 0 ;;
     *) die "usage: fui cursor [apply|status]" ;;
   esac
-  if [ ! -f "$dir/cursors/default" ] || [ "$CFG/fui/tokens.json" -nt "$dir/cursors/default" ]; then
-    python3 "$DOTS/theme/make-cursor.py" --edition "$ed" "$dir" >/dev/null 2>&1 || return 0
-  fi
-  mkdir -p "${link%/*}"; ln -sfn "$dir" "$link"
-  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl setcursor fui "${size:-24}" >/dev/null 2>&1
+  rm -rf "$HOME/.local/share/icons/fui" "$HOME"/.local/share/icons/fui-cursors-* 2>/dev/null   # the old generated cursors
+  cursor_installed "$theme" || return 0
+  mkdir -p "$dflt"
+  printf '[Icon Theme]\nName=Default\nComment=fui: the default cursor is %s\nInherits=%s\n' "$theme" "$theme" > "$dflt/index.theme"
+  have gsettings && t3 gsettings set org.gnome.desktop.interface cursor-theme "$theme"
+  have gsettings && t3 gsettings set org.gnome.desktop.interface cursor-size "${size:-24}"
+  [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && t3 hyprctl setcursor "$theme" "${size:-24}" >/dev/null 2>&1
   return 0
 }
+cursor_installed() { [ -d "/usr/share/icons/$1/cursors" ] || [ -d "$HOME/.local/share/icons/$1/cursors" ] || [ -d "$HOME/.icons/$1/cursors" ]; }
 
 # ── display: the tier (crt, lcd, deep) ──────────────────────────────────
 # A tube, a backlit panel, or an OLED / HDR / wide-gamut panel. `auto` reads the connected
@@ -633,7 +637,7 @@ cmd_lockclock() {
 # A loop takes minutes to render, so after showing the wallpaper `fui wallpaper warm` renders
 # every other edition's in the background (idle priority): a later edition change finds its
 # loop ready, and a running player swaps to it in place, with no gap.
-WP_SCENES="survey ribbon helix orbit fibre mesh"
+WP_SCENES="survey ribbon helix orbit fibre mesh veil"
 wp_blurb() {        # a backdrop's one-line description, for the picker
   case "$1" in
     auto) echo "Each edition its own" ;;
@@ -643,6 +647,7 @@ wp_blurb() {        # a backdrop's one-line description, for the picker
     orbit) echo "Orbit: a gyroscope of rings, beads travelling them" ;;
     fibre) echo "Fibre: a fibre-optic lamp, its tips breathing" ;;
     mesh) echo "Mesh: a wireframe landscape rolling in" ;;
+    veil) echo "Veil: curtains of light hanging in a night sky" ;;
   esac
 }
 
@@ -779,13 +784,15 @@ wallpaper_pick() {
 cmd_wallpaper() {
   mkdir -p "$STATE" "$CACHE"
   local pref
+  # still by default: a still costs nothing once drawn; a live loop keeps the decoder and the
+  # compositor's blur busy every frame, so it is opted into (SUPER+SHIFT+W)
   pref=$(cat "$STATE/wallpaper" 2>/dev/null)
-  [ "$pref" = still ] || pref=live
+  [ "$pref" = live ] || pref=still
   case "${1:-start}" in
     start) ;;
     toggle) [ "$pref" = live ] && pref=still || pref=live; echo "$pref" > "$STATE/wallpaper"; note "BACKDROP" "$pref" preferences-desktop-wallpaper ;;
     live|still) pref="$1"; echo "$pref" > "$STATE/wallpaper" ;;
-    pick|auto|survey|ribbon|helix|orbit|fibre|mesh)
+    pick|auto|survey|ribbon|helix|orbit|fibre|mesh|veil)
       local s="$1"
       if [ "$s" = pick ]; then s=$(wallpaper_pick) || return 0; fi
       if [ "$s" = auto ]; then rm -f "$STATE/backdrop"; else echo "$s" > "$STATE/backdrop"; fi
@@ -851,6 +858,7 @@ on_battery() {      # true when running on a battery that is discharging
 }
 wallpaper_warm() {
   have flock || return 0
+  sleep 20                                   # after an edition change has settled, never during it
   exec 8>"$CACHE/.warm.lock"
   flock -n 8 || return 0
   have renice && renice -n 19 -p $$ >/dev/null 2>&1
@@ -872,6 +880,7 @@ wallpaper_warm() {
     [ "$kind" = live ] && { [ "$pref" = still ] || ! have mpvpaper || ! have ffmpeg || on_battery; } && break
     for m in $eds; do
       [ "$kind" = live ] && [ "$m" != "$cur" ] && [ "$m" != "$next" ] && continue
+      [ "$kind" = still ] && [ "$pref" != live ] && [ "$m" != "$cur" ] && [ "$m" != "$next" ] && continue   # still mode: two stills, nothing more
       scene=$(backdrop_of "$m")
       out=$(wp_file "$kind" "$scene" "$m" "$tier" "$size" "$key")
       [ -s "$out" ] && continue
@@ -1222,7 +1231,15 @@ cmd_record() {
       pkill -INT -x wf-recorder
       cmd_sound tick; note "RECORDING" "saved: $(sed "s|$HOME|~|" "$STATE/record-file" 2>/dev/null)" media-playback-stop
       rm -f "$STATE/record-start" ;;
-    status)   # JSON for the bar: shown only while recording
+    status)   # JSON for the bar: shown only while recording; --follow keeps one process for the bar
+      if [ "${2:-}" = --follow ]; then
+        local last=""
+        while :; do
+          if pgrep -x wf-recorder >/dev/null; then cmd_record status; sleep 1
+          else [ "$last" = idle ] || echo '{"text": ""}'; last=idle; sleep 3; continue; fi
+          last=rec
+        done
+      fi
       if [ "$running" = 1 ]; then
         local now began s
         now=$(date +%s); began=$(cat "$STATE/record-start" 2>/dev/null || echo "$now"); s=$((now - began))
@@ -1445,6 +1462,11 @@ cmd_doctor() {
     esac
   done < <(gpu_lines)
   [ "$any" = 1 ] || warn "no graphics card found by lspci (is pciutils installed?)"
+  # video decoding on the GPU: without it a live wallpaper is decoded on the CPU, every frame
+  if gpu_lines | grep -qi "intel" && ! pacman -Qq intel-media-driver >/dev/null 2>&1; then
+    warn "Intel graphics without intel-media-driver: video (and a live wallpaper) is decoded on the CPU"; fix fix_gpu "fui setup gpu"
+  fi
+  info "wallpaper: $(cmd_wallpaper status | cut -d' ' -f1) (a still costs nothing once drawn; live keeps the decoder and blur busy · SUPER+SHIFT+W)"
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
     hyprctl -j monitors all 2>/dev/null | python3 -c '
 import json, sys
@@ -1578,6 +1600,8 @@ for m in json.load(sys.stdin):
   section "look"
   info "edition: $(current_mode) (SUPER+SHIFT+T)   screen finish: $(cmd_screen status) (SUPER+SHIFT+C)"
   info "display tier: $(cmd_display status) (SUPER+SHIFT+D)"
+  if cursor_installed "$(tok desktop.cursor_theme)"; then ok "cursor: $(tok desktop.cursor_theme)"
+  else warn "the $(tok desktop.cursor_theme) cursor theme is not installed (apple_cursor, AUR)"; fix fix_packages "install the package lists"; fi
   [ "$(cmd_alert status)" = on ] && warn "the alert takeover is on ($(cat "$STATE/alert-source" 2>/dev/null || echo manual)): fui alert off clears it"
   local nbar; nbar=$(pgrep -cx waybar 2>/dev/null || echo 0)
   if [ "${nbar:-0}" -gt 1 ]; then warn "$nbar bars are running"; fix fix_bar "restart the bar (fui bar)"
@@ -1830,9 +1854,6 @@ setup_boot() {
   sudo install -Dm644 "$tmp/greeter/regreet.toml" /etc/greetd/regreet.toml
   sudo install -Dm644 "$tmp/greeter/regreet.css" /etc/greetd/regreet.css
   sudo install -Dm644 "$tmp/greeter/background.png" /usr/share/fui/greeter/background.png
-  # the greeter's pointer: the edition's cursors, as a system theme
-  python3 "$DOTS/theme/make-cursor.py" --edition "$ed" "$tmp/cursors" >/dev/null 2>&1 &&
-    sudo rm -rf /usr/share/icons/fui && sudo mkdir -p /usr/share/icons/fui && sudo cp -a "$tmp/cursors/." /usr/share/icons/fui/
   # the greeter runs as its own user: the brand face must be a system font
   sudo install -Dm644 "$DOTS/fui/.local/share/fonts/fui/Michroma-Regular.ttf" /usr/share/fonts/fui/Michroma-Regular.ttf 2>/dev/null &&
     sudo fc-cache -f >/dev/null 2>&1

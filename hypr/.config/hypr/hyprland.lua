@@ -22,7 +22,7 @@ if not ok or type(T) ~= "table" or type(T.editions) ~= "table" then   -- keeps H
         cursor = { theme = "fui", size = 24 },
         geometry = { radius = 4, gaps_in = 6, gaps_out = 14 },
         opacity = { window_active = 0.98, window_inactive = 0.94 },
-        blur = { size = 6, passes = 3, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
+        blur = { size = 6, passes = 2, noise = 0.015, contrast = 1.0, brightness = 1.0, vibrancy = 0.15 },
         screen = { on = false }, font = { brand = "Michroma", ui = "Inter", mono = "JetBrainsMono Nerd Font", size = 10 },
         ease = { 0.25, 0.9, 0.25, 1.0 },
     }
@@ -161,6 +161,8 @@ hl.config({
             brightness = T.blur.brightness,
             vibrancy   = T.blur.vibrancy,
             popups     = true,
+            new_optimizations = true,           -- blur the wallpaper once, not under every window each frame
+            xray       = false,
         },
         dim_inactive = false,
         -- the optional screen finish: a faint vignette (fui screen toggles it)

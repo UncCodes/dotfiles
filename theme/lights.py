@@ -11,6 +11,8 @@ colour glowing through it, faint disc rings and column rules) and draws its own 
           under their own weight, each tip a point of light; they sway, the tips breathe
   mesh    a wireframe landscape in perspective, rows of light rolling in from the horizon,
           the near rows bright, the far ones fading into the haze
+  veil    curtains of light hanging in a night sky: fine threads from a rippling hem, the signal
+          at the top fading into the counter colour below, swaying; a few stars
 
 Every figure is lines(t) (polylines with an opacity and a width) and points(t) (glowing
 dots); the base class draws them supersampled with a soft bloom, and writes them as SVG for the
@@ -52,7 +54,7 @@ class LightScene(RibbonScene):
     def _routes(self):
         """Routes for the boot splash's traces: the brightest lines, as they stand at t = 0."""
         ls = sorted(self.lines(0.0), key=lambda l: -l[1])[:5]
-        return [(pts[::3], False, (n * 3) % 8, (n * 7) % 10) for n, (pts, _, _) in enumerate(ls)]
+        return [(item[0][::3], False, (n * 3) % 8, (n * 7) % 10) for n, item in enumerate(ls)]
 
     def ribbon(self, img, t):                     # draws the figure where the ribbon drew its sheaf
         W, H = self.W, self.H
@@ -60,10 +62,10 @@ class LightScene(RibbonScene):
         layer = Image.new("RGBA", (W * s, H * s), (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
         dim = 1.0 if self.dark else 0.9
-        for pts, a, w in self.lines(t):
+        for pts, a, w, *colour in self.lines(t):     # an optional fourth item: the line's own colour
             if a <= 0.01 or len(pts) < 2:
                 continue
-            d.line([(x * s, y * s) for x, y in pts], fill=(*self.line, round(255 * min(1.0, a * dim))),
+            d.line([(x * s, y * s) for x, y in pts], fill=(*(colour[0] if colour else self.line), round(255 * min(1.0, a * dim))),
                    width=max(1, round(s * w)))
         layer = layer.reduce(s)                        # 2x supersampled down to the screen: a box filter is enough
         img.alpha_composite(bloom(layer, H))
@@ -297,7 +299,82 @@ class MeshScene(LightScene):
         return out
 
 
-SCENES = {"helix": HelixScene, "orbit": OrbitScene, "fibre": FibreScene, "mesh": MeshScene}
+class VeilScene(LightScene):
+    name = "veil"
+    THREADS = 200
+
+    def _tint(self):
+        from palette import E
+        p = E(self.mode)
+        rgb = lambda c: tuple(int(c.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        return rgb(p["signal_hi"]), rgb(p["counter"])
+
+    def _hem(self, u, t, fold):
+        """The curtain's top edge at u (0..1 across): a slow, deep ripple, each fold its own."""
+        w = TAU * t / LOOP
+        a = self.seed * 0.2 + fold * 1.9
+        return self.H * (0.16 + 0.10 * math.sin(TAU * 0.9 * u + a + w) + 0.05 * math.sin(TAU * 2.3 * u - a + 2 * w)
+                         + 0.04 * fold)
+
+    def _length(self, u, t, fold):
+        w = TAU * t / LOOP
+        return self.H * (0.30 + 0.20 * (0.5 + 0.5 * math.sin(TAU * 1.6 * u + self.seed + fold - w)))
+
+    def lines(self, t):
+        W = self.W
+        w = TAU * t / LOOP
+        top, low = self._tint()
+        out = []
+        for j in range(self.THREADS):
+            g = (self.seed * 0.618 + j * 0.381966) % 1.0
+            fold = j % 3                                                      # three curtains, one behind another
+            u = (j + 0.5) / self.THREADS
+            hem, length = self._hem(u, t, fold), self._length(u, t, fold)
+            x0 = W * (-0.05 + 1.1 * u)
+            sway = W * 0.010 * (1 + fold)
+            bright = (0.62 - 0.16 * fold) * (0.55 + 0.45 * g)
+            pts, al = [], []
+            for i in range(15):
+                k = i / 14
+                x = x0 + sway * k * k * math.sin(w * (1 + fold) + TAU * (u * 1.7 + g) + k * 2.0)
+                pts.append((x, hem + length * k))
+                al.append(bright * (0.25 + 0.75 * math.sin(math.pi * min(1, k * 1.25))) * (1 - k) ** 0.8)
+            for n, (seg, a) in enumerate(_chunks(pts, al, 3)):
+                f = min(1.0, n / 4)
+                c = tuple(round(top[i] + (low[i] - top[i]) * f) for i in range(3))
+                out.append((seg, a, 1.0, c))
+        return out
+
+    def ribbon(self, img, t):
+        """A soft glow behind the curtains (drawn small and blurred: cheap), then the threads."""
+        W, H = self.W, self.H
+        top, low = self._tint()
+        q = 6
+        glow = Image.new("RGBA", (W // q, H // q), (0, 0, 0, 0))
+        d = ImageDraw.Draw(glow)
+        for fold in range(3):
+            n = 48
+            hems = [(W * (-0.05 + 1.1 * i / n) / q, self._hem(i / n, t, fold) / q) for i in range(n + 1)]
+            feet = [(x, y + self._length(i / n, t, fold) * 0.8 / q) for i, (x, y) in enumerate(hems)]
+            a = (70, 46, 30)[fold] if self.dark else (60, 40, 26)[fold]
+            d.polygon(hems + feet[::-1], fill=(*top, a))
+            d.polygon([(x, y + (fy - y) * 0.45) for (x, y), (_, fy) in zip(hems, feet)] + feet[::-1], fill=(*low, a // 2))
+        glow = glow.filter(ImageFilter.GaussianBlur(max(2, H // q // 30))).resize((W, H), Image.BILINEAR)
+        img.alpha_composite(glow)
+        super().ribbon(img, t)
+
+    def points(self, t):
+        W, H = self.W, self.H
+        out = []
+        for n in range(30):                                                   # stars, each breathing out of step
+            g = (self.seed * 0.73 + n * 0.618034) % 1.0
+            h = (self.seed * 0.29 + n * 0.754877) % 1.0
+            breath = 0.5 + 0.5 * math.sin(TAU * (1 + n % 3) * t / LOOP + g * TAU)
+            out.append((W * g, H * (0.03 + 0.92 * h), H * (0.0011 + 0.0009 * breath), 0.20 + 0.45 * breath))
+        return out
+
+
+SCENES = {"helix": HelixScene, "orbit": OrbitScene, "fibre": FibreScene, "mesh": MeshScene, "veil": VeilScene}
 
 
 def svg(name, mode, W=1000, H=700):
@@ -305,7 +382,7 @@ def svg(name, mode, W=1000, H=700):
     sc = SCENES[name].__new__(SCENES[name])
     sc.mode, sc.W, sc.H, sc.seed = mode, W, H, _seed(mode, len(name))
     paths = []
-    for pts, a, w in sc.lines(0.0):
+    for pts, a, w, *_ in sc.lines(0.0):
         if a > 0.02:
             d = "M" + "L".join(f"{x:.0f} {y:.1f}" for x, y in pts)
             paths.append(f'<path d="{d}" stroke-opacity="{min(1, a * 1.2):.2f}" stroke-width="{w:.2f}"/>')

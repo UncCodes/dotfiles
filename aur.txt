@@ -1,2 +1,3 @@
 # AUR packages, installed by install.sh with yay (skipped when yay is missing).
 mpvpaper      # plays the live wallpaper; without it the still image is used
+apple_cursor  # the cursor: the macOS-style set (theme "macOS"), system-wide so the login screen has it too

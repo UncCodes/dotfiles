@@ -58,7 +58,7 @@ changes between them.
 
 | Edition | Floor | Signal | Lineage |
 |---|---|---|---|
-| cyan (default) | obsidian | signal cyan | night operations |
+| cyan | obsidian | signal cyan | night operations |
 | amber | warm black | amber | amber terminals |
 | phosphor | green-black | phosphor green | green-screen terminals |
 | acid | black | acid lime | techwear and dither prints |
@@ -70,6 +70,7 @@ changes between them.
 | chrome | brushed aluminium | blue LCD | the modern player skin (light) |
 | slate | gunmetal | periwinkle | the skinned desktop |
 | ruby | navy in a ruby shell | sky blue | the disc suite |
+| aurora (default) | deep indigo | violet, magenta as the counter | the cosmic night of the 2007 desktops |
 
 Ice, chrome, slate and ruby define their own chassis (`shell`, `shell_hi`, `readout`,
 `readout_ink`); the others derive one from their palette: gunmetal tinted by the signal on the
@@ -162,13 +163,13 @@ Every code names a real panel and stays stable:
 | Notifications (swaync) | tinted plastic slips; a critical one takes `bad`, its summary a solid plate |
 | Control centre (swaync) | brushed metal under a chrome strip, rubber-key toggles, boxy gel sliders |
 | OSD (swayosd) | an LCD panel in a shell bezel: lit segments, the number glowing in the brand face |
-| Lock screen (hyprlock) | the welcome screen: a boxy shell with a chrome title strip, the distribution's logo in a square tile, the operator, the passphrase pressed in, the time in a lit readout, the notice |
+| Lock screen (hyprlock) | authentication: a round frosted panel under a chrome title strip (AUTHENTICATION, AUTH-00), the distribution's logo in the signal, the host and the OS, the clock as the hero value, the operator and kernel as readouts, the passphrase field, the notice |
 | Apps (GTK3/4, libadwaita, Qt) | chrome headers, chrome keys, gel on the primary action and the selection, pressed-in fields, readout-well progress and sliders, brushed-metal sidebars, one soft shadow under a window |
 | Terminal (kitty) and console tools | the edition's console: 16 colours mapped from the roles (light editions keep a dark console); shell colours are ANSI numbers so everything follows it |
 | Browser (Firefox) | a flat tab strip with the stripe, the current tab underlined; the start page is the intranet |
 | Start page | a small device: a chrome masthead (the distribution's logo, the host, the OS), readouts (edition, display, operator, node), a pressed-in search with a gel key, a directory with index codes in chrome panels, the clock in a lit readout and a day meter |
 | Boot (Plymouth), sign-in (greetd + ReGreet), consoles | the splash fades in the edition's survey field and the machine's logo, host and OS while traces of signal run along the contours, with a 4 px progress line; then the login screen, a boxy chrome shell over the edition's backdrop; the console palette and a sign-in banner with the notice |
-| Backdrop | light drawn as fine line work over a haze, in the edition's colours, one of six (each edition opens with its own; `fui wallpaper pick` chooses one for all): **survey** (a topographic map, traces running along its contours), **ribbon** (a sheaf of light lines pinching and fanning), **helix** (two braided strands, the near one bright), **orbit** (a gyroscope of tilted rings, beads travelling them), **fibre** (a fibre-optic lamp, its tips breathing), **mesh** (a wireframe landscape rolling in from the horizon). Live, each is a seamless 56 s loop. No text |
+| Backdrop | light drawn as fine line work over a haze, in the edition's colours, one of six (each edition opens with its own; `fui wallpaper pick` chooses one for all): **survey** (a topographic map, traces running along its contours), **ribbon** (a sheaf of light lines pinching and fanning), **helix** (two braided strands, the near one bright), **orbit** (a gyroscope of tilted rings, beads travelling them), **fibre** (a fibre-optic lamp, its tips breathing), **mesh** (a wireframe landscape rolling in from the horizon), **veil** (curtains of light hanging in a night sky, the signal fading into the counter colour, stars). Still by default; live, each is a seamless 56 s loop. No text |
 | Screen finish | optional (`fui screen toggle`), lcd and deep only: a faint vignette |
 
 ## Motion
@@ -210,7 +211,7 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 | One soft shadow | floating | windows (deep and soft under the focused one, light under the rest), menus, tooltips; never between flat panels |
 | Unified chrome (one smooth fall of light, no horizon) | a window's header | GTK header bars, Plasma's window frames; flat and quiet when unfocused |
 | Source list (`source`: the panel tinted by the signal) | the places beside the content | app sidebars, their selection a band of gel |
-| The pointer: chrome with a gel inset (theme/make-cursor.py) | where you are | every cursor shape, drawn per edition; busy is a ring of gel keys lighting in turn |
+| The pointer: the macOS-style set (apple_cursor) | where you are | one theme everywhere: Hyprland, GTK, Qt, XWayland, Plasma and the login screen |
 
 ### One family, many parts
 

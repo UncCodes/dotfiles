@@ -7,8 +7,9 @@
  * colors-<edition>.rasi by theme/build.py (chrome-strip, gel-face) and named here. */
 
 window {
-  border: 2px solid;
+  border: 1px solid;
   border-color: @chrome-mid;
+  background-color: @glass;                  /* frosted: the compositor blurs what is behind */
   border-radius: 14px;   /* the device: round chassis; rows and fields inside are boxy */
 }
 
