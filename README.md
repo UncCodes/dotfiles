@@ -75,7 +75,7 @@ One command runs the desktop's moving parts. `fui help` lists it all.
 | `fui idle dim` / `blank` / `wake` | the idle steps hypridle runs (crt and deep only: dim, drift the bar, blank) |
 | `fui update` · `fui updates` | update the dotfiles · count pending package updates (also in the bar) |
 | `fui version` · `fui rollback [version]` | the installed version · go back to an earlier one if an update misbehaves (`fui update` returns to the newest) |
-| `fui showcase` / `on` / `off` | a composed scene for a screenshot on workspace 1: fastfetch and neovim down the left, btop across the top right, cava below it, the skinned player floating in the corner (also in the palette). `on` opens it at every sign-in instead of the startup layout |
+| `fui showcase` / `on` / `off` | a composed scene for a screenshot on a fresh workspace: three tiled panes with even gaps, fastfetch on the left half, btop above cava on the right (also in the palette). `on` opens it at every sign-in instead of the startup layout |
 | `fui doctor` / `--fix` | check graphics, audio, network, packages, fonts, links, the look (edition, tier, one bar running); fix what it can |
 | `fui setup gpu` / `audio` / `bluetooth` / `firmware` / `system` / `firefox` / `boot` / `all` | machine setup (`boot`: the animated splash, the login screen and the consoles; not part of `all`) |
 
