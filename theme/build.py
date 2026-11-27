@@ -515,6 +515,8 @@ def gtk_look(v, ed):
     metal = (f"linear-gradient(to bottom, {c('chrome_lip')} 0%, {c('chrome_top')} 8%, {c('chrome_mid')} 46%, "
              f"{c('chrome_horizon')} 52%, {c('chrome_low')} 84%, {c('chrome_reflect')} 100%)")
     unified = f"linear-gradient(to bottom, {c('chrome_top')}, {c('chrome_mid')} 55%, {c('chrome_low')})"
+    # a knob: a round chrome bead lit from above (a slider's thumb, a switch's toggle)
+    knob = f"radial-gradient(circle at 50% 30%, #FFFFFF, {c('face_hi')} 24%, {c('face_mid')} 62%, {c('face_lo')})"
     face = f"{lens.format(a=0.6)}, linear-gradient(to bottom, {c('face_hi')}, {c('face_mid')} 48%, {c('face_horizon')} 52%, {c('face_lo')})"
     face_hover = f"{lens.format(a=0.8)}, linear-gradient(to bottom, {c('face_hi')}, {c('face_hi')} 30%, {c('face_horizon')} 52%, {c('face_mid')})"
     pressed = f"linear-gradient(to bottom, {c('face_horizon')}, {c('face_mid')})"
@@ -571,8 +573,9 @@ button.suggested-action, button.default {{
 button.suggested-action:hover {{ background-image: {gel}; box-shadow: 0 0 10px alpha({c('signal')}, 0.65), 0 1px 2px alpha(#000000, 0.30); }}
 button.suggested-action:active {{ background-image: {gel_flat}; box-shadow: inset 0 2px 3px alpha(#000000, 0.35); }}
 button.destructive-action {{ background-image: none; border-color: {c('bad')}; color: {c('bad')}; text-shadow: none; }}
-/* corners: one language, boxy. Every key, field and track takes the controls' radius; only a
-   radio stays round (its shape is its meaning). Joined parts (linked groups, an entry's
+/* corners: one language, boxy. Every key, field and track takes the controls' radius; the
+   shapes whose roundness is their meaning stay round: a radio, a switch and its knob, a
+   slider's knob and its track. Joined parts (linked groups, an entry's
    buttons, spin buttons) meet square and round only their outer corners. */
 {capsule} {{ border-radius: {cr}px; }}
 {orb} {{ border-radius: {cr}px; min-width: 24px; min-height: 24px; padding: 4px; }}
@@ -599,12 +602,13 @@ menuitem:hover, modelbutton:hover, popover.menu modelbutton:hover, popover.menu 
 tooltip, tooltip.background {{ border-radius: {r}px; border-color: {c('rim')}; box-shadow: 0 4px 12px alpha(#000000, 0.30); }}
 progressbar trough, levelbar trough {{ min-height: 10px; border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.6); border: 1px solid alpha(#000000, 0.5); }}
 progressbar progress {{ min-height: 10px; border-radius: {cr}px; background-image: {gel}; box-shadow: 0 0 6px alpha({c('signal')}, 0.55); }}
-scale trough {{ min-height: 6px; min-width: 6px; border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 1px 2px alpha(#000000, 0.6); }}
-scale highlight {{ border-radius: {cr}px; background-image: {gel_flat}; }}
-scale slider {{ min-width: 22px; min-height: 13px; border: 1px solid {c('rim')}; border-radius: {cr}px; background-image: {face}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
-switch {{ border-radius: {cr}px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.5); border-color: {c('rim')}; }}
+scale trough {{ min-height: 6px; min-width: 6px; border-radius: 99px; background-color: {c('readout')}; box-shadow: inset 0 1px 2px alpha(#000000, 0.6); }}
+scale highlight {{ border-radius: 99px; background-image: {gel_flat}; }}
+scale slider {{ min-width: 18px; min-height: 18px; border: 1px solid {c('rim')}; border-radius: 99px; background-image: {knob}; box-shadow: 0 1px 2px alpha(#000000, 0.40); }}
+scale slider:hover {{ box-shadow: 0 0 0 2px alpha({c('signal')}, 0.40), 0 1px 2px alpha(#000000, 0.40); }}
+switch {{ border-radius: 99px; min-width: 42px; min-height: 22px; background-color: {c('readout')}; box-shadow: inset 0 2px 3px alpha(#000000, 0.5); border-color: {c('rim')}; }}
 switch:checked {{ background-image: {gel}; border-color: {c('gel_lo')}; }}
-switch slider {{ border-radius: {cr}px; background-image: {face}; border: 1px solid {c('rim')}; box-shadow: 0 1px 2px alpha(#000000, 0.35); }}
+switch slider {{ border-radius: 99px; min-width: 20px; min-height: 20px; background-image: {knob}; border: 1px solid {c('rim')}; box-shadow: 0 1px 2px alpha(#000000, 0.40); }}
 scrollbar slider {{ border-radius: {cr}px; min-width: 8px; min-height: 8px; background-image: {face}; border: 1px solid {c('rim')}; }}
 notebook > header tab:checked, tabbar tab:selected {{
   background-image: {gel_flat}; color: {c('on_gel')}; box-shadow: none; border-radius: {cr}px;
@@ -745,6 +749,8 @@ def qss_look(p):
     face_hover = v((0, "face_hi"), (0.3, "face_hi"), (0.52, "face_horizon"), (1, "face_mid"))
     pressed = v((0, "face_horizon"), (1, "face_mid"))
     gel = v((0, "gel_hi"), (0.48, "gel_mid"), (0.52, "signal"), (1, "gel_lo"))
+    knob = ("qradialgradient(cx:0.5, cy:0.3, radius:0.6, fx:0.5, fy:0.25, stop:0 #FFFFFF, "
+            f"stop:0.3 {q('face_hi')}, stop:0.7 {q('face_mid')}, stop:1 {q('face_lo')})")
     return f"""
 /* the look: an owned device, cut square. Chrome bars, chrome keys, gel on the primary action and the selection. */
 QMenuBar, QToolBar, QHeaderView::section, QStatusBar {{ background: {metal}; color: {q('ink')}; border: none; border-bottom: 1px solid {q('rim')}; }}
@@ -763,12 +769,12 @@ QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit {{ border-r
 QComboBox {{ background: {face}; color: {q('mark')}; border-color: {q('rim')}; }}
 QProgressBar {{ background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; max-height: 10px; }}
 QProgressBar::chunk {{ background: {gel}; border-radius: {cr}px; }}
-QSlider::groove:horizontal {{ height: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
+QSlider::groove:horizontal {{ height: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: 3px; }}
 QSlider::sub-page:horizontal {{ background: {gel}; border-radius: {cr}px; }}
-QSlider::handle:horizontal {{ background: {face}; border: 1px solid {q('rim')}; width: 22px; margin: -5px 0; border-radius: {cr}px; }}
-QSlider::groove:vertical {{ width: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
+QSlider::handle:horizontal {{ background: {knob}; border: 1px solid {q('rim')}; width: 16px; height: 16px; margin: -6px 0; border-radius: 8px; }}
+QSlider::groove:vertical {{ width: 6px; background: {q('readout')}; border: 1px solid {q('rim')}; border-radius: 3px; }}
 QSlider::add-page:vertical {{ background: {gel}; border-radius: {cr}px; }}
-QSlider::handle:vertical {{ background: {face}; border: 1px solid {q('rim')}; height: 22px; margin: 0 -5px; border-radius: {cr}px; }}
+QSlider::handle:vertical {{ background: {knob}; border: 1px solid {q('rim')}; width: 16px; height: 16px; margin: 0 -6px; border-radius: 8px; }}
 QScrollBar::handle {{ background: {face}; border: 1px solid {q('rim')}; border-radius: {cr}px; }}
 QTabBar::tab:selected {{ background: {gel}; color: {q('on_gel')}; border: 1px solid {q('gel_lo')}; border-radius: {r}px; }}
 QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {{ background: {gel}; color: {q('on_gel')}; border-left: none; }}

@@ -101,3 +101,36 @@ scale slider { min-width: 20px; min-height: 12px; border-radius: 2px; border: 1p
   color: @signal_hi; text-shadow: 0 0 6px alpha(@signal, 0.6);
   box-shadow: inset 0 2px 3px alpha(#000000, 0.45), inset 0 -3px @signal;
 }
+
+/* ── the shapes whose roundness is their meaning: the close button is a round chrome button
+      (red gel on hover), a slider's knob a round chrome bead on a capsule track, a switch a
+      capsule (gel when on) with a round knob ── */
+.close-button {
+  min-width: 18px; min-height: 18px; padding: 0; border-radius: 99px;
+  background-image: radial-gradient(circle at 50% 30%, #FFFFFF, @face_hi 24%, @face_mid 62%, @face_lo);
+  box-shadow: 0 1px 2px alpha(#000000, 0.40);
+}
+.close-button:hover {
+  color: #FFFFFF; text-shadow: none; border-color: shade(@bad, 0.7);
+  background-image: radial-gradient(circle at 50% 30%, mix(@bad, #FFFFFF, 0.55), @bad 55%, shade(@bad, 0.75));
+}
+scale trough { border-radius: 99px; }
+scale highlight { border-radius: 99px; }
+scale slider {
+  min-width: 18px; min-height: 18px; margin: -7px 0; border-radius: 99px; border: 1px solid @rim;
+  background-image: radial-gradient(circle at 50% 30%, #FFFFFF, @face_hi 24%, @face_mid 62%, @face_lo);
+  box-shadow: 0 1px 2px alpha(#000000, 0.40);
+}
+.widget-dnd switch {
+  min-width: 42px; min-height: 22px; border-radius: 99px; border: 1px solid @rim;
+  background-color: @readout; background-image: none; box-shadow: inset 0 2px 3px alpha(#000000, 0.55);
+}
+.widget-dnd switch:checked {
+  background-image: linear-gradient(to bottom, @gel_hi, @gel_mid 48%, @signal 52%, @gel_lo);
+  box-shadow: inset 0 1px 2px alpha(#000000, 0.35), 0 0 6px alpha(@signal, 0.45);
+}
+.widget-dnd switch slider {
+  min-width: 20px; min-height: 20px; border-radius: 99px; border: 1px solid @rim;
+  background-image: radial-gradient(circle at 50% 30%, #FFFFFF, @face_hi 24%, @face_mid 62%, @face_lo);
+  box-shadow: 0 1px 2px alpha(#000000, 0.45);
+}

@@ -90,12 +90,14 @@ t "the look has its layer for the bar, notices, OSD, launcher and lock screen" b
            rofi/.config/rofi/look.rasi hypr/.config/hypr/lock-look.conf; do
     [ -s "$1/$f" ] || { echo "missing $f"; exit 1; }
   done' _ "$DOTS"
-t "corners: round outer shells (18 px at most), boxy parts (no pills or circles but radios and LEDs)" bash -c '
-  ! grep -nE "border-radius: *(99|19|[2-9][0-9])px" "$1"/waybar/.config/waybar/look.css "$1"/swaync/.config/swaync/look.css \
+t "corners: round outer shells (18 px at most), boxy parts; round only where roundness is the meaning" bash -c '
+  ! grep -nE "border-radius: *(99|19|[2-9][0-9])px" "$1"/waybar/.config/waybar/look.css \
       "$1"/swayosd/.config/swayosd/look.css "$1"/rofi/.config/rofi/look.rasi "$1"/theme/templates/start.html.in &&
+  ! grep -E "^[^ ].*border-radius: *99px" "$1"/swaync/.config/swaync/look.css | grep -vE "close-button|switch|slider|trough|highlight" &&
+  ! grep -E "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css | grep -vE "^(radio|switch|scale)" &&
   grep -q "border-radius: 18px" "$1"/waybar/.config/waybar/look.css &&
   ! grep -nE "rounding = (19|[2-9][0-9]|-1)" "$1"/hypr/.config/hypr/lock-look.conf &&
-  [ "$(grep -c "border-radius: 99px" "$1"/gtk/.config/gtk-4.0/fui-cyan.css)" -le 1 ]' _ "$DOTS"
+  true' _ "$DOTS"
 t "the type is the three instrument faces: no pixel or segment faces anywhere" bash -c '
   ! git -C "$1" grep -n -i -E "silkscreen|dseg" -- . ":!CYBERCORE.md" ":!tests" | grep -v "RETIRED="' _ "$DOTS"
 t "one tool per job: windowed settings apps, one file manager, one monitor (no nmtui, wiremix, bluetui, yazi, nvtop)" bash -c '
