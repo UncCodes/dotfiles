@@ -34,7 +34,7 @@ keys: [`../docs/KEYS.md`](../docs/KEYS.md).
 7. **Precision: a round shell, boxy parts.** A 4 px unit, integer strokes. The device's outer
    shells are round (the bar a capsule; the launcher, console, OSD, lock and login panels at
    14 to 16 px); everything on them is boxy: 4 px windows and panels, 2 px keys, fields and
-   rows (only a radio stays round: its shape is its meaning). Tabular figures with a slashed zero.
+   rows. Only the shapes whose roundness is their meaning stay round: a radio, a switch and its knob, a slider's knob on its capsule track, a notification's close button (a round chrome bead, red gel on hover). Tabular figures with a slashed zero.
 8. **Legible before cool.** Contrast floors, flash limits and reduced motion come first;
    the finish, the gloss and the glow are the first things cut. Glass is the material and stays on
    every tier, so text on it is checked against the glass over the darkest backdrop.
@@ -190,7 +190,7 @@ a muted fall. Small cues sit quieter than the thresholds. `fui sound off` silenc
 
 ## Don't
 
-- No pills or circles among the parts (but radios and LEDs); round corners only on the outer shells.
+- No pills or circles among the parts but radios, LEDs, switches, slider knobs and close buttons; round corners otherwise only on the outer shells.
 - No gloss without a job: gel only on the primary action, the selection and the current
   workspace; the shadow only under what floats; glow only on lit readouts and gel.
 - No pixel or segment typefaces: the type is the instrument's three voices.

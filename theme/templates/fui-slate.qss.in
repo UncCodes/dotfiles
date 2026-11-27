@@ -65,12 +65,12 @@ QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QDateEdit, QTimeEdit { border-ra
 QComboBox { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e6e8ef, stop:0.48 #a1a9c5, stop:0.52 #626c8b, stop:1 #747a8e); color: #0f1118; border-color: #161924; }
 QProgressBar { background: #05070c; border: 1px solid #161924; border-radius: 2px; max-height: 10px; }
 QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4d0ff, stop:0.48 #9eb2ff, stop:0.52 #93a9ff, stop:1 #6776b2); border-radius: 2px; }
-QSlider::groove:horizontal { height: 6px; background: #05070c; border: 1px solid #161924; border-radius: 2px; }
+QSlider::groove:horizontal { height: 6px; background: #05070c; border: 1px solid #161924; border-radius: 3px; }
 QSlider::sub-page:horizontal { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4d0ff, stop:0.48 #9eb2ff, stop:0.52 #93a9ff, stop:1 #6776b2); border-radius: 2px; }
-QSlider::handle:horizontal { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e6e8ef, stop:0.48 #a1a9c5, stop:0.52 #626c8b, stop:1 #747a8e); border: 1px solid #161924; width: 22px; margin: -5px 0; border-radius: 2px; }
-QSlider::groove:vertical { width: 6px; background: #05070c; border: 1px solid #161924; border-radius: 2px; }
+QSlider::handle:horizontal { background: qradialgradient(cx:0.5, cy:0.3, radius:0.6, fx:0.5, fy:0.25, stop:0 #FFFFFF, stop:0.3 #e6e8ef, stop:0.7 #a1a9c5, stop:1 #747a8e); border: 1px solid #161924; width: 16px; height: 16px; margin: -6px 0; border-radius: 8px; }
+QSlider::groove:vertical { width: 6px; background: #05070c; border: 1px solid #161924; border-radius: 3px; }
 QSlider::add-page:vertical { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4d0ff, stop:0.48 #9eb2ff, stop:0.52 #93a9ff, stop:1 #6776b2); border-radius: 2px; }
-QSlider::handle:vertical { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e6e8ef, stop:0.48 #a1a9c5, stop:0.52 #626c8b, stop:1 #747a8e); border: 1px solid #161924; height: 22px; margin: 0 -5px; border-radius: 2px; }
+QSlider::handle:vertical { background: qradialgradient(cx:0.5, cy:0.3, radius:0.6, fx:0.5, fy:0.25, stop:0 #FFFFFF, stop:0.3 #e6e8ef, stop:0.7 #a1a9c5, stop:1 #747a8e); border: 1px solid #161924; width: 16px; height: 16px; margin: 0 -6px; border-radius: 8px; }
 QScrollBar::handle { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e6e8ef, stop:0.48 #a1a9c5, stop:0.52 #626c8b, stop:1 #747a8e); border: 1px solid #161924; border-radius: 2px; }
 QTabBar::tab:selected { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4d0ff, stop:0.48 #9eb2ff, stop:0.52 #93a9ff, stop:1 #6776b2); color: #0b0d16; border: 1px solid #6776b2; border-radius: 4px; }
 QTreeView::item:selected, QListView::item:selected, QTableView::item:selected { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4d0ff, stop:0.48 #9eb2ff, stop:0.52 #93a9ff, stop:1 #6776b2); color: #0b0d16; border-left: none; }
